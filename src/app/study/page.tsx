@@ -33,7 +33,6 @@ import Link from "@/lib/link";
 import { sets as allSets, tags as allTags } from "@/study/sets";
 import db, { enableNetwork } from "@/db";
 import { StudySetStats } from "./[_id]/exports";
-import { Info } from "@mui/icons-material";
 import {
   useRouter,
   useSearchParams,
@@ -63,8 +62,9 @@ function StudyPage() {
   );
   const isPopulated = useGongoIsPopulated();
   const gdGrade = searchParams?.get("gdGrade") || "all";
+
   const currentSets = useGongoLive((db) =>
-    db.collection("studySet").find()
+    db.collection("studySet").find().sort("setId", "asc")
   ).filter(
     (s) =>
       !!allSets[s.setId] &&
@@ -72,6 +72,7 @@ function StudyPage() {
       (tags[0] === "all" ||
         tags.every((tag) => allSets[s.setId].tags?.includes(tag)))
   );
+
   const network = useGongoOne((db) => db.gongoStore.find({ _id: "network" }));
   const userId = useGongoUserId();
   useGongoSub("studySet");
@@ -97,7 +98,15 @@ function StudyPage() {
             tags.every((tag) => allSets[key].tags?.includes(tag))
         )
         .filter((setId) => !currentSetIds.includes(setId))
-        .map((setId) => allSets[setId]),
+        .map((setId) => allSets[setId])
+        .sort((a, b) => {
+          if (a.gdGrade !== b.gdGrade)
+            return (
+              parseInt(a.gdGrade.split("=")[0]) -
+              parseInt(b.gdGrade.split("=")[0])
+            );
+          return a.id.localeCompare(b.id);
+        }),
     [currentSetIds, gdGrade, tags]
   );
 
@@ -135,12 +144,20 @@ function StudyPage() {
           <TableHead>
             <TableRow>
               <TableCell>Set</TableCell>
-              <TableCell align="right">Due</TableCell>
+              <TableCell align="center" width="100px">
+                Due
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {currentSets.map((set) => {
               const dueCards = dueCount(set);
+              const score =
+                set.correct + set.incorrect > 0
+                  ? Math.round(
+                      (set.correct / (set.correct + set.incorrect)) * 100
+                    ) + "%"
+                  : "(info)";
 
               return (
                 <TableRow
@@ -151,36 +168,18 @@ function StudyPage() {
                   }}
                   // onClick={() => router.push("/study/" + set.setId)}
                 >
-                  <TableCell>
-                    <Link href={"/study/" + set.setId}>{set.setId}</Link>
-                    <div style={{ marginTop: 5 }}>
-                      <Chip size="small" label={allSets[set.setId].gdGrade} />{" "}
-                      <Chip
-                        component={Link}
-                        href={"/study/info/" + set.setId}
-                        clickable
-                        icon={<Info />}
-                        sx={{
-                          "& .MuiChip-label": {
-                            lineHeight: "1em",
-                          },
-                        }}
-                        size="small"
-                        label={
-                          set.correct + set.incorrect > 0
-                            ? Math.round(
-                                (set.correct / (set.correct + set.incorrect)) *
-                                  100
-                              ) + "%"
-                            : "-"
-                        }
-                      />
+                  <TableCell /* sx={{ verticalAlign: "top" }} */>
+                    <div style={{ display: "inline-block", width: 55 }}>
+                      <Chip size="small" label={allSets[set.setId].gdGrade} />
                     </div>
+                    <Link href={"/study/" + set.setId}>{set.setId}</Link>
                   </TableCell>
-                  <TableCell align="right" sx={{ _verticalAlign: "top" }}>
+                  <TableCell align="center" sx={{ _verticalAlign: "top" }}>
                     {dueCards
                       ? dueCards + " cards"
                       : "in " + formatDistanceToNowStrict(set.dueDate)}
+                    <br />
+                    <Link href={"/study/info/" + set.setId}>{score}</Link>
                   </TableCell>
                 </TableRow>
               );
