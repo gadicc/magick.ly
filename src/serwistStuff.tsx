@@ -64,6 +64,13 @@ export default function serwistStuff() {
       // The time check is because we don't want to display the prompt if
       // the new service worker is installed on the first load.  Only on update.
       if (event.isUpdate && Date.now() > startTime + UPDATE_INTERVAL - 1000) {
+        console.log({
+          isUpdate: event.isUpdate,
+          startTime,
+          UPDATE_INTERVAL,
+          now: Date.now(),
+          bool: Date.now() > startTime + UPDATE_INTERVAL - 1000,
+        });
         if (
           await asyncConfirm(
             t`A newer version of this web app is available, reload to update?`
