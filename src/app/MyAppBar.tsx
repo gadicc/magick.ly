@@ -36,6 +36,8 @@ import {
   Close,
   ExpandLess,
   ExpandMore,
+  ArrowDropDown,
+  ArrowDropUp,
 } from "@mui/icons-material";
 
 // import Link from "@/lib/link";
@@ -212,6 +214,9 @@ export default function ButtonAppBar() {
   const network = useGongoOne((db) => db.gongoStore.find({ _id: "network" }));
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [navAnchorEl, setNavAnchorEl] = React.useState<null | HTMLElement>(
+    null
+  );
 
   const handleUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -224,6 +229,8 @@ export default function ButtonAppBar() {
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
   };
+
+  // console.log(navParts);
 
   function share() {
     const data = {
@@ -268,20 +275,73 @@ export default function ButtonAppBar() {
                 whiteSpace: "nowrap",
               }}
             >
-              {navParts &&
-                navParts.map((part) => (
-                  <span key={part.url}>
-                    <NextLink
-                      href={part.url}
-                      style={{ color: "inherit" /*, textDecoration: "none" */ }}
+              {navParts && navParts.length ? (
+                <>
+                  <div onClick={(e) => setNavAnchorEl(e.currentTarget)}>
+                    <span style={{ verticalAlign: "top" }}>{title}</span>
+                    {navAnchorEl ? (
+                      <ArrowDropUp
+                        sx={{ verticalAlign: "bottom", marginBottom: 0.5 }}
+                      />
+                    ) : (
+                      <ArrowDropDown
+                        sx={{ verticalAlign: "bottom", marginBottom: 0.5 }}
+                      />
+                    )}
+                  </div>
+                  <Menu
+                    id="nav-menu"
+                    anchorEl={navAnchorEl}
+                    open={Boolean(navAnchorEl)}
+                    onClose={() => setNavAnchorEl(null)}
+                    anchorOrigin={{
+                      vertical: "bottom",
+                      horizontal: "left",
+                    }}
+                    transformOrigin={{
+                      vertical: "top",
+                      horizontal: "left",
+                    }}
+                    sx={{ marginTop: 0.5, marginLeft: -1.8 }}
+                  >
+                    {navParts.map((part, i) => (
+                      <MenuItem
+                        key={part.url}
+                        onClick={() => {
+                          setNavAnchorEl(null);
+                        }}
+                      >
+                        <NextLink
+                          href={part.url}
+                          style={{
+                            color: "inherit",
+                            textDecoration: "none",
+                            paddingLeft: 9 * i,
+                          }}
+                        >
+                          {part.title}
+                        </NextLink>
+                      </MenuItem>
+                    ))}
+                    <MenuItem
+                      onClick={() => {
+                        setNavAnchorEl(null);
+                      }}
                     >
-                      {part.title}
-                    </NextLink>{" "}
-                    &gt;{" "}
-                  </span>
-                ))}
-
-              {title}
+                      <span
+                        style={{
+                          paddingLeft: 9 * navParts.length,
+                          color: "red",
+                        }}
+                      >
+                        {title}
+                      </span>
+                    </MenuItem>
+                  </Menu>
+                </>
+              ) : (
+                title
+              )}
             </Typography>
             <div
               // Container for search, share and user buttons.
