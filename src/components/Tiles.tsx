@@ -18,7 +18,7 @@ function Tiles({ tiles }) {
             overflow: "hidden",
           }}
         >
-          <Link href={tile.to}>
+          <Link href={tile.to} underline="none">
             {tile.Component ? (
               <div
                 style={{
