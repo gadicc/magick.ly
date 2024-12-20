@@ -3,6 +3,10 @@ const t = String.raw.bind(String);
 import asyncConfirm from "./asyncConfirm";
 import type { BroadcastMessage } from "serwist";
 
+const UPDATE_INTERVAL = 60_000;
+
+const startTime = Date.now();
+
 export default function serwistStuff() {
   if (
     typeof window !== "undefined" &&
@@ -57,7 +61,9 @@ export default function serwistStuff() {
     sw.addEventListener("waiting", promptNewVersionAvailable);
 
     sw.addEventListener("controlling", async (event) => {
-      if (event.isUpdate) {
+      // The time check is because we don't want to display the prompt if
+      // the new service worker is installed on the first load.  Only on update.
+      if (event.isUpdate && Date.now() > startTime + UPDATE_INTERVAL - 1000) {
         if (
           await asyncConfirm(
             t`A newer version of this web app is available, reload to update?`
@@ -103,14 +109,13 @@ export default function serwistStuff() {
     let interval;
     if (typeof navigator === "object" && "serviceWorker" in navigator) {
       navigator.serviceWorker.ready.then(function (registration) {
-        const updateInterval = 60_000;
         console.log(
-          `[PWA] Will check for updates ever ${updateInterval / 1000} seconds`
+          `[PWA] Will check for updates ever ${UPDATE_INTERVAL / 1000} seconds`
         );
         interval = setInterval(() => {
           console.log("[PWA] Checking for updates...");
           registration.update();
-        }, updateInterval);
+        }, UPDATE_INTERVAL);
       });
     }
 
