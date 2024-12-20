@@ -44,14 +44,22 @@ module.exports = async (phase) => {
     const withSerwist = (await import("@serwist/next")).default({
       // https://serwist.pages.dev/docs/next/configuring/cache-on-navigation
       cacheOnNavigation: true,
+
       // Note: This is only an example. If you use Pages Router,
       // use something else that works, such as "service-worker/index.ts".
       swSrc: "src/app/sw.ts",
       swDest: "public/sw.js",
+
       //   reloadOnOnline: true,
+
       disable: process.env.NODE_ENV === "development", // to disable pwa in development
+
       // https://serwist.pages.dev/docs/next/configuring/reload-on-online
       // reloadOnOnline: true,
+
+      // Handled in src/serwistStuff.tsx
+      // https://serwist.pages.dev/docs/next/configuring/register
+      register: false,
     });
     return withSerwist(nextConfig);
   }
