@@ -24,6 +24,8 @@ import {
   ListItemButton,
   ListItemText,
   Collapse,
+  useScrollTrigger,
+  Slide,
 } from "@mui/material";
 import {
   AccountCircle,
@@ -71,6 +73,16 @@ function usePathnameInfo() {
   else if (typeof value === "object") value = value["/"];
 
   return { navParts, title: value as unknown as string };
+}
+
+function HideOnScroll({ children }) {
+  const trigger = useScrollTrigger();
+
+  return (
+    <Slide appear={false} direction="down" in={!trigger}>
+      {children ?? <div />}
+    </Slide>
+  );
 }
 
 export function UserAvatar({
@@ -232,173 +244,175 @@ export default function ButtonAppBar() {
 
   return (
     <div>
-      <AppBar position="static">
-        <Toolbar disableGutters={true} sx={{ px: 2 }}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            sx={{ mr: 0.5 }}
-            onClick={handleDrawerToggle}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              flexGrow: 1,
-              display: "inline-block",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              height: "1.5em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {navParts &&
-              navParts.map((part) => (
-                <span key={part.url}>
-                  <NextLink
-                    href={part.url}
-                    style={{ color: "inherit" /*, textDecoration: "none" */ }}
-                  >
-                    {part.title}
-                  </NextLink>{" "}
-                  &gt;{" "}
-                </span>
-              ))}
-
-            {title}
-          </Typography>
-          <div
-            // Container for search, share and user buttons.
-            style={{
-              display: "inline-block",
-              overflow: "hidden",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <div
-              style={{
+      <HideOnScroll>
+        <AppBar>
+          <Toolbar disableGutters={true} sx={{ px: 2 }}>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              sx={{ mr: 0.5 }}
+              onClick={handleDrawerToggle}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                flexGrow: 1,
                 display: "inline-block",
-                width: 25,
-                paddingLeft: 8,
-                paddingRight: 8,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                height: "1.5em",
+                whiteSpace: "nowrap",
               }}
             >
-              <Box
-                // Could try merge this with below.
-                sx={{
-                  display: "block",
-                  position: "absolute",
-                  // top: 6,
-                  marginTop: -3.1,
-                  // This will get much easier once CSS anchor() is baseline
-                  // Each is width 25 + padding 16 = 41, x2 = 82
-                  right: 82 + 16 + (avatarSrc ? 20 : 0),
-                  left: searchOpen
-                    ? 14
-                    : "calc(100% - 82px - 16px - 25px - 16px - 16px" +
-                      (avatarSrc ? " - 20px" : "") +
-                      ")",
-                  transition: "left 0.5s, background 0.2s",
-                  background: searchOpen ? "#80a6f1" : undefined,
-                  "&:hover": {
-                    background: "#80a6f1",
-                  },
-                  borderRadius: 3,
+              {navParts &&
+                navParts.map((part) => (
+                  <span key={part.url}>
+                    <NextLink
+                      href={part.url}
+                      style={{ color: "inherit" /*, textDecoration: "none" */ }}
+                    >
+                      {part.title}
+                    </NextLink>{" "}
+                    &gt;{" "}
+                  </span>
+                ))}
+
+              {title}
+            </Typography>
+            <div
+              // Container for search, share and user buttons.
+              style={{
+                display: "inline-block",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-block",
+                  width: 25,
+                  paddingLeft: 8,
+                  paddingRight: 8,
                 }}
               >
-                <InputBase
-                  id="searchInput"
-                  placeholder="Coming soon…"
-                  inputProps={{ "aria-label": "search" }}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onFocus={() => !searchOpen && setSearchOpen(true)}
-                  onBlur={() => searchOpen && setSearchOpen(false)}
+                <Box
+                  // Could try merge this with below.
                   sx={{
-                    paddingTop: 0.5,
-                    paddingBottom: 0.5,
-                    paddingLeft: 1,
-                    color: "white",
-                    width: "100%",
+                    display: "block",
+                    position: "absolute",
+                    // top: 6,
+                    marginTop: -3.1,
+                    // This will get much easier once CSS anchor() is baseline
+                    // Each is width 25 + padding 16 = 41, x2 = 82
+                    right: 82 + 16 + (avatarSrc ? 20 : 0),
+                    left: searchOpen
+                      ? 14
+                      : "calc(100% - 82px - 16px - 25px - 16px - 16px" +
+                        (avatarSrc ? " - 20px" : "") +
+                        ")",
+                    transition: "left 0.5s, background 0.2s",
+                    background: searchOpen ? "#80a6f1" : undefined,
+                    "&:hover": {
+                      background: "#80a6f1",
+                    },
+                    borderRadius: 3,
                   }}
-                  endAdornment={
-                    <InputAdornment position="end">
-                      <IconButton
-                        sx={{
-                          color: "white",
-                          // pointerEvents: searchOpen ? "auto" : "none",
-                        }}
-                        aria-label="toggle search box"
-                        onClick={(e) => {
-                          setSearchOpen(!searchOpen);
-                          if (!searchOpen) {
-                            document.getElementById("searchInput")?.focus();
-                          }
-                        }}
-                      >
-                        {searchOpen ? <Close /> : <SearchIcon />}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                />
-              </Box>
-            </div>
-            <IconButton color="inherit" aria-label="share" onClick={share}>
-              <Share />
-            </IconButton>
-            {userId ? (
-              <span>
-                <IconButton
-                  aria-label="account of current user"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-                  onClick={handleUserMenu}
-                  color="inherit"
                 >
-                  <UserAvatar />
-                </IconButton>
-                <Menu
-                  id="menu-appbar"
-                  anchorEl={anchorEl}
-                  anchorOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
-                  open={Boolean(anchorEl)}
-                  onClose={handleUserClose}
-                >
-                  <MenuItem
-                    onClick={() => {
-                      signOut();
-                      handleUserClose();
+                  <InputBase
+                    id="searchInput"
+                    placeholder="Coming soon…"
+                    inputProps={{ "aria-label": "search" }}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onFocus={() => !searchOpen && setSearchOpen(true)}
+                    onBlur={() => searchOpen && setSearchOpen(false)}
+                    sx={{
+                      paddingTop: 0.5,
+                      paddingBottom: 0.5,
+                      paddingLeft: 1,
+                      color: "white",
+                      width: "100%",
                     }}
-                  >
-                    Logout
-                  </MenuItem>
-                </Menu>
-              </span>
-            ) : (
-              <IconButton
-                sx={{ color: "white" }}
-                onClick={() => {
-                  if (!network) enableNetwork();
-                  signIn();
-                }}
-              >
-                <Login />
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          sx={{
+                            color: "white",
+                            // pointerEvents: searchOpen ? "auto" : "none",
+                          }}
+                          aria-label="toggle search box"
+                          onClick={(e) => {
+                            setSearchOpen(!searchOpen);
+                            if (!searchOpen) {
+                              document.getElementById("searchInput")?.focus();
+                            }
+                          }}
+                        >
+                          {searchOpen ? <Close /> : <SearchIcon />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
+                  />
+                </Box>
+              </div>
+              <IconButton color="inherit" aria-label="share" onClick={share}>
+                <Share />
               </IconButton>
-            )}
-          </div>
-        </Toolbar>
-      </AppBar>
+              {userId ? (
+                <span>
+                  <IconButton
+                    aria-label="account of current user"
+                    aria-controls="menu-appbar"
+                    aria-haspopup="true"
+                    onClick={handleUserMenu}
+                    color="inherit"
+                  >
+                    <UserAvatar />
+                  </IconButton>
+                  <Menu
+                    id="menu-appbar"
+                    anchorEl={anchorEl}
+                    anchorOrigin={{
+                      vertical: "top",
+                      horizontal: "right",
+                    }}
+                    keepMounted
+                    transformOrigin={{
+                      vertical: "top",
+                      horizontal: "right",
+                    }}
+                    open={Boolean(anchorEl)}
+                    onClose={handleUserClose}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        signOut();
+                        handleUserClose();
+                      }}
+                    >
+                      Logout
+                    </MenuItem>
+                  </Menu>
+                </span>
+              ) : (
+                <IconButton
+                  sx={{ color: "white" }}
+                  onClick={() => {
+                    if (!network) enableNetwork();
+                    signIn();
+                  }}
+                >
+                  <Login />
+                </IconButton>
+              )}
+            </div>
+          </Toolbar>
+        </AppBar>
+      </HideOnScroll>
       <nav>
         <Drawer
           variant="temporary"

@@ -159,6 +159,8 @@ export default function RootLayout(props: { children: React.ReactNode }) {
             <ClientProviders>
               <React.Suspense fallback={null}>
                 <MyAppBar />
+                {/* same height as floating AppBar, so page starts beneath it */}
+                <div style={{ height: 56 }}></div>
               </React.Suspense>
               {props.children}
             </ClientProviders>
