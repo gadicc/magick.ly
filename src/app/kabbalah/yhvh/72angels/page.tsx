@@ -183,7 +183,6 @@ function Angel({
 }
 
 function SevenyTwo() {
-  const navParts = [{ title: "Kabbalah", url: "/kabbalah" }];
   const [astrologySystem, setAstrologySystem] = React.useState("tropical");
 
   return (
