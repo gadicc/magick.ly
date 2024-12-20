@@ -4,7 +4,7 @@ import { useGongoOne, useGongoUserId } from "gongo-client-react";
 import { signIn, signOut } from "next-auth/react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import MuiLink from "@mui/material/Link";
+import Link from "next/link";
 
 import {
   AppBar,
@@ -133,7 +133,7 @@ function MenuDrawer({
             typeof value === "string" || Object.keys(value).length === 2 ? (
               <ListItem key={key} disablePadding>
                 <ListItemButton
-                  component={MuiLink}
+                  component={Link}
                   href={key === "/" ? "/" : "/" + key}
                 >
                   <ListItemText
@@ -170,7 +170,7 @@ function MenuDrawer({
                         <ListItemButton
                           key={key2}
                           sx={{ pl: 4 }}
-                          component={MuiLink}
+                          component={Link}
                           href={"/" + key + (key2 === "/" ? "" : "/" + key2)}
                         >
                           <ListItemText primary={value} />
