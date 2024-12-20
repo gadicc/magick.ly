@@ -56,6 +56,22 @@ export default function serwistStuff() {
 
     sw.addEventListener("waiting", promptNewVersionAvailable);
 
+    sw.addEventListener("controlling", async (event) => {
+      if (event.isUpdate) {
+        if (
+          await asyncConfirm(
+            t`A newer version of this web app is available, reload to update?`
+          )
+        ) {
+          window.location.reload();
+        } else {
+          console.log(
+            "User rejected to reload the web app, keep using old version, which might disfunction with newly loaded serviceworker"
+          );
+        }
+      }
+    });
+
     sw.addEventListener("message", (event) => {
       if (
         event.data.meta === "serwist-broadcast-update" &&
