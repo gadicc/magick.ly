@@ -177,7 +177,7 @@ function MenuDrawer({
                     {Object.entries(value)
                       .filter(([key, value]) => {
                         if (key === "/") return false;
-                        if (typeof value !== "string") return false;
+                        // if (typeof value !== "string") return false;
                         return true;
                       })
                       .map(([key2, value]) => (
@@ -187,7 +187,11 @@ function MenuDrawer({
                           component={Link}
                           href={"/" + key + (key2 === "/" ? "" : "/" + key2)}
                         >
-                          <ListItemText primary={value} />
+                          <ListItemText
+                            primary={
+                              typeof value === "string" ? value : value["/"]
+                            }
+                          />
                         </ListItemButton>
                       ))}
                   </List>
