@@ -11,10 +11,10 @@ export async function generateStaticParams() {
   return Object.keys(planets).map((id) => ({ id }));
 }
 
-export default function Planet(props: {
-  params: { id: keyof typeof data.planet };
+export default async function Planet(props: {
+  params: Promise<{ id: keyof typeof data.planet }>;
 }) {
-  const { id } = props.params;
+  const { id } = await props.params;
   if (!id) return null;
 
   const planet = planets[id];
