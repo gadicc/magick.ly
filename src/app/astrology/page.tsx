@@ -1,21 +1,27 @@
 import React from "react";
 import Tiles from "@/components/Tiles";
 
+import PlanetaryHoursPic from "./img/planetary-hours.webp";
+import AstrologyTile from "../img/astrology.jpeg";
+
 const tiles = [
   {
-    img: "/pics/clock-in-the-solar-system.jpg",
     title: "Planetary Hours",
     to: "/astrology/planetary-hours",
+    img: PlanetaryHoursPic,
+    alt: "Planets around a clock",
   },
   {
-    img: "/pics/planets2013.jpg",
     title: "Planets",
     to: "/astrology/planets",
+    img: "/pics/planets2013.jpg",
+    alt: "Our solar system",
   },
   {
-    img: "/pics/astrology.jpg",
     title: "Zodiac",
     to: "/astrology/zodiac",
+    img: AstrologyTile,
+    alt: "zodiac wheel",
   },
 ];
 
