@@ -57,7 +57,7 @@ function MercuryDrawing({ phase, width, height, }) {
 }
 */
 
-function MercuryWidget({ padding = "10px 0 18px 0" }) {
+function MercuryWidget({ padding = "10px 0 2px 0" }) {
   const retrograde = find();
   if (!retrograde)
     return "Could not find next retrograde, sorry; please report.";

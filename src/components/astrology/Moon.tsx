@@ -108,7 +108,7 @@ function MoonDrawing({
   );
 }
 
-function MoonWidget({ moonPadding = "10px 0 19px 0" }) {
+function MoonWidget({ moonPadding = "10px 0 2px 0" }) {
   const phaseData = lune.phase(new Date());
   const phaseValue = phaseData.phase;
   const phaseName = moonPhaseName(phaseValue);
