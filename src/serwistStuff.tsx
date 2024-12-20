@@ -1,6 +1,7 @@
 // import { t } from "@lingui/macro";
 const t = String.raw.bind(String);
 import asyncConfirm from "./asyncConfirm";
+import type { BroadcastMessage } from "serwist";
 
 export default function serwistStuff() {
   if (
@@ -31,6 +32,7 @@ export default function serwistStuff() {
     // NOTE: MUST set skipWaiting to false in next.config.js pwa object
     // https://developers.google.com/web/tools/workbox/guides/advanced-recipes#offer_a_page_reload_for_users
     const promptNewVersionAvailable = async (_event) => {
+      console.log("Event waiting is triggered.", _event);
       // `event.wasWaitingBeforeRegister` will be false if this is the first time the updated service worker is waiting.
       // When `event.wasWaitingBeforeRegister` is true, a previously updated service worker is still waiting.
       // You may want to customize the UI prompt accordingly.
@@ -53,6 +55,19 @@ export default function serwistStuff() {
     };
 
     sw.addEventListener("waiting", promptNewVersionAvailable);
+
+    sw.addEventListener("message", (event) => {
+      if (
+        event.data.meta === "serwist-broadcast-update" &&
+        event.data.type === "CACHE_UPDATED"
+      ) {
+        const {
+          payload: { updatedURL },
+        }: BroadcastMessage = event.data;
+
+        console.log(`A newer version of \${updatedURL} is available!`);
+      }
+    });
 
     // ISSUE - this is not working as expected, why?  (for workbox, didn't test serwist)
     // I could only make message event listenser work when I manually add this listenser into sw.js file
@@ -83,10 +98,12 @@ export default function serwistStuff() {
       });
     }
 
+    /*
     window.addEventListener("beforeinstallprompt", (event) => {
       // https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
       console.log("beforeinstallprompt - TODO");
     });
+    */
 
     return function cleanup() {
       clearInterval(interval);

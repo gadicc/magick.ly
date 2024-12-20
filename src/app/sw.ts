@@ -23,3 +23,11 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Not used yet... but if we want to trigger update from the client side
+// https://serwist.pages.dev/docs/window#the-waiting-event
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
