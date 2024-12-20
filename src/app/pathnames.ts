@@ -44,7 +44,10 @@ const pathnames: {
   },
   kabbalah: {
     "/": "Kabbalah",
-    yhvh: "Shem HaMephorash",
+    yhvh: {
+      "/": "Shem HaMephorash",
+      "72angels": "72 Angels",
+    },
     tree: "Tree of Life",
   },
   study: "Study", // TODO, from pages router
