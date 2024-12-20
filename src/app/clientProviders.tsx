@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import serwistStuff from "@/serwistStuff";
+import { ConfirmDialog } from "@/asyncConfirm";
 
 export default function ClientProviders({
   children,
@@ -19,6 +20,7 @@ export default function ClientProviders({
     <SessionProvider>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         {children}
+        <ConfirmDialog />
       </LocalizationProvider>
     </SessionProvider>
   );
