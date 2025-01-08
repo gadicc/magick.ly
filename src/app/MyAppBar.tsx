@@ -96,7 +96,7 @@ export function UserAvatar({
   const user = useGongoOne((db) =>
     db.collection("users").find({ _id: userId })
   );
-  const avatarSrc = user?.image || user?.photos?.[0]?.value;
+  const avatarSrc = (user?.image as string) || user?.photos?.[0]?.value;
 
   return avatarSrc ? (
     <Avatar
