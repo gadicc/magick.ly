@@ -18,10 +18,15 @@ import {
 import { WithId } from "gongo-client/lib/browser/Collection";
 import { UserServer } from "../schemas";
 
+// https://github.com/microsoft/TypeScript/issues/54451
+type MappedOmit<T, K extends keyof T> = {
+  [P in keyof T as P extends K ? never : P]: T[P];
+};
+
 type ServerDocument<T> = GongoDocument &
   EnhancedOmit<T, "_id"> & { _id: ObjectId };
 
-type MongoAdapterUser = Omit<AdapterUser, "_id"> & { _id: ObjectId };
+type MongoAdapterUser = MappedOmit<AdapterUser, "_id"> & { _id: ObjectId };
 type MongoAdapterAccount = Omit<AdapterAccount, "userId"> & {
   userId: ObjectId;
 };
@@ -124,19 +129,50 @@ export default function GongoAuthAdapter(
       return from<AdapterUser>(user);
     },
     */
-    async createUser(data: Omit<AdapterUser, "id">): Promise<AdapterUser> {
+
+    async createUser(
+      data: MappedOmit<AdapterUser, "id">
+    ): Promise<AdapterUser> {
+      console.log("createUser data", data);
+
       if (!gs.dba) throw new Error("no gs.dba");
-      console.log("createUser", data);
-      const user = await gs.dba.Users.createUser((user) => {
-        Object.assign(user, data);
-        /*
-        if (!user.emails) user.emails = [];
-        user.emails.push({ value: data.email, verified: data.emailVerified });
-        if (!user.displayName && data.name) user.displayName = data.name;
-        if (!user.photos) user.photos = [];
-        user.photos.push({ value: data.image });
-        */
+      const _id = data._id ?? new ObjectId();
+      const id = _id.toHexString();
+
+      if (data.id && data.id !== id) {
+        console.log("Warning: Replacing id", data.id, "with", id);
+      }
+
+      const user: AdapterUser = {
+        // @ts-expect-error: fine for now
+        emails: [],
+        // @ts-expect-error: fine for now
+        services: [],
+
+        ...data,
+
+        id: _id.toHexString(),
+      };
+
+      console.log("createUser user", user);
+
+      const result = await (
+        await db
+      ).U.insertOne({
+        // @ts-expect-error: fine for now
+        _id,
+        ...user,
       });
+
+      if (!result.acknowledged) {
+        throw new Error(
+          "Unexpected mongo result in createUser():" + JSON.stringify(result)
+        );
+      }
+
+      return user;
+
+      /*
       return {
         id: user._id.toHexString(),
         name: user.name,
@@ -144,6 +180,7 @@ export default function GongoAuthAdapter(
         emailVerified: null, // we have verified but as bool not Date
         image: user.photos[0].value,
       };
+      */
     },
 
     /*
@@ -187,6 +224,7 @@ export default function GongoAuthAdapter(
             provider: service.service,
             type: "oauth",
             providerAccountId: service.id,
+            // @ts-expect-error: that's correct, it doesn't exist anymore
             access_token: service.accessToken,
             token_type: "bearer",
             scope: (function () {

@@ -27,8 +27,12 @@ function newUserFromService<T extends Record<string, unknown>>(
   service: Service,
   overrides: T = {} as T
 ) {
+  const _id = new ObjectId();
+
   return {
-    id: service.id,
+    _id,
+    id: _id.toHexString(),
+
     displayName: service.profile.displayName,
     name: service.profile.name
       ? service.profile.name.givenName + " " + service.profile.name.familyName
@@ -104,9 +108,15 @@ export const { auth, handlers, signIn, signOut } = NextAuth((req) => {
             },
           };
 
-          return newUserFromService(service, {
+          const user = newUserFromService(service, {
             name: profile.name, // <-- full name in one string
           });
+
+          console.log("profile() user", user);
+          return user;
+
+          // Hack since this gets added in a later step
+          // return user as typeof user & { _id: ObjectId };
         },
       }),
     ],
