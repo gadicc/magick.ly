@@ -220,7 +220,7 @@ export default function StudySetLoad(props: {
   const studyDataExists = !!studyData;
   React.useEffect(() => {
     if (!_id) return;
-    if (isPopulated && !studyData) {
+    if (isPopulated && !studyData && userId) {
       // Race conditiion, let's double check with sync
       // Note, previously the if had an errant semicolon (";") afterwards,
       // so was never checked before calling the next line.  Fixed now,
