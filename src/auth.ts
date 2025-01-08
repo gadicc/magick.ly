@@ -23,15 +23,13 @@ interface Service {
   };
 }
 
-function newUserFromService<T extends Record<string, unknown>>(
+function userStubFromService<T extends Record<string, unknown>>(
   service: Service,
   overrides: T = {} as T
 ) {
-  const _id = new ObjectId();
-
   return {
-    _id,
-    id: _id.toHexString(),
+    // This looks wrong but this is the format next-auth expects!  Don't change!
+    id: service.id,
 
     displayName: service.profile.displayName,
     name: service.profile.name
@@ -108,15 +106,14 @@ export const { auth, handlers, signIn, signOut } = NextAuth((req) => {
             },
           };
 
-          const user = newUserFromService(service, {
+          const user = userStubFromService(service, {
             name: profile.name, // <-- full name in one string
           });
 
           console.log("profile() user", user);
-          return user;
 
           // Hack since this gets added in a later step
-          // return user as typeof user & { _id: ObjectId };
+          return user as typeof user & { _id: ObjectId };
         },
       }),
     ],
