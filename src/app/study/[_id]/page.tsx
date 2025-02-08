@@ -60,7 +60,7 @@ function randomCard(
 
 const StudySetCol = db.collection("studySet");
 
-function newStudySetStats(set: StudySet, userId: string) {
+function newStudySetStats(set: StudySet, userId?: string) {
   const studySetStats: StudySetStats = {
     setId: set.id,
     cards: {},
@@ -220,20 +220,24 @@ export default function StudySetLoad(props: {
   const studyDataExists = !!studyData;
   React.useEffect(() => {
     if (!_id) return;
-    if (isPopulated && !studyData && userId) {
+    if (isPopulated && !studyData) {
       // Race conditiion, let's double check with sync
       // Note, previously the if had an errant semicolon (";") afterwards,
       // so was never checked before calling the next line.  Fixed now,
       // look out for any strange behaviour.  TODO.
-      if (!StudySetCol.findOne({ setId: _id }))
+      if (!StudySetCol.findOne({ setId: _id })) {
+        console.log("Creating new study set stats");
         if (set) StudySetCol.insert(newStudySetStats(set, userId));
+        else console.error("Failure.  Set not defined");
+      }
     }
   }, [studyDataExists, isPopulated, _id, set, studyData, userId]);
 
-  if (!_id || !studyData || !isPopulated) return <div>Initializing</div>;
-
-  if (!allCards) throw new Error("allCards not set");
-  if (!set) throw new Error("set not defined");
+  if (!_id) return <div>No _id specified</div>;
+  if (!isPopulated) return <div>Waiting for database population...</div>;
+  if (!studyData) return <div>Waiting for study data...</div>;
+  if (!allCards) return <div>Error: allCards not set</div>;
+  if (!set) return <div>Error: set not defined</div>;
 
   let cards;
   if (mode === "supermemo") {
