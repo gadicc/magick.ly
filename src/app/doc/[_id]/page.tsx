@@ -13,10 +13,13 @@ import _neophyte from "!!raw-loader!@/doc/0=0.jade";
 import _zelator from "!!raw-loader!@/doc/1=10.jade";
 // import _healing from "!!raw-loader!../../src/doc/healing.jade";
 // import _chesedTalisman from "!!raw-loader!../../src/doc/chesed-talisman.jade";
+// @ts-expect-error: ok
+import _theoricus from "!!raw-loader!@/doc/2=9.jade";
 
 const docs = {
   neophyte: prepare(_neophyte),
   zelator: prepare(_zelator),
+  theoricus: prepare(_theoricus),
   // neophyteM: prepare(_neophyteM),
   // healing: prepare(_healing),
   // "chesed-talisman": prepare(_chesedTalisman),
