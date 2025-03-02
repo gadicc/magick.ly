@@ -97,8 +97,19 @@ class I extends Node {
 
 class Img extends Node {
   render(key) {
-    // eslint-disable-next-line
-    return <img key={key} width="100%" src={this.block.src} />;
+    const style = this.block.style ? JSON.parse(this.block.style) : {};
+    if (!style.width && !this.block.style) style.width = "100%";
+
+    return (
+      // eslint-disable-next-line
+      <img
+        key={key}
+        width={this.block.width}
+        height={this.block.height}
+        style={style}
+        src={this.block.src}
+      />
+    );
   }
 }
 
