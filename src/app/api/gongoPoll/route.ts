@@ -42,6 +42,8 @@ gs.publish("docs", async (db, opts, { auth }) => {
   } as Filter<Document>;
 
   if (user?.groupIds) query.$or?.push({ groupId: { $in: user.groupIds } });
+
+  // TODO, minGrade check.
   if (templeIds) query.$or?.push({ templeId: { $in: templeIds } });
 
   console.log(JSON.stringify(query, null, 2));

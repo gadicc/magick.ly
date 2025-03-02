@@ -30,7 +30,11 @@ import {
 import { Edit } from "@mui/icons-material";
 
 import Link from "@/lib/link";
-import { Doc, Temple } from "@/schemas";
+import {
+  Doc,
+  Temple,
+  TempleMembershipClient as TempleMembership,
+} from "@/schemas";
 
 const builtInDocs = [
   {
@@ -216,12 +220,31 @@ export default function Rituals() {
     () => [...builtInDocs, ...dbDocs] as unknown as typeof dbDocs,
     [dbDocs]
   );
-  const docs: Array<Doc & { temple?: Temple }> = React.useMemo(
+
+  type AggregatedDoc = Doc & { temple?: Temple; membership?: TempleMembership };
+  const docs: AggregatedDoc[] = React.useMemo(
     () =>
-      _docs.map((doc) =>
-        doc.templeId ? { ...doc, temple: temples[doc.templeId] } : doc
-      ),
-    [_docs, temples]
+      _docs
+        .map((doc) =>
+          doc.templeId
+            ? {
+                ...doc,
+                temple: temples[doc.templeId],
+                membership: templeMemberships[doc.templeId],
+              }
+            : doc
+        )
+        .filter((doc: AggregatedDoc) => {
+          if (!doc.templeId) return true;
+          // TODO, re should also remove the doc in this case XXX
+          if (!doc.membership) return false;
+          return (
+            !doc.minGrade ||
+            doc.membership.admin ||
+            doc.minGrade <= doc.membership.grade
+          );
+        }),
+    [_docs, temples, templeMemberships]
   );
 
   const navParts = [{ title: "HOGD", url: "/hogd" }];
