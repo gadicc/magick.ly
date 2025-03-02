@@ -101,12 +101,10 @@ export default function DocEdit({
 
   // We want the reactivity for first load, but never again.
   React.useEffect(() => {
-    if (initialValue === null) {
-      if (_dbDoc && !dbDoc) setDbDoc(_dbDoc);
-      if (!_dbDoc?.docRevisionId) {
-        console.log("no docRevisionId, setting initialValue to ''");
-        setInitialValue("");
-      }
+    if (_dbDoc && !dbDoc) setDbDoc(_dbDoc);
+    if (initialValue === null && !_dbDoc?.docRevisionId) {
+      console.log("no docRevisionId, setting initialValue to ''");
+      setInitialValue("");
     }
   }, [_dbDoc, dbDoc, initialValue]);
   React.useEffect(() => {
