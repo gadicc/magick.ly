@@ -31,7 +31,7 @@ export default function TreeOfLife() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const ref = React.useRef(null);
+  const ref = React.useRef<SVGSVGElement>(null);
 
   const opts: Partial<typeof defaults> = {};
   const defaults = {

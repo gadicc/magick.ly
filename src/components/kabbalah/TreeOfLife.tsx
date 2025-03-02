@@ -1,8 +1,5 @@
-"use client";
 import React from "react";
 import dotProp from "dot-prop";
-
-import { useRouter } from "next/navigation";
 
 import Data from "@/../data/data";
 const _sephirot = Object.values(Data.sephirah);
@@ -49,42 +46,41 @@ function LineOutline({ x1, y1, x2, y2, offset = 5, ...args }) {
  * browser, but was very inconsistent when exporting into external programs.
  */
 
-const TreeOfLife = React.forwardRef(function TreeOfLife(
-  {
-    width,
-    height,
-    labels,
-    colorScale,
-    field,
-    topText = "index",
-    bottomText = "",
-    letterAttr = "hermetic",
-    active,
-    pathHref,
-    sephirahHref,
-    activePath,
-    flip,
-    showDaat,
-    fontSize,
-  }: {
-    width?: string | number;
-    height?: string | number;
-    labels?;
-    colorScale?;
-    field?;
-    topText?: string;
-    bottomText?: string;
-    letterAttr?: string;
-    active?;
-    pathHref?;
-    sephirahHref?;
-    activePath?;
-    flip?;
-    showDaat?;
-    fontSize?;
-  },
-  ref
-) {
+function TreeOfLife({
+  width,
+  height,
+  labels,
+  colorScale,
+  field,
+  topText = "index",
+  bottomText = "",
+  letterAttr = "hermetic",
+  active,
+  pathHref,
+  sephirahHref,
+  activePath,
+  flip,
+  showDaat,
+  fontSize,
+  ref,
+}: {
+  width?: string | number;
+  height?: string | number;
+  labels?;
+  colorScale?;
+  field?;
+  topText?: string;
+  bottomText?: string;
+  letterAttr?: string;
+  active?;
+  pathHref?;
+  sephirahHref?;
+  activePath?;
+  flip?;
+  showDaat?;
+  fontSize?;
+  ref: React.RefObject<SVGSVGElement>;
+}) {
   const color = colorScale ? colorScale + "Web" : "queenWeb";
   width = width || "100%";
   field = field || "index";
@@ -210,19 +206,25 @@ const TreeOfLife = React.forwardRef(function TreeOfLife(
     return specialPositions[letterAttr][path.id] || 0.5;
   }
 
-  const innerRef = React.useRef<SVGSVGElement>(null);
-  const router = useRouter();
-  React.useImperativeHandle(ref, () => innerRef.current);
+  // const innerRef = React.useRef<SVGSVGElement>(null);
+  // React.useImperativeHandle(ref, () => innerRef.current);
 
-  React.useEffect(() => {
-    innerRef.current?.querySelectorAll("a").forEach((a) => {
-      a.onclick = function (e) {
-        e.preventDefault();
-        const href = a.getAttribute("xlink:href");
-        href && router.push(href);
-      };
-    });
-  });
+  if ("useEffect" in React) {
+    // doesn't exist on the server.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+      ref?.current?.querySelectorAll("a").forEach((a) => {
+        a.onclick = function (e) {
+          if (typeof window === "object") {
+            e.preventDefault();
+            const href = a.getAttribute("xlink:href");
+            // href && router.push(href);  // TODO, maybe accept a router passed in?
+            if (href) location.href = href;
+          }
+        };
+      });
+    }, [ref]);
+  }
 
   return (
     <svg
@@ -236,7 +238,7 @@ const TreeOfLife = React.forwardRef(function TreeOfLife(
       id="TreeOfLife"
       width={width}
       height={height}
-      ref={innerRef}
+      ref={ref}
     >
       <style type="text/css">
         {`
@@ -624,6 +626,6 @@ const TreeOfLife = React.forwardRef(function TreeOfLife(
       )}
     </svg>
   );
-});
+}
 
 export default TreeOfLife;

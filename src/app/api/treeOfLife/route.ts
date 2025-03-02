@@ -7,6 +7,7 @@ import TreeOfLife from "@/components/kabbalah/TreeOfLife";
 
 import fs from "fs";
 import path from "path";
+import { NextRequest } from "next/server";
 console.log(__dirname);
 console.log(path.resolve("."));
 console.log(path.resolve("./public"));
@@ -16,14 +17,40 @@ const fontsDir = path.resolve("public", "fonts.conf");
 process.env.FONTCONFIG_FILE = "/var/task/public/fonts.conf";
 console.log(fs.readFileSync(fontsDir).toString());
 
-export async function GET(req, res) {
+// Helper function to convert Node.js stream to Web API ReadableStream
+function nodeReadableStreamToWebReadableStream(nodeStream) {
+  return new ReadableStream({
+    start(controller) {
+      nodeStream.on("data", (chunk) => {
+        controller.enqueue(chunk);
+      });
+
+      nodeStream.on("end", () => {
+        controller.close();
+      });
+
+      nodeStream.on("error", (err) => {
+        controller.error(err);
+      });
+    },
+    cancel() {
+      nodeStream.destroy();
+    },
+  });
+}
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const query = Object.fromEntries(searchParams.entries());
+
   // https://github.com/vercel/next.js/discussions/69244
   // https://stackoverflow.com/questions/77978991/rendertostring-youre-importing-a-component-that-imports-react-dom-server
   const { renderToString } = await import("react-dom/server");
 
   let svgText =
     '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
-    renderToString(React.createElement(TreeOfLife, req.query));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    renderToString(React.createElement(TreeOfLife, query as any));
 
   // since React doesn't support namespace tags
   svgText = svgText.replace(
@@ -31,10 +58,14 @@ export async function GET(req, res) {
     'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
   );
 
-  if (!req.query.fmt || req.query.fmt === "svg") {
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "image/svg+xml");
-    res.end(beautify(svgText));
+  const fmt = searchParams.get("fmt");
+  if (!fmt || fmt === "svg") {
+    return new Response(beautify(svgText), {
+      status: 200,
+      headers: {
+        "Content-Type": "image/svg+xml",
+      },
+    });
   } else {
     /*
     svgText = svgText.replace(
@@ -45,9 +76,20 @@ export async function GET(req, res) {
 
     const s = sharp(Buffer.from(svgText));
 
-    if (req.query.width && req.query.height)
-      s.resize(Number(req.query.width), Number(req.query.height));
+    const width = searchParams.get("width");
+    const height = searchParams.get("height");
 
-    s.toFormat("png").pipe(res);
+    if (width && height) s.resize(Number(width), Number(height));
+
+    // s.toFormat("png").pipe(res);
+    const buffer = await s.toFormat("png").toBuffer();
+
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/png",
+        "Content-Length": buffer.length.toString(),
+      },
+    });
   }
 }
