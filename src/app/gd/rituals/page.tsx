@@ -39,15 +39,15 @@ import {
 const builtInDocs = [
   {
     _id: "neophyte",
-    title: "0=0 Grade of the Neophyte",
+    title: "0=0 Grade of the Neophyte (Regardie, S.M.)",
   },
   {
     _id: "zelator",
-    title: "1=10 Grade of the Zelator",
+    title: "1=10 Grade of the Zelator (Regardie, S.M.)",
   },
   {
     _id: "theoricus",
-    title: "2=9 Grade of the Theoricus",
+    title: "2=9 Grade of the Theoricus (Regardie, S.M.)",
   },
 ];
 
