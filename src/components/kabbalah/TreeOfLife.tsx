@@ -79,7 +79,7 @@ function TreeOfLife({
   flip?;
   showDaat?;
   fontSize?;
-  ref: React.RefObject<SVGSVGElement>;
+  ref?: React.RefObject<SVGSVGElement>;
 }) {
   const color = colorScale ? colorScale + "Web" : "queenWeb";
   width = width || "100%";
