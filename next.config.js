@@ -55,7 +55,8 @@ module.exports = async (phase) => {
       disable: process.env.NODE_ENV === "development", // to disable pwa in development
 
       // https://serwist.pages.dev/docs/next/configuring/reload-on-online
-      // reloadOnOnline: true,
+      // Hopefully fixes issue where app reloads after phone lock/unlock on Android Chrome.
+      reloadOnOnline: false,
 
       // Handled in src/serwistStuff.tsx
       // https://serwist.pages.dev/docs/next/configuring/register
