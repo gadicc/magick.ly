@@ -12,13 +12,6 @@ declareVar(
   option(value="candidate", label="Candidate")
   option(value="member", label="Member")
 declareVar(
-  name="candidateName",
-  label="Candidate's Name",
-  varType="text",
-  default="(Candidate's Name)",
-  collapsable
-)
-declareVar(
   name="candidateMotto",
   label="Candidate's Motto",
   varType="text",
@@ -88,7 +81,7 @@ note
     | at the closing, but otherwise do not move from their places. (✊ = one knock)
 
 * Hierophant ✊
-Hierophant: Fratres and sorores of the order of the ${orderName} in
+Hierophant: Fratres and sorores of the ${orderName} in
   | the outer, assist me to open the temple in the Theoricus grade.
   
 Hierophant: Frater Keryx, see that the temple is properly guarded.
@@ -170,7 +163,7 @@ title(text="Ceremony of Advancement in the Path of Tau")
 
 * Hierophant ✊
 Hierophant:
-  | Fratres and sorores, our Frater (Soror) ${candidateName;b},
+  | Fratres and sorores, our Frater (Soror) ${candidateMotto;b},
   | having made such progress in the paths of occult knowledge as has
   | enabled him to pass an examination in the requisite of knowledge,
   | is now eligible for advancement to the grade of Theoricus, and I 
@@ -196,6 +189,7 @@ note
 * Keryx stands to his right
 * Hegemon stands to his left.
 * Keryx takes cubical cross from him.
+* Hegemon ready to prompt if necessary to help with answers below.
 
 Hierophant:
   | Give me the step and sign of a Zelator. (Done.)
@@ -275,6 +269,7 @@ Hierophant:
   | In the sign of the man, child of air, thou art purified. Pass thou on.
 * Hierophant hands over Zelator and the Banner of the West to the Keryx.
 * Keryx leads Zelator on and hands the banner to Hegemon in passing.
+* Hegemon takes banner.
 Hiereus:
   | I am Osiris, the soul in twin aspect, united to the higher by
   | purification, perfected by suffering, glorified through trial. I have come
@@ -299,8 +294,10 @@ Hegemon:
 * Hegemon replaces lamp and takes the place of Keryx
 * Keryx returns to his seat in the north.
 * Hegemon leads Zelator past Hiereus, to whom he hands the Banner of the West.
+* Hiereus takes banner.
 * Hiereus reads for the third time (see below).
-* Hegemon being careful to lead Zelator slowly round the temple, returning to
+* Hegemon
+  | being careful to lead Zelator slowly round the temple, returning to
   | Hiereus when the speech is finished.
 Hiereus:
   i (As they go round the third time)
@@ -357,8 +354,7 @@ Keryx: In what signs and symbols do ye come?
 Hegemon:
   | In the Letters Aleph ("א"), Mem ("מ"), and Shin ("ש"),
   | and in the symbols of banner and cross.
-* Keryx stands back, and makes the sign of Taurus ♉ over Zelator with
-  | salt.
+* Keryx stands back, and makes the sign of Taurus ♉ over Zelator with salt.
 Keryx:
   | In the sign of the head of the ox, child of the elements, thou art
   | purified. Pass thou on.
@@ -662,7 +658,8 @@ Hierophant:
   | de Rejectis which means “brought from among the rejected,” and I give you
   | the symbol of ruach (רוּחַ), which is the Hebrew name for air.
 * Hiero ✊
-Hierophant: Frater Keryx, you have my command to declare that the Zelator
+Hierophant:
+  | Frater Keryx, you have my command to declare that the Zelator
   | has been duly advanced to the grade of Theoricus.
 Keryx:
   | In the name of Shaddai El Chai (שַׁדַּי אֵל חַי), and by command of the very
