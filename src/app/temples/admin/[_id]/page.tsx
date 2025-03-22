@@ -191,8 +191,8 @@ function Users({ templeId }: { templeId: string }) {
     {
       sort: ["__updatedAt", "desc"],
       limit: 5000,
-      minInterval: 500,
-      maxInterval: 2000,
+      minInterval: 1500,
+      maxInterval: 3000,
       // persist: false,
     }
   );

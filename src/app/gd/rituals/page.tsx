@@ -57,7 +57,10 @@ function DocAdmin() {
     db.collection("users").find({ _id: userId })
   );
 
-  useGongoSub("userTemplesAndMemberships");
+  useGongoSub("userTemplesAndMemberships", {
+    minInterval: 2000,
+    maxInterval: 5000,
+  });
   const _memberships = useGongoLive((db) =>
     db.collection("templeMemberships").find({ admin: true })
   );

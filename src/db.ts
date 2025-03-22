@@ -21,7 +21,8 @@ function defineTransport() {
   db.gongoStore.remove({ _id: "auth" });
 
   db.extend("transport", HTTPTransport, {
-    pollInterval: 60 * 1000,
+    pollInterval: process.env.NODE_ENV === "development" ? 60 * 1000 : 3 * 1000,
+    // pollInterval: 60 * 1000,
     // pollInterval: false,
     pollWhenIdle: false,
     idleTimeout: 60 * 1000,
@@ -82,7 +83,10 @@ if (typeof window !== "undefined")
 /*
  */
 
-db.subscribe("user");
+db.subscribe("user", {
+  minInterval: 2000,
+  maxInterval: 5000,
+});
 db.collection("users").persist();
 db.collection("userGroups").persist();
 db.collection("docs").persist();
