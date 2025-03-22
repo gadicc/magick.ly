@@ -52,7 +52,7 @@
     "gongo-client": "^2.8.2",
     "gongo-client-react": "^0.5.2",
     "gongo-server": "3.6.1",
-    "gongo-server-db-mongo": "3.3.0",
+    "gongo-server-db-mongo": "3.3.1",
     "jade-code-mirror": "^2.0.0",
     "json-rich-text": "^1.3.1",
     "langchain": "^0.2.6",
