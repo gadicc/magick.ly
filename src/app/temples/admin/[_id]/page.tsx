@@ -4,6 +4,7 @@ import { useGongoSub, useGongoLive, db, useGongoOne } from "gongo-client-react";
 import trpc from "@/lib/trpc";
 
 import {
+  Box,
   Button,
   Checkbox,
   Container,
@@ -16,12 +17,14 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
@@ -64,8 +67,6 @@ function JoinInfo({ temple }: { temple: Temple }) {
 
   return (
     <div>
-      <Typography variant="h6">Join Info</Typography>
-      <br />
       <TableContainer component={Paper}>
         <Table aria-label="simple table">
           <TableBody>
@@ -245,9 +246,21 @@ function Users({ templeId }: { templeId: string }) {
 
   return (
     <div>
-      <Typography variant="h6">Users</Typography>
-      <FormControl>
-        <FormLabel id="sortBy-radio-buttons-group-label">Sort By</FormLabel>
+      <FormGroup>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={useMotto}
+              onChange={(e) => setUseMotto(e.target.checked)}
+            />
+          }
+          label="Motto"
+        />
+      </FormGroup>
+      <FormControl sx={{ flexDirection: "row", alignItems: "center" }}>
+        <FormLabel id="sortBy-radio-buttons-group-label" sx={{ mr: 1.5 }}>
+          Sort By
+        </FormLabel>
         <RadioGroup
           aria-labelledby="sortBy-radio-buttons-group-label"
           value={sortBy}
@@ -264,20 +277,11 @@ function Users({ templeId }: { templeId: string }) {
           <FormControlLabel value="name" control={<Radio />} label="Name" />
         </RadioGroup>
       </FormControl>
-      <FormGroup>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={useMotto}
-              onChange={(e) => setUseMotto(e.target.checked)}
-            />
-          }
-          label="Motto"
-        />
-      </FormGroup>
 
       <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-        <Button onClick={discourseSync}>Discourse Sync</Button>
+        <Button disabled onClick={discourseSync}>
+          Discourse Sync
+        </Button>
         <div style={{ color: discourseSyncResult.color }}>
           {discourseSyncResult.message}
         </div>
@@ -333,6 +337,26 @@ function Users({ templeId }: { templeId: string }) {
   );
 }
 
+function CustomTabPanel(props: {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      // id={`simple-tabpanel-${index}`}
+      // aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 1 }}>{children}</Box>}
+    </div>
+  );
+}
+
 export default function AdminTemplesPage(props: {
   params: Promise<{ _id: string }>;
 }) {
@@ -341,16 +365,34 @@ export default function AdminTemplesPage(props: {
 
   useGongoSub("templeForTempleAdmin", { _id });
   const temple = useGongoOne((db) => db.collection("temples").find({ _id }));
+  const [tabId, setTabId] = React.useState(0);
+  const onTabChange = React.useCallback(
+    (event, newValue) => {
+      setTabId(newValue);
+    },
+    [setTabId]
+  );
+
   if (!temple) return <div>Temple loading or not found...</div>;
 
   return (
     <>
       <Container sx={{ my: 2 }}>
         <Typography variant="h5">{temple?.name} Temple</Typography>
-        <br />
-        <JoinInfo temple={temple} />
-        <br />
-        <Users templeId={_id} />
+        <Tabs
+          value={tabId}
+          onChange={onTabChange}
+          aria-label="temple admin tabs"
+        >
+          <Tab label="Users" />
+          <Tab label="Join Info" />
+        </Tabs>
+        <CustomTabPanel value={tabId} index={0}>
+          <Users templeId={_id} />
+        </CustomTabPanel>
+        <CustomTabPanel value={tabId} index={1}>
+          <JoinInfo temple={temple} />
+        </CustomTabPanel>
       </Container>
     </>
   );
