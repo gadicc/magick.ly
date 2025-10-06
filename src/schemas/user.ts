@@ -1,5 +1,4 @@
 import { ObjectId } from "bson";
-import { EnhancedOmit } from "gongo-server-db-mongo/lib/collection";
 
 interface UserServer {
   [key: string]: unknown;

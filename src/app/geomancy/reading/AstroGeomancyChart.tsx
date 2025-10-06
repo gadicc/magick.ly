@@ -1,12 +1,11 @@
 import React, { CSSProperties } from "react";
-import houses from "@/../data/astrology/Houses";
-import zodiacs from "@/../data/astrology/Zodiac";
 import planets from "@/../data/astrology/Planets";
+// import houses from "@/../data/astrology/Houses";
+import zodiacs from "@/../data/astrology/Zodiac";
 import type { Tetragram } from "@/../data/geomancy/Tetragrams";
 import TetragramRender from "../Tetragram";
-import { z } from "zod";
 
-type Point = { x: number; y: number };
+// type Point = { x: number; y: number };
 
 const houseLayouts = [
   {
@@ -123,7 +122,7 @@ export default React.forwardRef(function AstroGeomancyChart(
     width?: CSSProperties["width"];
     height?: CSSProperties["width"];
   },
-  ref: React.Ref<SVGSVGElement>
+  ref: React.Ref<SVGSVGElement>,
 ) {
   const innerRatio = 1 / Math.sqrt(2);
 
@@ -168,11 +167,11 @@ export default React.forwardRef(function AstroGeomancyChart(
       <line x1="50" y1="0" x2="52" y2="0" stroke="black" strokeWidth=".5" />
 
       {houseLayouts.map((layout) => {
-        const house = houses[layout.index - 1];
+        // const house = houses[layout.index - 1];
         const tetragram = tetragrams[layout.geoFigIdx - 1];
         if (!tetragram) return null;
 
-        const houseZodiac = zodiacs[house.zodiacId];
+        // const houseZodiac = zodiacs[house.zodiacId];
         const tetragramZodiac =
           tetragram.zodiacId && zodiacs[tetragram.zodiacId];
 

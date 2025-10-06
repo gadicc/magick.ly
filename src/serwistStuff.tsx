@@ -1,7 +1,8 @@
 // import { t } from "@lingui/macro";
 const t = String.raw.bind(String);
-import asyncConfirm from "./asyncConfirm";
+
 import type { BroadcastMessage } from "serwist";
+import asyncConfirm from "./asyncConfirm";
 
 const UPDATE_INTERVAL = 60_000;
 
@@ -42,7 +43,7 @@ export default function serwistStuff() {
       // You may want to customize the UI prompt accordingly.
       if (
         await asyncConfirm(
-          t`A newer version of this web app is available, reload to update?`
+          t`A newer version of this web app is available, reload to update?`,
         )
       ) {
         sw.addEventListener("controlling", (_event) => {
@@ -53,7 +54,7 @@ export default function serwistStuff() {
         sw.messageSkipWaiting();
       } else {
         console.log(
-          "User rejected to reload the web app, keep using old version. New version will be automatically load when user open the app next time."
+          "User rejected to reload the web app, keep using old version. New version will be automatically load when user open the app next time.",
         );
       }
     };
@@ -73,13 +74,13 @@ export default function serwistStuff() {
         });
         if (
           await asyncConfirm(
-            t`A newer version of this web app is available, reload to update?`
+            t`A newer version of this web app is available, reload to update?`,
           )
         ) {
           window.location.reload();
         } else {
           console.log(
-            "User rejected to reload the web app, keep using old version, which might disfunction with newly loaded serviceworker"
+            "User rejected to reload the web app, keep using old version, which might disfunction with newly loaded serviceworker",
           );
         }
       }
@@ -94,7 +95,7 @@ export default function serwistStuff() {
           payload: { updatedURL },
         }: BroadcastMessage = event.data;
 
-        console.log(`A newer version of \${updatedURL} is available!`);
+        console.log(`A newer version of ${updatedURL} is available!`);
       }
     });
 
@@ -117,7 +118,7 @@ export default function serwistStuff() {
     if (typeof navigator === "object" && "serviceWorker" in navigator) {
       navigator.serviceWorker.ready.then(function (registration) {
         console.log(
-          `[PWA] Will check for updates ever ${UPDATE_INTERVAL / 1000} seconds`
+          `[PWA] Will check for updates ever ${UPDATE_INTERVAL / 1000} seconds`,
         );
         interval = setInterval(() => {
           console.log("[PWA] Checking for updates...");

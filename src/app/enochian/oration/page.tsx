@@ -1,5 +1,3 @@
-import React from "react";
-
 const s = {
   page: {
     textAlign: "center" as const,

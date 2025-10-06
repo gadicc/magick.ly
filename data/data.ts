@@ -4,7 +4,7 @@ import zodiac from "./astrology/Zodiac";
 import house from "./astrology/Houses";
 
 import chakra from "./chakras.json5" with { type: "json" };
-import enochianLetter from "./enochian/letters.json5" with { type: "json" };
+import enochianLetter from "./enochian/Letters";
 
 import gdGrade from "./gd/Grades";
 

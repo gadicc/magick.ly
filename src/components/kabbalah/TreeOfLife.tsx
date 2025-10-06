@@ -1,7 +1,8 @@
-import React from "react";
 import dotProp from "dot-prop";
+import React from "react";
 
 import Data from "@/../data/data";
+
 const _sephirot = Object.values(Data.sephirah);
 const _paths = Data.tolPath;
 
@@ -9,21 +10,54 @@ const _paths = Data.tolPath;
 // prettier-ignore
 const orderedPaths = {
   hebrew: [
-    "4_5", "2_3", "7_8", // alef, shin, mem
-    "1_2", "1_3", "1_6", // he, vav, dalet
-    "2_5", "3_4", // zayin, qof <-- paths specific to hebrew tree
-    "2_4", "2_6", "3_5", "3_6",
-    "4_6", "4_7", "5_6", "5_8", "6_7", "6_8", "6_9", "7_9", "8_9", "9_10",
+    "4_5",
+    "2_3",
+    "7_8", // alef, shin, mem
+    "1_2",
+    "1_3",
+    "1_6", // he, vav, dalet
+    "2_5",
+    "3_4", // zayin, qof <-- paths specific to hebrew tree
+    "2_4",
+    "2_6",
+    "3_5",
+    "3_6",
+    "4_6",
+    "4_7",
+    "5_6",
+    "5_8",
+    "6_7",
+    "6_8",
+    "6_9",
+    "7_9",
+    "8_9",
+    "9_10",
   ],
   hermetic: [
-    "4_5", "2_3", "7_8",
-    "1_2", "1_3", "1_6", "2_4", "2_6", "3_5", "3_6",
-    "4_6", "4_7", "5_6", "5_8", "6_7", "6_8", "6_9", "7_9", "8_9", "9_10",
-    "7_10", "8_10", // paths specific to hermetic tree
-  ]
+    "4_5",
+    "2_3",
+    "7_8",
+    "1_2",
+    "1_3",
+    "1_6",
+    "2_4",
+    "2_6",
+    "3_5",
+    "3_6",
+    "4_6",
+    "4_7",
+    "5_6",
+    "5_8",
+    "6_7",
+    "6_8",
+    "6_9",
+    "7_9",
+    "8_9",
+    "9_10",
+    "7_10",
+    "8_10", // paths specific to hermetic tree
+  ],
 };
-
-const firstUpper = (string) => string[0].toUpperCase() + string.substr(1);
 
 function LineOutline({ x1, y1, x2, y2, offset = 5, ...args }) {
   const theta = Math.PI / 2 - Math.atan((x2 - x1) / (y2 - y1));
@@ -93,20 +127,20 @@ function TreeOfLife({
       field
         .split(",")
         .map((field) => dotProp.get(_sephirot[i], field))
-        .join(" ")
+        .join(" "),
     );
 
   const topTextArr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) =>
     topText
       .split(",")
       .map((path) => dotProp.get(_sephirot[i], path))
-      .join(" ")
+      .join(" "),
   );
   const bottomTextArr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) =>
     bottomText
       .split(",")
       .map((path) => dotProp.get(_sephirot[i], path))
-      .join(" ")
+      .join(" "),
   );
 
   const fontSizeFromFieldName = {
@@ -141,16 +175,86 @@ function TreeOfLife({
 
   // prettier-ignore
   const sephirot = [
-    { x: pillar[1].x, y: rowStart+rowGap*0, data: _sephirot[0], color: _sephirot[0].color[color], text: labels[0], textColor: _sephirot[0].color[color+'Text'] },
-    { x: pillar[2].x, y: rowStart+rowGap*1, data: _sephirot[1], color: _sephirot[1].color[color], text: labels[1], textColor: _sephirot[1].color[color+'Text'] },
-    { x: pillar[0].x, y: rowStart+rowGap*1, data: _sephirot[2], color: _sephirot[2].color[color], text: labels[2], textColor: _sephirot[2].color[color+'Text'] },
-    { x: pillar[2].x, y: rowStart+rowGap*3, data: _sephirot[3], color: _sephirot[3].color[color], text: labels[3], textColor: _sephirot[3].color[color+'Text'] },
-    { x: pillar[0].x, y: rowStart+rowGap*3, data: _sephirot[4], color: _sephirot[4].color[color], text: labels[4], textColor: _sephirot[4].color[color+'Text'] },
-    { x: pillar[1].x, y: rowStart+rowGap*4, data: _sephirot[5], color: _sephirot[5].color[color], text: labels[5], textColor: _sephirot[5].color[color+'Text'] },
-    { x: pillar[2].x, y: rowStart+rowGap*5, data: _sephirot[6], color: _sephirot[6].color[color], text: labels[6], textColor: _sephirot[6].color[color+'Text'] },
-    { x: pillar[0].x, y: rowStart+rowGap*5, data: _sephirot[7], color: _sephirot[7].color[color], text: labels[7], textColor: _sephirot[7].color[color+'Text'] },
-    { x: pillar[1].x, y: rowStart+rowGap*6, data: _sephirot[8], color: _sephirot[8].color[color], text: labels[8], textColor: _sephirot[8].color[color+'Text'] },
-    { x: pillar[1].x, y: rowStart+rowGap*8, data: _sephirot[9], color: _sephirot[9].color[color], text: labels[9], textColor: _sephirot[9].color[color+'Text'] },
+    {
+      x: pillar[1].x,
+      y: rowStart + rowGap * 0,
+      data: _sephirot[0],
+      color: _sephirot[0].color[color],
+      text: labels[0],
+      textColor: _sephirot[0].color[color + "Text"],
+    },
+    {
+      x: pillar[2].x,
+      y: rowStart + rowGap * 1,
+      data: _sephirot[1],
+      color: _sephirot[1].color[color],
+      text: labels[1],
+      textColor: _sephirot[1].color[color + "Text"],
+    },
+    {
+      x: pillar[0].x,
+      y: rowStart + rowGap * 1,
+      data: _sephirot[2],
+      color: _sephirot[2].color[color],
+      text: labels[2],
+      textColor: _sephirot[2].color[color + "Text"],
+    },
+    {
+      x: pillar[2].x,
+      y: rowStart + rowGap * 3,
+      data: _sephirot[3],
+      color: _sephirot[3].color[color],
+      text: labels[3],
+      textColor: _sephirot[3].color[color + "Text"],
+    },
+    {
+      x: pillar[0].x,
+      y: rowStart + rowGap * 3,
+      data: _sephirot[4],
+      color: _sephirot[4].color[color],
+      text: labels[4],
+      textColor: _sephirot[4].color[color + "Text"],
+    },
+    {
+      x: pillar[1].x,
+      y: rowStart + rowGap * 4,
+      data: _sephirot[5],
+      color: _sephirot[5].color[color],
+      text: labels[5],
+      textColor: _sephirot[5].color[color + "Text"],
+    },
+    {
+      x: pillar[2].x,
+      y: rowStart + rowGap * 5,
+      data: _sephirot[6],
+      color: _sephirot[6].color[color],
+      text: labels[6],
+      textColor: _sephirot[6].color[color + "Text"],
+    },
+    {
+      x: pillar[0].x,
+      y: rowStart + rowGap * 5,
+      data: _sephirot[7],
+      color: _sephirot[7].color[color],
+      text: labels[7],
+      textColor: _sephirot[7].color[color + "Text"],
+    },
+    {
+      x: pillar[1].x,
+      y: rowStart + rowGap * 6,
+      data: _sephirot[8],
+      color: _sephirot[8].color[color],
+      text: labels[8],
+      textColor: _sephirot[8].color[color + "Text"],
+    },
+    {
+      x: pillar[1].x,
+      y: rowStart + rowGap * 8,
+      data: _sephirot[9],
+      color: _sephirot[9].color[color],
+      text: labels[9],
+      textColor: _sephirot[9].color[color + "Text"],
+    },
   ];
 
   if (showDaat)
@@ -194,14 +298,17 @@ function TreeOfLife({
     // prettier-ignore
     const specialPositions = {
       hebrew: {
-        '2_5': 0.3,   '3_4': 0.3,   // Half way to 2_5,3_4 intersection
-        '2_6': 0.333, '3_6': 0.333, // Level with y-cent of 1_6, 2_4, 3_5
-        '6_9': 0.635                // Visible between 7_8 and Yesod
+        "2_5": 0.3,
+        "3_4": 0.3, // Half way to 2_5,3_4 intersection
+        "2_6": 0.333,
+        "3_6": 0.333, // Level with y-cent of 1_6, 2_4, 3_5
+        "6_9": 0.635, // Visible between 7_8 and Yesod
       },
       hermetic: {
-        '2_6': 0.333, '3_6': 0.333, // In line with Center 1_6, 2_4, 3_5
-        '6_9': 0.635                // Visible between 7_8 and Yesod
-      }
+        "2_6": 0.333,
+        "3_6": 0.333, // In line with Center 1_6, 2_4, 3_5
+        "6_9": 0.635, // Visible between 7_8 and Yesod
+      },
     };
     return specialPositions[letterAttr][path.id] || 0.5;
   }
@@ -210,8 +317,7 @@ function TreeOfLife({
   // React.useImperativeHandle(ref, () => innerRef.current);
 
   if ("useEffect" in React) {
-    // doesn't exist on the server.
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+    // biome-ignore lint/correctness/useHookAtTopLevel: doesn't exist on server
     React.useEffect(() => {
       ref?.current?.querySelectorAll("a").forEach((a) => {
         a.onclick = function (e) {
@@ -360,7 +466,7 @@ function TreeOfLife({
       <g id="sephirot">
         {sephirot.map((s, i) => (
           // @ts-expect-error: later
-          (<a key={i} id={s.data.id} xlinkHref={sephirahHref(s)}>
+          <a key={i} id={s.data.id} xlinkHref={sephirahHref(s)}>
             <circle
               cx={s.x}
               cy={s.y}
@@ -404,7 +510,7 @@ function TreeOfLife({
                       }}
                       opacity={sephirahOpacity(s)}
                       d={`M ${s.x},${s.y} L ${from.x},${from.y} A ${r},${r} 0 0,1 ${to.x},${to.y} z`}
-                    />
+                    />,
                   );
                 }
                 return out;
@@ -468,12 +574,12 @@ function TreeOfLife({
                   style: { fill: s.textColor || "black" },
                   fill: s.textColor || "black",
                   fillOpacity: sephirahOpacity(s),
-                  textAnchor: "middle",
-                  dominantBaseline: "middle",
+                  textAnchor: "middle" as const,
+                  dominantBaseline: "middle" as const,
                   stroke: "none",
                   fontSize: fontSize,
-                  fontStyle: "normal",
-                  fontWeight: "normal",
+                  fontStyle: "normal" as const,
+                  fontWeight: "normal" as const,
                   letterSpacing: 0,
                   wordSpacing: 0,
                 };
@@ -585,7 +691,7 @@ function TreeOfLife({
                 </g>
               );
             })()}
-          </a>)
+          </a>
         ))}
       </g>
       {showConstructionCircles && (

@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   siteUrl: "https://magick.ly",
   generateRobotsTxt: true,
 };

@@ -32,7 +32,7 @@ export default function Upload({
 
       // preflight to make sure file isn't previously uploaded
       let response = await fetch(
-        "/api/file2?return=meta&sha256=" + sha256.value
+        "/api/file2?return=meta&sha256=" + sha256.value,
       );
       let result = (await response.json()) as FileEntry | FileError;
 

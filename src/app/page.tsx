@@ -1,19 +1,15 @@
-import React from "react";
-import { useGongoOne, useGongoUserId } from "gongo-client-react";
-
 import { AdminPanelSettingsTwoTone } from "@mui/icons-material";
-//import Link from '@mui/material/Link';
-
+import { useGongoOne, useGongoUserId } from "gongo-client-react";
 import Tiles from "@/components/Tiles";
-import AstrologyTile from "./img/astrology.jpeg";
 import GDLogoSquished from "@/goldendawn-logo-squished.svg";
-import MagicalTemple from "./img/magical-temple.webp";
-import GeomancyImg from "./img/geomancy.webp";
-import StudyImg from "./img/study.webp";
 import AndroidMagician from "./img/android-magician.png";
+import AstrologyTile from "./img/astrology.jpeg";
+import EnochianAngel from "./img/enochian-angel.webp";
+import GeomancyImg from "./img/geomancy.webp";
+import MagicalTemple from "./img/magical-temple.webp";
 import PortaeLucis from "./img/portae_lucis_upsampled.webp";
 import MagicBook from "./img/shutterstock_393367726_768x512.webp";
-import EnochianAngel from "./img/enochian-angel.webp";
+import StudyImg from "./img/study.webp";
 
 const tiles = [
   {
@@ -90,7 +86,7 @@ const adminTile = {
 function Index() {
   const userId = useGongoUserId();
   const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId })
+    db.collection("users").find({ _id: userId }),
   );
 
   const _tiles = user?.admin ? [adminTile, ...tiles] : tiles;

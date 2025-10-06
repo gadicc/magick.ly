@@ -1,13 +1,11 @@
+import fs from "fs";
+import { NextRequest } from "next/server";
+import path from "path";
 import React from "react";
-// import { renderToString } from "react-dom/server";
-import beautify from "xml-beautifier";
 import sharp from "sharp";
-
+import beautify from "xml-beautifier";
 import TreeOfLife from "@/components/kabbalah/TreeOfLife";
 
-import fs from "fs";
-import path from "path";
-import { NextRequest } from "next/server";
 console.log(__dirname);
 console.log(path.resolve("."));
 console.log(path.resolve("./public"));
@@ -16,28 +14,6 @@ console.log(path.resolve("./public/fonts.conf"));
 const fontsDir = path.resolve("public", "fonts.conf");
 process.env.FONTCONFIG_FILE = "/var/task/public/fonts.conf";
 console.log(fs.readFileSync(fontsDir).toString());
-
-// Helper function to convert Node.js stream to Web API ReadableStream
-function nodeReadableStreamToWebReadableStream(nodeStream) {
-  return new ReadableStream({
-    start(controller) {
-      nodeStream.on("data", (chunk) => {
-        controller.enqueue(chunk);
-      });
-
-      nodeStream.on("end", () => {
-        controller.close();
-      });
-
-      nodeStream.on("error", (err) => {
-        controller.error(err);
-      });
-    },
-    cancel() {
-      nodeStream.destroy();
-    },
-  });
-}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -49,13 +25,13 @@ export async function GET(request: NextRequest) {
 
   let svgText =
     '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' +
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: dunno
     renderToString(React.createElement(TreeOfLife, query as any));
 
   // since React doesn't support namespace tags
   svgText = svgText.replace(
     'xmlns="http://www.w3.org/2000/svg"',
-    'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+    'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"',
   );
 
   const fmt = searchParams.get("fmt");

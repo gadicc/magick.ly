@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import { ExpandMore } from "@mui/icons-material";
 
 import {
   Accordion,
@@ -16,15 +16,13 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   Typography,
 } from "@mui/material";
-import { ExpandMore } from "@mui/icons-material";
-
-import angels, { type Angel } from "@/../data/kabbalah/SeventyTwoAngels";
-import angelicOrders from "@/../data/kabbalah/AngelicOrders";
+import React from "react";
 import zodiacs from "@/../data/astrology/Zodiac";
+import angelicOrders from "@/../data/kabbalah/AngelicOrders";
+import angels, { type Angel } from "@/../data/kabbalah/SeventyTwoAngels";
 
 const formatter = new Intl.DateTimeFormat("default", {
   month: "short",

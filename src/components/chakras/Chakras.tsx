@@ -1,14 +1,12 @@
-import React from "react";
-
 // prettier-ignore
 const chakras = [
-  { id: 'crown',        fill: "#c9f",    cx: "111.262", cy: "132.993" },
-  { id: 'third-eye',    fill: "#A28BE7", cx: "111.262", cy: "142.332" },
-  { id: 'throat',       fill: "#0ff",    cx: "111.262", cy: "155.345" },
-  { id: 'heart',        fill: "#0f0",    cx: "111.262", cy: "169.516" },
-  { id: 'solar-plexus', fill: "#ff0",    cx: "111.262", cy: "182.237" },
-  { id: 'sacral',       fill: "#f60",    cx: "111.262", cy: "195.468" },
-  { id: 'root',         fill: "red",     cx: "111.262", cy: "205.777" },
+  { id: "crown", fill: "#c9f", cx: "111.262", cy: "132.993" },
+  { id: "third-eye", fill: "#A28BE7", cx: "111.262", cy: "142.332" },
+  { id: "throat", fill: "#0ff", cx: "111.262", cy: "155.345" },
+  { id: "heart", fill: "#0f0", cx: "111.262", cy: "169.516" },
+  { id: "solar-plexus", fill: "#ff0", cx: "111.262", cy: "182.237" },
+  { id: "sacral", fill: "#f60", cx: "111.262", cy: "195.468" },
+  { id: "root", fill: "red", cx: "111.262", cy: "205.777" },
 ];
 
 const opacityActive = { false: 0.2, true: 1 };

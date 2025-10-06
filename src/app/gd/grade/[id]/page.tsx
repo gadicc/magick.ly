@@ -1,13 +1,11 @@
-import React from "react";
-import { decycle } from "cycle";
-
-import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
-
-import Link from "@/lib/link";
+import Container from "@mui/material/Container";
+import { decycle } from "cycle";
+import Data from "@/../data/data";
 
 import GradeTree from "@/components/gd/GradeTree";
-import Data from "@/../data/data";
+import Link from "@/lib/link";
+
 const grades = Data.gdGrade;
 
 export function generateStaticParams() {

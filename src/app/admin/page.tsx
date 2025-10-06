@@ -1,7 +1,5 @@
 "use client";
-import React from "react";
-import { db, useGongoLive, useGongoSub } from "gongo-client-react";
-
+import { AdminPanelSettings } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -15,7 +13,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { AdminPanelSettings } from "@mui/icons-material";
+import { db, useGongoLive, useGongoSub } from "gongo-client-react";
+import React from "react";
 
 import { UserClient, UserGroup } from "@/schemas";
 
@@ -106,7 +105,7 @@ function UserRow({
 function addTo(
   field: "groupIds" | "groupAdminIds",
   selected: string[],
-  groupId: string
+  groupId: string,
 ) {
   for (const id of selected) {
     // @ts-expect-error: this is not sustainable!
@@ -121,7 +120,7 @@ function addTo(
 function removeFrom(
   field: "groupIds" | "groupAdminIds",
   selected: string[],
-  groupId: string
+  groupId: string,
 ) {
   const Users = db.collection("users");
   for (const id of selected) {
@@ -149,7 +148,7 @@ function Users({
   React.useEffect(() => {
     // groupId === "" if first useState call happened before data fully loaded.
     if (groupId === "" && groups[0]) setGroupId(groups[0]._id);
-  }, [groups, groupId, setGroupId]);
+  }, [groups, groupId]);
 
   const addToGroup = addTo.bind(null, "groupIds", selected, groupId);
   const removeFromGroup = removeFrom.bind(null, "groupIds", selected, groupId);
@@ -158,7 +157,7 @@ function Users({
     null,
     "groupAdminIds",
     selected,
-    groupId
+    groupId,
   );
 
   function toggleRow(_id) {

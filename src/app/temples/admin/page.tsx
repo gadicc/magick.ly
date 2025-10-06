@@ -1,14 +1,14 @@
 "use client";
-import React from "react";
-import {
-  useGongoSub,
-  useGongoLive,
-  db,
-  useGongoUserId,
-} from "gongo-client-react";
-import slug from "slug";
 
 import { Container, Typography } from "@mui/material";
+import {
+  db,
+  useGongoLive,
+  useGongoSub,
+  useGongoUserId,
+} from "gongo-client-react";
+import React from "react";
+import slug from "slug";
 
 import "@/db";
 
@@ -30,7 +30,7 @@ export default function AdminTemplesPage() {
     const templeId = insertedDoc._id;
     if (!templeId)
       return alert(
-        "Failed to insert temple membership, no temple id in inserted doc"
+        "Failed to insert temple membership, no temple id in inserted doc",
       );
 
     db.collection("templeMemberships").insert({

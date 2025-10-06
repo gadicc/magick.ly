@@ -1,18 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Message as VercelChatMessage, StreamingTextResponse } from "ai";
-
-import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
-import { PromptTemplate } from "@langchain/core/prompts";
+// @ts-expect-error: no types
 import { Document } from "@langchain/core/documents";
-import { RunnableSequence } from "@langchain/core/runnables";
 import {
   BytesOutputParser,
   StringOutputParser,
+  // @ts-expect-error: no types
 } from "@langchain/core/output_parsers";
-
+// @ts-expect-error: no types
+import { PromptTemplate } from "@langchain/core/prompts";
+// @ts-expect-error: no types
+import { RunnableSequence } from "@langchain/core/runnables";
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+import { PineconeStore } from "@langchain/pinecone";
 // import { vectorStore as createVectorStore } from "../openai"; // MongoDB
 import { Pinecone } from "@pinecone-database/pinecone";
-import { PineconeStore } from "@langchain/pinecone";
+import { StreamingTextResponse, Message as VercelChatMessage } from "ai";
+import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
@@ -44,7 +46,7 @@ const CONDENSE_QUESTION_TEMPLATE = `Given the following conversation and a follo
 Follow Up Input: {question}
 Standalone question:`;
 const condenseQuestionPrompt = PromptTemplate.fromTemplate(
-  CONDENSE_QUESTION_TEMPLATE
+  CONDENSE_QUESTION_TEMPLATE,
 );
 
 const ANSWER_TEMPLATE = `You are a helpful assistant and academic expert in Magick and related fields.
@@ -112,14 +114,14 @@ export async function POST(req: Request) {
     if (!PINECONE_INDEX_NAME || !PINECONE_NAME_SPACE) {
       return NextResponse.json(
         { message: "Missing PINECONE_INDEX_NAME or PINECONE_NAME_SPACE" },
-        { status: 500 }
+        { status: 500 },
       );
     }
     const pinecone = new Pinecone();
     const pineconeIndex = pinecone.Index(PINECONE_INDEX_NAME);
     const vectorStore = await PineconeStore.fromExistingIndex(
       new OpenAIEmbeddings(),
-      { pineconeIndex, namespace: PINECONE_NAME_SPACE }
+      { pineconeIndex, namespace: PINECONE_NAME_SPACE },
     );
 
     /**
@@ -211,7 +213,7 @@ export async function POST(req: Request) {
 
     const encoder = new TextEncoder();
     const prepend = encoder.encode(
-      "\n__META_JSON__\n" + JSON.stringify(meta) + "\n__META_JSON__\n"
+      "\n__META_JSON__\n" + JSON.stringify(meta) + "\n__META_JSON__\n",
     );
     const transform = new TransformStream({
       start(controller) {
@@ -223,7 +225,7 @@ export async function POST(req: Request) {
     });
 
     return new StreamingTextResponse(stream.pipeThrough(transform));
-  } catch (e) {
+  } catch (_error) {
     return NextResponse.json({ message: "Error Processing" }, { status: 500 });
   }
 }

@@ -1,10 +1,9 @@
-import { auth } from "@/auth";
 import Discourse from "discourse2";
 import { z } from "zod";
-
-import { publicProcedure } from "../trpc";
 import { db, ObjectId } from "@/api-lib/db";
-import type { UserServer, TempleMembershipServer } from "@/schemas";
+import { auth } from "@/auth";
+import type { TempleMembershipServer, UserServer } from "@/schemas";
+import { publicProcedure } from "../trpc";
 
 const discourse = new Discourse("https://forums.magick.ly", {
   "Api-Key": process.env.DISCOURSE_API_KEY,
@@ -32,7 +31,7 @@ export const discourseSync = publicProcedure
       .toArray();
 
     const membershipMap = new Map(
-      memberships.map((m) => [m.userId.toHexString(), m])
+      memberships.map((m) => [m.userId.toHexString(), m]),
     );
 
     // 2. Get users with those memberships and left join
@@ -51,9 +50,9 @@ export const discourseSync = publicProcedure
 
       // 4. Find or create a discourse user
       let user;
-      if (dbUser.discourseId)
+      if (dbUser.discourseId) {
         user = await discourse.adminGetUser({ id: dbUser.discourseId });
-      else if (dbUser.emails.length) {
+      } else if (dbUser.emails.length) {
         for (const email of dbUser.emails) {
           const users = await discourse.adminListUsers({
             flag: "active",
@@ -61,12 +60,13 @@ export const discourseSync = publicProcedure
           });
 
           if (users.length) {
-            if (users.length > 1)
+            if (users.length > 1) {
               console.warn(
                 "Multiple users with email",
                 email.value,
-                "using first match"
+                "using first match",
               );
+            }
             user = users[0];
             break;
           }
@@ -82,12 +82,14 @@ export const discourseSync = publicProcedure
           approved: true,
           // title: highest grade...
         });
+        console.log("result", result);
       }
 
-      if (false && user && !dbUser.discourseId)
+      if (false && user && !dbUser.discourseId) {
         await db
           .collection("users")
           .updateOne({ _id: dbUser._id }, { $set: { discourseId: user.id } });
+      }
 
       console.log("user", user);
     }

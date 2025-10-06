@@ -1,12 +1,5 @@
 "use client";
-import React from "react";
-import { format } from "date-fns";
-import {
-  DAY_IN_MS,
-  calcPlanetaryHoursForDayAndLocation,
-  upcomingHoursForPlanetAtLocation,
-} from "./utils";
-
+import { ExpandMore } from "@mui/icons-material";
 import {
   Accordion,
   AccordionDetails,
@@ -26,10 +19,15 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-
-import useGeoIP from "@/useGeoIP";
-import { ExpandMore } from "@mui/icons-material";
+import { format } from "date-fns";
+import React from "react";
 import OpenSource from "@/OpenSource";
+import useGeoIP from "@/useGeoIP";
+import {
+  calcPlanetaryHoursForDayAndLocation,
+  DAY_IN_MS,
+  upcomingHoursForPlanetAtLocation,
+} from "./utils";
 
 const sxNowRow = {
   "& .MuiTableCell-root": {
@@ -94,7 +92,7 @@ function PlanetaryHoursForDayAndLocation({ date, geo, planet }) {
 export default function PlanetaryHours() {
   const geo = useGeoIP();
   const [planet, setPlanet] = React.useState("");
-  const [upcomingHours, setUpcomingHours] = React.useState<
+  const [_upcomingHours, setUpcomingHours] = React.useState<
     { from: Date; to: Date }[]
   >([]);
 
@@ -105,10 +103,9 @@ export default function PlanetaryHours() {
 
   if (!geo) return "Loading location...";
 
-  const navParts = [{ title: "Astrology", url: "/astrology" }];
   const now = new Date();
   const week = [0, 1, 2, 3, 4, 5, 6].map(
-    (d, i) => new Date(now.getTime() + d * DAY_IN_MS)
+    (d, i) => new Date(now.getTime() + d * DAY_IN_MS),
   );
 
   const planetSelect = [

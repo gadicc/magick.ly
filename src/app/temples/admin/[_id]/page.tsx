@@ -1,7 +1,4 @@
 "use client";
-import React, { use } from "react";
-import { useGongoSub, useGongoLive, db, useGongoOne } from "gongo-client-react";
-import trpc from "@/lib/trpc";
 
 import {
   Box,
@@ -28,9 +25,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { db, useGongoLive, useGongoOne, useGongoSub } from "gongo-client-react";
+import React, { use } from "react";
+import trpc from "@/lib/trpc";
 
 import "@/db";
-import { Temple } from "@/schemas";
 import {
   AdminPanelSettings,
   CheckBox,
@@ -42,6 +41,7 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import { QRCode } from "react-qrcode";
+import { Temple } from "@/schemas";
 
 function JoinInfo({ temple }: { temple: Temple }) {
   const joinUrl =
@@ -194,11 +194,11 @@ function Users({ templeId }: { templeId: string }) {
       minInterval: 1500,
       maxInterval: 3000,
       // persist: false,
-    }
+    },
   );
 
   const memberships = useGongoLive((db) =>
-    db.collection("templeMemberships").find({ templeId })
+    db.collection("templeMemberships").find({ templeId }),
   );
 
   const _users = React.useMemo(() => {
@@ -224,7 +224,7 @@ function Users({ templeId }: { templeId: string }) {
         if (useMotto)
           return (
             ((a.membership.motto || "").localeCompare(
-              b.membership.motto || ""
+              b.membership.motto || "",
             ) || (a.displayName || "").localeCompare(b.displayName || "")) *
             order
           );
@@ -366,12 +366,9 @@ export default function AdminTemplesPage(props: {
   useGongoSub("templeForTempleAdmin", { _id });
   const temple = useGongoOne((db) => db.collection("temples").find({ _id }));
   const [tabId, setTabId] = React.useState(0);
-  const onTabChange = React.useCallback(
-    (event, newValue) => {
-      setTabId(newValue);
-    },
-    [setTabId]
-  );
+  const onTabChange = React.useCallback((event, newValue) => {
+    setTabId(newValue);
+  }, []);
 
   if (!temple) return <div>Temple loading or not found...</div>;
 

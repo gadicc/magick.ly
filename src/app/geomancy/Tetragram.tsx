@@ -93,7 +93,7 @@ function Tetragram({
             cy={padding + radius + i * rowHeight}
             r={radius}
           />
-        )
+        ),
       )}
     </svg>
   );

@@ -1,7 +1,7 @@
 import pugInlineTags from "pug-parser/lib/inline-tags";
-import { roles } from "../DocRender";
 import type { SourceMapConsumer } from "source-map";
 import { blocks } from "@/doc/blocks";
+import { roles } from "../DocRender";
 
 interface PugAttribute {
   column: number;
@@ -30,7 +30,7 @@ interface PugTag {
 
 function nodeWalker(
   node: PugBlock | PugTag,
-  cb: (node: PugBlock | PugTag) => void
+  cb: (node: PugBlock | PugTag) => void,
 ) {
   cb(node);
   if (node.type === "Block") {
@@ -99,7 +99,7 @@ export function checkSrc(node: PugBlock | PugTag, consumer: SourceMapConsumer) {
           else if (["all", "all-officers"].includes(role)) valid = true;
           else {
             const match = role.match(
-              /^(?<prefix>all-(officers-)?except-)?(?<roles>.+)$/
+              /^(?<prefix>all-(officers-)?except-)?(?<roles>.+)$/,
             );
             if (match && match.groups) {
               const prefix = match.groups.prefix || "";

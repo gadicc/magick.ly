@@ -1,8 +1,7 @@
 "use client";
 import React from "react";
-
-import data from "@/../data/data";
 import { PlanetId } from "@/../data/astrology/Planets";
+import data from "@/../data/data";
 
 interface Point {
   x: number;
@@ -12,20 +11,13 @@ interface Point {
 function degreesToPointOnCircle(
   degrees: number,
   radius: number,
-  center: Point = { x: 0, y: 0 }
+  center: Point = { x: 0, y: 0 },
 ): Point {
   const radians = (degrees * Math.PI) / 180;
   // console.log(degrees, radians);
   return {
     x: radius * Math.cos(radians) + center.x,
     y: radius * Math.sin(radians) + center.y,
-  };
-}
-
-function midPoint(p1: Point, p2: Point): Point {
-  return {
-    x: (p1.x + p2.x) / 2,
-    y: (p1.y + p2.y) / 2,
   };
 }
 
@@ -54,11 +46,6 @@ const branches: PlanetId[] = [
 function Branch({ index }: { index: number }) {
   const radius = 7.4; // TODO, work it out properly
   const center = degreesToPointOnCircle((index * 360) / 7 - 90, 25 + radius);
-  const points = [
-    degreesToPointOnCircle(90, radius, center),
-    degreesToPointOnCircle(90 + 360 / 3, radius, center),
-    degreesToPointOnCircle(90 + (360 / 3) * 2, radius, center),
-  ];
 
   const planetId = branches[index];
   const planet = data.planet[planetId];
@@ -94,7 +81,7 @@ function Branch({ index }: { index: number }) {
   const topRight = degreesToPointOnCircle(
     90 + (360 / 3) * 2,
     radius - 0.4,
-    center
+    center,
   );
   const rotation = (360 / 7) * index;
 
@@ -153,9 +140,8 @@ function Branch({ index }: { index: number }) {
 
 export default React.forwardRef(function SevenBranchedCandleStick(
   _opts,
-  ref: React.Ref<SVGSVGElement>
+  ref: React.Ref<SVGSVGElement>,
 ) {
-  const pathRef = React.useRef<SVGPathElement>(null);
   const indexes = [0, 1, 2, 3, 4, 5, 6];
 
   return (
@@ -194,7 +180,7 @@ export default React.forwardRef(function SevenBranchedCandleStick(
             .map((i) => {
               const p = degreesToPointOnCircle(
                 (i * 360) / indexes.length - 90,
-                25
+                25,
               );
               return `${p.x} ${p.y}`;
             })

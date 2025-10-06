@@ -189,7 +189,7 @@ function Grid({
               </text>
             </React.Fragment>
           );
-        })
+        }),
       )}
       <rect
         x={0}
@@ -218,7 +218,7 @@ const Tablet = React.forwardRef(function Tablet(
     width?: string | number;
     height?: string | number;
   },
-  ref: React.Ref<SVGSVGElement>
+  ref: React.Ref<SVGSVGElement>,
 ) {
   const Sigil = Sigils[id];
 

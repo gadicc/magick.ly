@@ -1,6 +1,3 @@
-import React from "react";
-//import Link from '@mui/material/Link';
-
 import Tiles from "@/components/Tiles";
 
 const tiles = [

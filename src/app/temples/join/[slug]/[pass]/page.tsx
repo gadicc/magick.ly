@@ -1,9 +1,7 @@
-import React from "react";
 import { Container, Typography } from "@mui/material";
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { headers as _headers } from "next/headers";
 import { db, ObjectId } from "@/api-lib/db";
+import { auth } from "@/auth";
 
 function Page({ message, error }: { message: string; error?: boolean }) {
   return (

@@ -1,4 +1,4 @@
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export function useSetSearchParam() {
   const router = useRouter();

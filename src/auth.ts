@@ -1,10 +1,9 @@
+import { ObjectId } from "bson";
 import NextAuth, { Session } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-
 import gs from "@/api-lib/db"; // -full
 import GongoAuthAdapter, { AdapterUser } from "@/api-lib/gongoAuthAdapter";
 import { ipFromReq } from "@/api-lib/ipCheck";
-import { ObjectId } from "bson";
 
 interface Service {
   service: string;
@@ -25,7 +24,7 @@ interface Service {
 
 function userStubFromService<T extends Record<string, unknown>>(
   service: Service,
-  overrides: T = {} as T
+  overrides: T = {} as T,
 ) {
   return {
     // This looks wrong but this is the format next-auth expects!  Don't change!
@@ -74,7 +73,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth((req) => {
                     ? req.headers.get("user-agent")
                     : req.headers["user-agent"],
               },
-            }
+            },
           );
         }
 

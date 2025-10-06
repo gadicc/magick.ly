@@ -1,11 +1,11 @@
-import type { Filter, Document } from "mongodb";
+import { ChangeSetUpdate } from "gongo-server/lib/DatabaseAdapter";
 import {
   CollectionEventProps,
-  userIsAdmin,
   userIdMatches,
+  userIsAdmin,
 } from "gongo-server-db-mongo/lib/collection";
+import type { Document, Filter } from "mongodb";
 import gs, { ObjectId /* User */ } from "@/api-lib/db";
-import { ChangeSetUpdate } from "gongo-server/lib/DatabaseAdapter";
 import { auth } from "@/auth";
 
 // TODO, later... with separate db.ts and db-full.ts and mongodb-rest-relay.
@@ -123,11 +123,11 @@ gs.publish("userGroups", async (db, opts, { auth }) => {
 
   if (user?.admin) return db.collection("userGroups").find();
 
-  if (user?.groupAdminIds)
+  if (user?.groupAdminIds) {
     return db
       .collection("userGroups")
       .find({ _id: { $in: user.groupAdminIds.map(ObjectId) } });
-  else return [];
+  } else return [];
 
   if (!user?.admin) return [];
 });
@@ -276,11 +276,11 @@ gs.publish("userTemplesAndMemberships", async (db, opts, { auth }) => {
           .toArray()
       ).map((temple) => {
         const membership = memberships.find((m) =>
-          m.templeId.equals(temple._id)
+          m.templeId.equals(temple._id),
         );
         if (membership?.admin) return temple;
         else {
-          const { joinPass, ...rest } = temple;
+          const { _joinPass, ...rest } = temple;
           return rest;
         }
       }),
@@ -288,9 +288,10 @@ gs.publish("userTemplesAndMemberships", async (db, opts, { auth }) => {
   ];
 });
 
+/*
 async function userIsGroupAdmin(
   doc: Document | ChangeSetUpdate | string,
-  { dba, auth, collection }: CollectionEventProps
+  { dba, auth, collection }: CollectionEventProps,
 ) {
   const userId = await auth.userId();
   if (!userId) return "NOT_LOGGED_IN";
@@ -305,8 +306,8 @@ async function userIsGroupAdmin(
     // return userId.equals(existingDoc.userId) || "doc.userId !== userId";
     // @ts-expect-error: ok
     return doc.groupId &&
-      // @ts-expect-error: ok
-      !(user.groupAdminIds && user.groupAdminIds.includes(doc.groupId))
+        // @ts-expect-error: ok
+        !(user.groupAdminIds && user.groupAdminIds.includes(doc.groupId))
       ? "not in group"
       : true;
   }
@@ -324,14 +325,15 @@ async function userIsGroupAdmin(
   console.log({ doc, userId });
   // return userId.equals(doc.userId) || "doc.userId !== userId";
   return doc.groupId &&
-    !(user.groupAdminIds && user.groupAdminIds.includes(doc.groupId))
+      !(user.groupAdminIds && user.groupAdminIds.includes(doc.groupId))
     ? "not in group"
     : true;
 }
+*/
 
 async function userIsTempleAdmin(
   doc: Document | ChangeSetUpdate | string,
-  { dba, auth, collection }: CollectionEventProps
+  { dba, auth, collection }: CollectionEventProps,
 ) {
   const userId = await auth.userId();
   if (!userId) return "NOT_LOGGED_IN";
@@ -414,5 +416,5 @@ if (gs.dba) {
 }
 
 // https://github.com/nextauthjs/next-auth/issues/12224
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: it's ok
 export const POST = (await auth(gs.vercelEdgePost())) as any;

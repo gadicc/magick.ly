@@ -1,7 +1,7 @@
 "use client";
-import React from "react";
-import NextLink from "next/link";
 import MuiLink from "@mui/material/Link";
+import NextLink from "next/link";
+import React from "react";
 
 export default function Link({
   href,

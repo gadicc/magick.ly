@@ -1,12 +1,4 @@
 "use client";
-import React from "react";
-
-import data, {
-  tetragram as _tetragrams,
-  geomanicHouse as houses,
-} from "@/../data/data";
-import Tetragram from "../Tetragram";
-import Typography from "@mui/material/Typography";
 import {
   Container,
   FormControlLabel,
@@ -24,9 +16,16 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { capitalizeFirstLetter } from "@/lib/utils";
+import Typography from "@mui/material/Typography";
+import React from "react";
+import data, {
+  tetragram as _tetragrams,
+  geomanicHouse as houses,
+} from "@/../data/data";
 import PlanetarySpirit from "@/components/astrology/planetarySpirits";
+import { capitalizeFirstLetter } from "@/lib/utils";
 import { PlanetId } from "../../../../data/astrology/Planets";
+import Tetragram from "../Tetragram";
 
 /*
 function id2title(str: string) {
@@ -46,7 +45,7 @@ const rowsToBinary = (rows: (1 | 2)[]) =>
 export default function Geomancy() {
   const [showAssoc, setShowAssoc] = React.useState(false);
   const [sortBy, setSortBy] = React.useState<"alpha" | "pairs" | "binary">(
-    "pairs"
+    "pairs",
   );
 
   const tetragrams = React.useMemo(() => {
@@ -54,15 +53,23 @@ export default function Geomancy() {
       const t = _tetragrams;
       // prettier-ignore
       return [
-        t.acquisitio, t.amissio, // gain, loss
-        t.albus, t.rubeus, // white, red
-        t.puella, t.puer, // girl, boy
-        t.laetitia, t.tristitia, // joy, sorrow
-        t.caput_draconis, t.cauda_draconis, // dragon's head, tail
-        t.populus, t.via, // people, way
-        t.conjunctio, t.carcer, // conjunction, prison
-        t.fortuna_major, t.fortuna_minor, // major, minor fortune
-      ]
+        t.acquisitio,
+        t.amissio, // gain, loss
+        t.albus,
+        t.rubeus, // white, red
+        t.puella,
+        t.puer, // girl, boy
+        t.laetitia,
+        t.tristitia, // joy, sorrow
+        t.caput_draconis,
+        t.cauda_draconis, // dragon's head, tail
+        t.populus,
+        t.via, // people, way
+        t.conjunctio,
+        t.carcer, // conjunction, prison
+        t.fortuna_major,
+        t.fortuna_minor, // major, minor fortune
+      ];
     }
 
     const tetragrams = Object.values(_tetragrams);
@@ -130,8 +137,9 @@ export default function Geomancy() {
                 sm: byPairs ? 6 : 4,
                 md: byPairs ? 6 : 3,
                 lg: byPairs ? 6 : 2,
-                xl: byPairs ? 6 : 1
-              }}>
+                xl: byPairs ? 6 : 1,
+              }}
+            >
               <Grid container spacing={2}>
                 <Grid size={8}>
                   <b>{tetragram.title.en}</b>

@@ -1,12 +1,9 @@
-import React from "react";
-import { Node, Render } from "json-rich-text";
-
-import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-
-import DocContext from "../../src/doc/context.js";
+import { Node, Render } from "json-rich-text";
+import React from "react";
 import { roleAliases } from "@/app/doc/[_id]/DocRender";
+import DocContext from "../../src/doc/context.js";
 
 class Title extends Node {
   render(key) {
@@ -101,7 +98,7 @@ class Img extends Node {
     if (!style.width && !this.block.style) style.width = "100%";
 
     return (
-      // eslint-disable-next-line
+      // biome-ignore lint/performance/noImgElement: dynamic src
       <img
         key={key}
         width={this.block.width}
@@ -355,7 +352,7 @@ class Task extends Node {
             <div className="say">
               {renderChildren(
                 this,
-                this.children.filter((node) => node.block.type != "footnotes")
+                this.children.filter((node) => node.block.type != "footnotes"),
               )}
             </div>
           )}
@@ -363,13 +360,13 @@ class Task extends Node {
             <div className="do">
               {renderChildren(
                 this,
-                this.children.filter((node) => node.block.type != "footnotes")
+                this.children.filter((node) => node.block.type != "footnotes"),
               )}
             </div>
           )}
           {(() => {
             let footnotes = this.children.find(
-              (node) => node instanceof Footnotes
+              (node) => node instanceof Footnotes,
             );
 
             // This section needs to happen after renderChildren above, otherwise
@@ -474,7 +471,7 @@ class A extends Node {
 
 class Span extends Node {
   render(key) {
-    const { type, children, ..._attrs } = this.block;
+    const { type: _type, children: _children, ..._attrs } = this.block;
     const attrs = _attrs || {};
     // console.log("span", attrs);
 
@@ -486,7 +483,7 @@ class Span extends Node {
           attrs.style &&
           JSON.parse(
             // https://stackoverflow.com/a/34763398/1839099
-            attrs.style.replace(/(['"])?([a-z0-9A-Z_]+)(['"])?:/g, '"$2": ')
+            attrs.style.replace(/(['"])?([a-z0-9A-Z_]+)(['"])?:/g, '"$2": '),
           )
         }
       >

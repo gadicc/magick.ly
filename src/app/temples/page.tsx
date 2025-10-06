@@ -12,7 +12,7 @@ export default function TemplePage() {
   const userId = useGongoUserId();
   useGongoSub("userTemplesAndMemberships");
   const memberships = useGongoLive((db) =>
-    db.collection("templeMemberships").find({ userId })
+    db.collection("templeMemberships").find({ userId }),
   );
   const temples = React.useMemo(
     () =>
@@ -20,7 +20,7 @@ export default function TemplePage() {
         ...db.collection("temples").findOne({ _id: membership.templeId }),
         membership,
       })),
-    [memberships]
+    [memberships],
   );
   const [slug, setSlug] = React.useState("");
   const [joinPass, setJoinPass] = React.useState("");

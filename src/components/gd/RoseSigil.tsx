@@ -1,5 +1,5 @@
-import React from "react";
 import nlopt from "nlopt-js";
+import React from "react";
 
 const letters = [
   ["א", "מ", "ש"],
@@ -36,7 +36,7 @@ function letterPoint(letter: string): Point {
 function calculatePerpendicularPointsAtEnd(
   point1: Point,
   point2: Point,
-  distance: number
+  distance: number,
 ): [Point, Point] {
   // Calculate slope of original line
   const slope = (point2.y - point1.y) / (point2.x - point1.x);
@@ -67,16 +67,8 @@ function calculatePerpendicularPointsAtEnd(
   return [pointA, pointB];
 }
 
-function angleInDegreesBetween(point1: Point, point2: Point) {
-  return (Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180) / Math.PI;
-}
-
 function toDegrees(radians: number) {
   return (radians * 180) / Math.PI;
-}
-
-function dotProduct2D(p1: Point, p2: Point) {
-  return p1.x * p2.x + p1.y * p2.y;
 }
 
 function lengthBetweenTwoPoints(p1: Point, p2: Point) {
@@ -146,14 +138,14 @@ function pathFromPoints({
 
     if (next) {
       if (prev) {
-        const slope = (prev.y - p.y) / (prev.x - p.x);
+        // const slope = (prev.y - p.y) / (prev.x - p.x);
 
         // On (near-) straight lines, do a loop to emphasize that the
         // point is indeed part of the sigil and we're not just passing
         // through.
         const range = 10;
         const angle = Math.abs(
-          toDegrees(angleBetweenTwoPointsAndVertex(prev, next, p))
+          toDegrees(angleBetweenTwoPointsAndVertex(prev, next, p)),
         );
         if (angle > 180 - range && angle < 180 + range) {
           const r = 1;
@@ -168,7 +160,7 @@ function pathFromPoints({
 
         // If the next token is the same token, do a squiqqle
         if (next && sigilTokens[i] == sigilTokens[i + 1]) {
-          const r = 1;
+          // const r = 1;
           const justBefore = pointFromEndOfLine(prev, p, 0.7);
           const justBefore2 = pointFromEndOfLine(prev, p, 0.35);
           const nextNext = points[i + 2];
@@ -202,7 +194,7 @@ function pathFromPoints({
     const finalPoints = calculatePerpendicularPointsAtEnd(
       { x: secondLastPoint.x, y: secondLastPoint.y },
       { x: lastPoint.x, y: lastPoint.y },
-      2
+      2,
     );
 
     d += "L " + finalPoints.map((p) => p.x + "," + p.y).join(" L ");
@@ -222,9 +214,9 @@ function objective(points: Point[], x: number[]) {
         angleBetweenTwoPointsAndVertex(
           points2[i - 1],
           points2[i + 1],
-          points2[i]
-        )
-      )
+          points2[i],
+        ),
+      ),
     );
     if (angle > 180) angle -= 180;
     // console.log(i, angle);
@@ -262,7 +254,7 @@ function objective(points: Point[], x: number[]) {
 
   // Length of connecting line between each point
   for (let i = 1; i < points2.length; i++) {
-    const length = lengthBetweenTwoPoints(points2[i - 1], points2[i]);
+    // const length = lengthBetweenTwoPoints(points2[i - 1], points2[i]);
     // console.log(i, d);
     // [REWARD]
     // score -= length * 10;
@@ -284,13 +276,13 @@ export default React.forwardRef(function RoseSigil(
     animate: boolean;
     debug: boolean;
   },
-  ref: React.Ref<SVGSVGElement>
+  ref: React.Ref<SVGSVGElement>,
 ) {
   const sigilTokens = React.useMemo(() => sigilText.split(""), [sigilText]);
   const pathRef = React.useRef<SVGPathElement>(null);
   const points = React.useMemo(
     () => sigilTokens.map((letter) => letterPoint(letter)),
-    [sigilTokens]
+    [sigilTokens],
   );
   const [res, setRes] = React.useState<null | {
     success: boolean;
@@ -304,7 +296,7 @@ export default React.forwardRef(function RoseSigil(
         await nlopt.ready;
         const opt = new nlopt.Optimize(
           nlopt.Algorithm.LN_COBYLA,
-          2 * points.length
+          2 * points.length,
         );
         opt.setMaxObjective(objective.bind(null, points), 1e-4);
         const res = opt.optimize(pointsToArray(points));
@@ -317,7 +309,7 @@ export default React.forwardRef(function RoseSigil(
 
   React.useEffect(() => {
     if (pathRef.current && points2) {
-      const animationDuration = points2.length / 4;
+      // const animationDuration = points2.length / 4;
       const length = pathRef.current.getTotalLength();
       pathRef.current.style.strokeDasharray = animate ? length.toString() : "";
       pathRef.current.style.strokeDashoffset = animate ? length.toString() : "";

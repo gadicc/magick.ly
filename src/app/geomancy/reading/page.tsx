@@ -1,13 +1,9 @@
 "use client";
-import React from "react";
 import {
   Box,
-  Checkbox,
   Container,
-  FormControl,
   FormControlLabel,
   FormGroup,
-  InputLabel,
   ListSubheader,
   MenuItem,
   Select,
@@ -18,37 +14,64 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-
+import { format } from "date-fns";
+import React from "react";
+import { PlanetId } from "@/../data/astrology/Planets";
+import data, {
+  geomanicHouse as houses,
+  tetragram as tetragrams,
+} from "@/../data/data";
+import { upcomingHoursForPlanetAtLocation } from "@/app/astrology/planetary-hours/utils";
+import PlanetarySpirit from "@/components/astrology/planetarySpirits";
+import CopyPasteExport, { ToastContainer } from "@/copyPasteExport";
+import { capitalizeFirstLetter, ordinal } from "@/lib/utils";
+import useGeoIP from "@/useGeoIP";
 import Tetragram from "../Tetragram";
 import { compute } from "../tetragrams";
-import data, {
-  tetragram as tetragrams,
-  geomanicHouse as houses,
-} from "@/../data/data";
-import { PlanetId } from "@/../data/astrology/Planets";
-import PlanetarySpirit from "@/components/astrology/planetarySpirits";
-import useGeoIP from "@/useGeoIP";
-import {
-  formatFromTo,
-  upcomingHoursForPlanetAtLocation,
-} from "@/app/astrology/planetary-hours/utils";
-import { format } from "date-fns";
-import { capitalizeFirstLetter, ordinal } from "@/lib/utils";
 import AstroGeomancyChart from "./AstroGeomancyChart";
-import CopyPasteExport, { ToastContainer } from "@/copyPasteExport";
 
-const { planet: planets, archangel: archangels, sephirah: sephirot } = data;
+const { planet: planets, archangel: archangels } = data;
 
 // https://blog.stevenlevithan.com/archives/javascript-roman-numeral-converter
 function romanize(num) {
   if (!+num) return false;
   const digits = String(+num).split("");
   // prettier-ignore
-  const key = ['','C','CC','CCC','CD','D','DC','DCC','DCCC','CM',
-             '','X','XX','XXX','XL','L','LX','LXX','LXXX','XC',
-             '','I','II','III','IV','V','VI','VII','VIII','IX'];
+  const key = [
+    "",
+    "C",
+    "CC",
+    "CCC",
+    "CD",
+    "D",
+    "DC",
+    "DCC",
+    "DCCC",
+    "CM",
+    "",
+    "X",
+    "XX",
+    "XXX",
+    "XL",
+    "L",
+    "LX",
+    "LXX",
+    "LXXX",
+    "XC",
+    "",
+    "I",
+    "II",
+    "III",
+    "IV",
+    "V",
+    "VI",
+    "VII",
+    "VIII",
+    "IX",
+  ];
   // prettier-ignore
-  let roman = '', i = 3;
+  let roman = "",
+    i = 3;
   // @ts-expect-error: while(i--) ensures digits.pop() is defined.
   while (i--) roman = (key[+digits.pop() + i * 10] || "") + roman;
   return Array(+digits.join("") + 1).join("M") + roman;
@@ -208,7 +231,7 @@ function GeomancyReading() {
           format(from, "h:mm aaa"),
           format(to, "h:mm aaa"),
         ],
-      })
+      }),
     );
   }, [planetId, geo]);
 
@@ -222,14 +245,14 @@ function GeomancyReading() {
 
   const { daughters, nephews, witnesses, judges } = React.useMemo(
     () => compute(mothers),
-    [mothers]
+    [mothers],
   );
   const allFigures = React.useMemo(
     () =>
       [...mothers, ...daughters, ...nephews, ...witnesses, ...judges].map(
-        tetragramFromRows
+        tetragramFromRows,
       ),
-    [mothers, daughters, nephews, witnesses, judges]
+    [mothers, daughters, nephews, witnesses, judges],
   );
 
   const interpretations = [
@@ -273,7 +296,7 @@ function GeomancyReading() {
       const randomValues = new Uint32Array(4);
       crypto.getRandomValues(randomValues);
       const randomTetra = Array.from(
-        randomValues.map((x) => (x % 2 === 0 ? 2 : 1))
+        randomValues.map((x) => (x % 2 === 0 ? 2 : 1)),
       );
 
       const newMothers = new Array(4);
@@ -283,6 +306,7 @@ function GeomancyReading() {
     };
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: See note below.
   React.useEffect(
     () => {
       for (const interpretation of interpretations) {
@@ -293,8 +317,7 @@ function GeomancyReading() {
       }
     },
     // This is intentional, we only care about mothers being changed.
-    // eslint-disable-next-line
-    [mothers]
+    [mothers],
   );
 
   const planet = planets[planetId];

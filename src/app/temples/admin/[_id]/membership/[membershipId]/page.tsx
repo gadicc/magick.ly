@@ -1,7 +1,4 @@
 "use client";
-import React, { use } from "react";
-import { useGongoSub, useGongoOne, db } from "gongo-client-react";
-import { useRouter } from "next/navigation";
 
 import {
   Button,
@@ -14,14 +11,15 @@ import {
   Typography,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-
+import dayjs, { Dayjs } from "dayjs";
+import { db, useGongoOne } from "gongo-client-react";
+import { useRouter } from "next/navigation";
+import React, { use } from "react";
 import { useForm } from "@/lib/forms";
 import {
   TempleMembershipClient,
   templeMembershipClientSchema,
 } from "@/schemas";
-import dayjs, { Dayjs } from "dayjs";
-import { useWatch } from "react-hook-form";
 
 export default function TemplesAdminEditMembershipPage(props: {
   params: Promise<{
@@ -37,10 +35,10 @@ export default function TemplesAdminEditMembershipPage(props: {
 
   const temple = useGongoOne((db) => db.collection("temples").find({ _id }));
   const membership = useGongoOne((db) =>
-    db.collection("templeMemberships").find({ _id: membershipId })
+    db.collection("templeMemberships").find({ _id: membershipId }),
   );
   const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: membership?.userId })
+    db.collection("users").find({ _id: membership?.userId }),
   );
 
   //console.log({ temple, membership, user });
@@ -52,8 +50,8 @@ export default function TemplesAdminEditMembershipPage(props: {
   });
   const {
     handleSubmit,
-    setValue,
-    getValues,
+    // setValue,
+    // getValues,
     control,
     Controller,
     fr,
@@ -62,11 +60,17 @@ export default function TemplesAdminEditMembershipPage(props: {
 
   function onSubmit(
     membership: TempleMembershipClient,
-    _event?: React.BaseSyntheticEvent
+    _event?: React.BaseSyntheticEvent,
   ) {
     // console.log("submit", membership);
 
-    const { _id, userId, templeId, addedAt, ...$set } = membership;
+    const {
+      _id,
+      userId: _userId,
+      templeId: _templeId,
+      addedAt: _addedAt,
+      ...$set
+    } = membership;
 
     if ($set.memberSince instanceof dayjs)
       $set.memberSince = ($set.memberSince as unknown as Dayjs).toDate();

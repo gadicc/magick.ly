@@ -1,6 +1,7 @@
 // import IPData from "ipdata";
-import type { NextRequest } from "next/server";
+
 import { ipAddress } from "@vercel/functions";
+import type { NextRequest } from "next/server";
 
 /*
 let ipdata: IPData | null = null;

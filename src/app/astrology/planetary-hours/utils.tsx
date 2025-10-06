@@ -1,5 +1,5 @@
+import { differenceInMinutes, format, getDay } from "date-fns";
 import SunCalc from "suncalc";
-import { differenceInMinutes, getDay, format } from "date-fns";
 
 // Useful Resources:
 // https://plentifulearth.com/calculate-planetary-hours/
@@ -79,7 +79,7 @@ export function calcPlanetaryHoursForDayAndLocation(date, geo) {
 export function upcomingHoursForPlanetAtLocation(planet, geo) {
   const now = new Date();
   const week = [0, 1, 2, 3, 4, 5, 6].map(
-    (d, i) => new Date(now.getTime() + d * DAY_IN_MS)
+    (d, i) => new Date(now.getTime() + d * DAY_IN_MS),
   );
 
   const hours = [] as { from: Date; to: Date }[];
@@ -95,7 +95,7 @@ export function upcomingHoursForPlanetAtLocation(planet, geo) {
               (i < 12
                 ? dayHours.meta.dayHourInMinutes
                 : dayHours.meta.nightHourInMinutes) *
-                60_000
+                60_000,
           ),
         });
       }

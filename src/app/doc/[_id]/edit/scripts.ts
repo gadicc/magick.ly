@@ -11,13 +11,14 @@ const scripts: Record<string, (props: ScriptProps) => void> = {
     let transformed = value;
     const transforms: [
       RegExp,
-      (substring: string, ...args: string[]) => string
+      (substring: string, ...args: string[]) => string,
     ][] = [
       [/^say\(role="(.*)"\)/gm, (_, role) => caps(role) + ":"],
       [/^do\(role="(.*)"\)/gm, (_, role) => "* " + caps(role)],
     ];
-    for (const [regexp, replacer] of transforms)
+    for (const [regexp, replacer] of transforms) {
       transformed = transformed.replaceAll(regexp, replacer);
+    }
 
     view.dispatch({
       changes: { from: 0, to: value.length, insert: transformed },

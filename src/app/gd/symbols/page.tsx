@@ -1,10 +1,7 @@
-import React from "react";
-//import Link from '@mui/material/Link';
-
-import Tiles from "@/components/Tiles";
 import SevenBranchedCandleStick from "@/components/gd/SevenBranchedCandleStick";
 // import { FylfotCross } from "../../pages/hogd/symbols/fylfot-cross";
 import TableOfShewbread from "@/components/gd/TableOfShewbread";
+import Tiles from "@/components/Tiles";
 
 const tiles = [
   {

@@ -1,14 +1,12 @@
-const {
+import JSON5 from "json5";
+import type { NextConfig } from "next";
+import {
   PHASE_DEVELOPMENT_SERVER,
   PHASE_PRODUCTION_BUILD,
-} = require("next/constants");
+} from "next/constants";
 
-const JSON5 = require("json5");
-
-/** @type {(phase: string, defaultConfig: import("next").NextConfig) => Promise<import("next").NextConfig>} */
-module.exports = async (phase) => {
-  /** @type {import("next").NextConfig} */
-  const nextConfig = {
+export default async function (phase: string): Promise<NextConfig> {
+  const nextConfig: NextConfig = {
     eslint: {
       ignoreDuringBuilds: true,
     },
@@ -68,4 +66,4 @@ module.exports = async (phase) => {
   }
 
   return nextConfig;
-};
+}

@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 
 import {
   Button,
@@ -10,6 +9,7 @@ import {
   FormGroup,
   Grid,
 } from "@mui/material";
+import React from "react";
 
 import data from "@/../data/data";
 import FylfotCross, {
@@ -69,8 +69,6 @@ export default function FylfotCrossPage() {
 
     setCells(unflat(flat));
   }
-
-  const navParts = [{ title: "Symbols", url: "/hogd/symbols/" }];
 
   return (
     <Container sx={{ p: 2 }}>

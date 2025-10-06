@@ -1,7 +1,4 @@
-import React from "react";
 import Image from "next/image";
-//import Link from '@mui/material/Link';
-
 import Tiles from "@/components/Tiles";
 
 import ReadingImgTile from "./img/reading.webp";

@@ -1,24 +1,21 @@
 "use client";
-import React from "react";
+import { ExpandMore } from "@mui/icons-material";
 
 import {
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Container,
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Typography,
-  Button,
   Box,
+  Container,
+  FormControl,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Typography,
 } from "@mui/material";
-import { ExpandMore } from "@mui/icons-material";
-
-import keys, { EnochianKey } from "@/../data/enochian/Keys";
+import React from "react";
 import dictionary from "@/../data/enochian/Dictionary";
+import keys, { EnochianKey } from "@/../data/enochian/Keys";
 import useEnochianFont, { EnochianFont } from "../useEnochianFont";
 
 const s = {
@@ -179,7 +176,7 @@ function KeyText({
                   </td>
                   <td>{subkey.english}</td>
                 </tr>
-              )
+              ),
           )}
         </tbody>
       </table>
@@ -189,7 +186,6 @@ function KeyText({
 }
 
 type EnochianLang = "enochian" | "english" | "both";
-const navParts = [{ title: "Enochian", url: "/enochian" }];
 
 export default function Keys() {
   const [lang, setLang] = React.useState<EnochianLang>("english");
@@ -252,7 +248,7 @@ export default function Keys() {
                   />
                 </AccordionDetails>
               </Accordion>
-            )
+            ),
         )}
       </Container>
       {selectedKey && (

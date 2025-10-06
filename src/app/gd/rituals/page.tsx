@@ -1,13 +1,5 @@
 "use client";
-import React, { useState } from "react";
-import {
-  db,
-  useGongoOne,
-  useGongoUserId,
-  useGongoSub,
-  useGongoLive,
-} from "gongo-client-react";
-
+import { Edit } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -27,7 +19,14 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Edit } from "@mui/icons-material";
+import {
+  db,
+  useGongoLive,
+  useGongoOne,
+  useGongoSub,
+  useGongoUserId,
+} from "gongo-client-react";
+import React from "react";
 
 import Link from "@/lib/link";
 import {
@@ -54,7 +53,7 @@ const builtInDocs = [
 function DocAdmin() {
   const userId = useGongoUserId() as string;
   const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId })
+    db.collection("users").find({ _id: userId }),
   );
 
   useGongoSub("userTemplesAndMemberships", {
@@ -62,7 +61,7 @@ function DocAdmin() {
     maxInterval: 5000,
   });
   const _memberships = useGongoLive((db) =>
-    db.collection("templeMemberships").find({ admin: true })
+    db.collection("templeMemberships").find({ admin: true }),
   );
   const temples = useGongoLive((db) => db.collection("temples").find());
   const memberships = React.useMemo(
@@ -71,11 +70,13 @@ function DocAdmin() {
         ...membership,
         temple: temples.find((t) => t._id === membership.templeId),
       })),
-    [_memberships, temples]
+    [_memberships, temples],
   );
 
+  /*
   const groups = useGongoLive((db) => db.collection("userGroups").find());
   useGongoSub("userGroups");
+  */
 
   const [title, setTitle] = React.useState("");
   // const [groupId, setGroupId] = React.useState("");
@@ -197,23 +198,25 @@ async function editDoc(id) {
 
 export default function Rituals() {
   const userId = useGongoUserId() as string;
+  /*
   const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId })
+    db.collection("users").find({ _id: userId }),
   );
+  */
 
   useGongoSub("userTemplesAndMemberships");
   const _templeMemberships = useGongoLive((db) =>
-    db.collection("templeMemberships").find({ userId })
+    db.collection("templeMemberships").find({ userId }),
   );
   const templeMemberships = React.useMemo(
     () => Object.fromEntries(_templeMemberships.map((tm) => [tm.templeId, tm])),
-    [_templeMemberships]
+    [_templeMemberships],
   );
 
   const _temples = useGongoLive((db) => db.collection("temples").find());
   const temples = React.useMemo(
     () => Object.fromEntries(_temples.map((t) => [t._id, t])),
-    [_temples]
+    [_temples],
   );
   // console.log("temples", temples);
 
@@ -221,7 +224,7 @@ export default function Rituals() {
   const dbDocs = useGongoLive((db) => db.collection("docs").find());
   const _docs = React.useMemo(
     () => [...builtInDocs, ...dbDocs] as unknown as typeof dbDocs,
-    [dbDocs]
+    [dbDocs],
   );
 
   type AggregatedDoc = Doc & { temple?: Temple; membership?: TempleMembership };
@@ -235,7 +238,7 @@ export default function Rituals() {
                 temple: temples[doc.templeId],
                 membership: templeMemberships[doc.templeId],
               }
-            : doc
+            : doc,
         )
         .filter((doc: AggregatedDoc) => {
           if (!doc.templeId) return true;
@@ -247,10 +250,9 @@ export default function Rituals() {
             doc.minGrade <= doc.membership.grade
           );
         }),
-    [_docs, temples, templeMemberships]
+    [_docs, temples, templeMemberships],
   );
 
-  const navParts = [{ title: "HOGD", url: "/hogd" }];
   return (
     <Container maxWidth="sm">
       <Box>

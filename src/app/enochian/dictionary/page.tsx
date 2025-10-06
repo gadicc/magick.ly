@@ -1,10 +1,10 @@
 "use client";
-import React from "react";
 
 import { TextField } from "@mui/material";
-
-import EnochianFont from "../../../components/enochian/enochianFont";
+import React from "react";
 import dictionary from "@/../data/enochian/Dictionary";
+import EnochianFont from "../../../components/enochian/enochianFont";
+
 const enochianWords = Object.keys(dictionary);
 
 const s = {

@@ -1,6 +1,6 @@
+import Auth from "gongo-server/lib/auth-class";
 import GongoServer from "gongo-server/lib/serverless";
 import MongoDBA from "gongo-server-db-mongo";
-import Auth from "gongo-server/lib/auth-class";
 import Database, { /* Collection, */ ObjectId } from "gongo-server-db-mongo";
 import { MongoClient } from "mongodb";
 
@@ -24,5 +24,5 @@ declare module "gongo-server" {
 }
 */
 
-export { db, dba, Auth, Database, ObjectId /* User, Order, CreditCode */ };
+export { Auth, Database, db, dba, ObjectId /* User, Order, CreditCode */ };
 export default gs;

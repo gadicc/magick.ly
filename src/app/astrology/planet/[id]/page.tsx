@@ -1,10 +1,8 @@
-import React from "react";
+import data from "@magick-data/data";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
 import { decycle } from "cycle";
 
-import Container from "@mui/material/Container";
-import Box from "@mui/material/Box";
-
-import data from "@magick-data/data";
 const planets = data.planet;
 
 export async function generateStaticParams() {

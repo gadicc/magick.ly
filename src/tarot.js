@@ -1,4 +1,5 @@
-const tarotDeck = require("tarot-deck");
+// @ts-expect-error: no types
+import tarotDeck from "tarot-deck";
 
 function RWSPath(rank) {
   const card = tarotDeck.getByRank(rank);

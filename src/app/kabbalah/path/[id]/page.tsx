@@ -1,17 +1,15 @@
 "use client";
-import React, { use } from "react";
-import Image from "next/legacy/image";
-import { decycle } from "cycle";
-
-import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
-
-import Link from "@/lib/link";
+import Container from "@mui/material/Container";
+import { decycle } from "cycle";
+import Image from "next/legacy/image";
+import React from "react";
+import Data from "@/../data/data";
 
 import TreeOfLife from "@/components/kabbalah/TreeOfLife";
-import { tarotDeck, RWSPath } from "@/tarot";
+import Link from "@/lib/link";
+import { RWSPath, tarotDeck } from "@/tarot";
 
-import Data from "@/../data/data";
 const paths = Object.values(Data.tolPath);
 
 /*
@@ -26,7 +24,7 @@ export async function getStaticProps({ params: { id } }) {
 */
 
 export default function Sephirot(props: { params: Promise<{ id: string }> }) {
-  const params = use(props.params);
+  const params = React.use(props.params);
 
   const { id } = params;
 
@@ -36,7 +34,7 @@ export default function Sephirot(props: { params: Promise<{ id: string }> }) {
   if (!path) return null;
 
   const otherLabels = Object.keys(path).filter(
-    (x) => !["id", "hermetic", "hebrew"].includes(x)
+    (x) => !["id", "hermetic", "hebrew"].includes(x),
   );
 
   const [from, to] = path.id

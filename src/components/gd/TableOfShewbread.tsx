@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
 
-import { PlanetId } from "@/../data/astrology/Planets";
 import zodiacs, { Zodiac } from "@/../data/astrology/Zodiac";
 import tribesOfIsrael from "@/../data/kabbalah/TribesOfIsrael";
 
@@ -15,7 +14,7 @@ interface Point {
 function degreesToPointOnCircle(
   degrees: number,
   radius: number,
-  center: Point = { x: 0, y: 0 }
+  center: Point = { x: 0, y: 0 },
 ): Point {
   const radians = (degrees * Math.PI) / 180;
   // console.log(degrees, radians);
@@ -24,35 +23,6 @@ function degreesToPointOnCircle(
     y: radius * Math.sin(radians) + center.y,
   };
 }
-
-function midPoint(p1: Point, p2: Point): Point {
-  return {
-    x: (p1.x + p2.x) / 2,
-    y: (p1.y + p2.y) / 2,
-  };
-}
-
-/*
-const branches: PlanetId[] = [
-  "sol",
-  "mars",
-  "jupiter",
-  "saturn",
-  "luna",
-  "mercury",
-  "venus",
-];
-*/
-
-const branches: PlanetId[] = [
-  "venus",
-  "mercury",
-  "sol",
-  "mars",
-  "jupiter",
-  "saturn",
-  "luna",
-];
 
 const yhvH = {
   y: "י",
@@ -71,13 +41,8 @@ function Branch({ zodiac, index }: { zodiac: Zodiac; index: number }) {
   const radius = 8; // TODO, work it out properly
   const center = degreesToPointOnCircle(
     (-index * 360) / numBranches - 90,
-    23.7 + radius
+    23.7 + radius,
   );
-  const points = [
-    degreesToPointOnCircle(90, radius, center),
-    degreesToPointOnCircle(90 + 360 / 3, radius, center),
-    degreesToPointOnCircle(90 + (360 / 3) * 2, radius, center),
-  ];
 
   const texts = [
     transToHeb(zodiac.tetragrammatonPermutation),
@@ -113,7 +78,7 @@ function Branch({ zodiac, index }: { zodiac: Zodiac; index: number }) {
   const topRight = degreesToPointOnCircle(
     90 + (360 / 3) * 2,
     radius - 0.4,
-    center
+    center,
   );
   const rotation = (360 / numBranches) * -index;
 
@@ -186,7 +151,7 @@ const innerCircleRadius = (innerRadius - pentagramRadius) / 2;
 // remaining inner circles and present contents at correct angles.
 const raphaelCircleCenter = degreesToPointOnCircle(
   90,
-  innerRadius - innerCircleRadius
+  innerRadius - innerCircleRadius,
 );
 
 const innerCircles = innerCircleData.map((data, index) => ({
@@ -194,7 +159,7 @@ const innerCircles = innerCircleData.map((data, index) => ({
   radius: innerCircleRadius,
   center: degreesToPointOnCircle(
     (270 + 90 * index) % 360,
-    innerRadius - innerCircleRadius
+    innerRadius - innerCircleRadius,
   ),
 }));
 
@@ -244,10 +209,8 @@ function TextOnCircle({
 
 export default React.forwardRef(function TableOfShewbread(
   _opts,
-  ref: React.Ref<SVGSVGElement>
+  ref: React.Ref<SVGSVGElement>,
 ) {
-  const pathRef = React.useRef<SVGPathElement>(null);
-
   const innerTriangles = [0, 30, 60, 90].map((offset) => [
     degreesToPointOnCircle(30 + offset, innerRadius),
     degreesToPointOnCircle(150 + offset, innerRadius),
@@ -257,7 +220,7 @@ export default React.forwardRef(function TableOfShewbread(
   // degrees = 360 / 5 = 72;
   // offset = 270 (top point of cirlce) - 288 (degrees at index 4) = -18
   const pentagramPoints = [3, 0, 2, 4, 1].map((index) =>
-    degreesToPointOnCircle(index * 72 - 18, pentagramRadius)
+    degreesToPointOnCircle(index * 72 - 18, pentagramRadius),
   );
 
   return (

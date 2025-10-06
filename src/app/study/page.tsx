@@ -1,43 +1,41 @@
 "use client";
-import React from "react";
-import {
-  useGongoLive,
-  useGongoOne,
-  useGongoUserId,
-  useGongoIsPopulated,
-  useGongoSub,
-} from "gongo-client-react";
-import { WithId } from "gongo-client/lib/browser/Collection";
-import { formatDistanceToNowStrict } from "date-fns";
-import { signIn } from "next-auth/react";
 
 import {
-  Container,
   Button,
   Chip,
-  Typography,
+  Container,
+  MenuItem,
+  Paper,
+  Select,
+  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Box,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
+  Typography,
 } from "@mui/material";
-
-import Link from "@/lib/link";
-import { sets as allSets, tags as allTags } from "@/study/sets";
+import { formatDistanceToNowStrict } from "date-fns";
+import { WithId } from "gongo-client/lib/browser/Collection";
+import {
+  useGongoIsPopulated,
+  useGongoLive,
+  useGongoOne,
+  useGongoSub,
+  useGongoUserId,
+} from "gongo-client-react";
+import { signIn } from "next-auth/react";
+import React from "react";
 import db, { enableNetwork } from "@/db";
-import { StudySetStats } from "./[_id]/exports";
+import Link from "@/lib/link";
 import {
   useRouter,
   useSearchParams,
   useSetSearchParam,
 } from "@/lib/navigation";
+import { sets as allSets, tags as allTags } from "@/study/sets";
+import { StudySetStats } from "./[_id]/exports";
 
 function dueCount(set: WithId<StudySetStats>) {
   let count = 0;
@@ -58,19 +56,19 @@ function StudyPage() {
   const tags = React.useMemo(
     () =>
       (_tags && (Array.isArray(_tags) ? _tags : _tags.split(","))) || ["all"],
-    [_tags]
+    [_tags],
   );
   const isPopulated = useGongoIsPopulated();
   const gdGrade = searchParams?.get("gdGrade") || "all";
 
   const currentSets = useGongoLive((db) =>
-    db.collection("studySet").find().sort("setId", "asc")
+    db.collection("studySet").find().sort("setId", "asc"),
   ).filter(
     (s) =>
       !!allSets[s.setId] &&
       (gdGrade === "all" || allSets[s.setId].gdGrade === gdGrade) &&
       (tags[0] === "all" ||
-        tags.every((tag) => allSets[s.setId].tags?.includes(tag)))
+        tags.every((tag) => allSets[s.setId].tags?.includes(tag))),
   );
 
   const network = useGongoOne((db) => db.gongoStore.find({ _id: "network" }));
@@ -84,7 +82,7 @@ function StudyPage() {
 
   const currentSetIds = React.useMemo(
     () => currentSets.map((s) => s.setId),
-    [currentSets]
+    [currentSets],
   );
 
   const otherSets = React.useMemo(
@@ -95,7 +93,7 @@ function StudyPage() {
           (key) =>
             !tags ||
             tags[0] === "all" ||
-            tags.every((tag) => allSets[key].tags?.includes(tag))
+            tags.every((tag) => allSets[key].tags?.includes(tag)),
         )
         .filter((setId) => !currentSetIds.includes(setId))
         .map((setId) => allSets[setId])
@@ -107,7 +105,7 @@ function StudyPage() {
             );
           return a.id.localeCompare(b.id);
         }),
-    [currentSetIds, gdGrade, tags]
+    [currentSetIds, gdGrade, tags],
   );
 
   const sortedTags = React.useMemo(() => [...allTags].sort(), []);
@@ -155,7 +153,7 @@ function StudyPage() {
               const score =
                 set.correct + set.incorrect > 0
                   ? Math.round(
-                      (set.correct / (set.correct + set.incorrect)) * 100
+                      (set.correct / (set.correct + set.incorrect)) * 100,
                     ) + "%"
                   : "(info)";
 

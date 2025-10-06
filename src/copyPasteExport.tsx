@@ -9,15 +9,17 @@ function getSvgText(element) {
   if (!text.match(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/))
     throw new Error("No XMLNS attribute found on SVG element, it won't work.");
 
-  return (text
-    .replace(
-      // since React doesn't support namespace tags
-      'xmlns="http://www.w3.org/2000/svg"',
-      'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
-    )
-    // assume this is only used for path annimations
-    .replace(/stroke-dasharray: [\d\\.]+;? ?/g, "")
-    .replace(/stroke-dashoffset: [\d\\.]+;? ?/g, ""));
+  return (
+    text
+      .replace(
+        // since React doesn't support namespace tags
+        'xmlns="http://www.w3.org/2000/svg"',
+        'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"',
+      )
+      // assume this is only used for path annimations
+      .replace(/stroke-dasharray: [\d\\.]+;? ?/g, "")
+      .replace(/stroke-dashoffset: [\d\\.]+;? ?/g, "")
+  );
 }
 
 function downloadSVG(event, element, filename) {
@@ -43,14 +45,14 @@ async function downloadPNG(event, element, filename) {
   let canvas;
   try {
     canvas = await drawnCanvas(element);
-  } catch (error) {
+  } catch (_error) {
     toast("❌ Could not draw canvas");
     return;
   }
   if (!canvas) return;
 
   const pngBlob: Blob | null = await new Promise((resolve) =>
-    canvas.toBlob(resolve, "image/png", 0.9)
+    canvas.toBlob(resolve, "image/png", 0.9),
   );
   if (!pngBlob) return alert("Error creating PNG blob.");
 
@@ -133,14 +135,14 @@ async function copyPNG(event, element) {
   let canvas;
   try {
     canvas = await drawnCanvas(element);
-  } catch (error) {
+  } catch (_error) {
     toast("❌ Could not draw canvas");
     return;
   }
   if (!canvas) return alert("No Canvas");
 
   const pngBlob: Blob | null = await new Promise((resolve) =>
-    canvas.toBlob(resolve, "image/png", 0.9)
+    canvas.toBlob(resolve, "image/png", 0.9),
   );
   if (!pngBlob) return alert("Error creating PNG blob.");
 
@@ -151,7 +153,7 @@ async function copyPNG(event, element) {
 
 const CopyPasteExport = React.forwardRef(function CopyPasteExport(
   { filename }: { filename: string },
-  ref: React.RefObject<SVGSVGElement | null>
+  ref: React.RefObject<SVGSVGElement | null>,
 ) {
   return (
     <div style={{ textAlign: "center", fontSize: "90%" }}>

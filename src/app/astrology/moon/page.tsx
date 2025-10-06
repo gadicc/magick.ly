@@ -1,10 +1,10 @@
 "use client";
-import React from "react";
 import lune from "lune";
 import { DateTime } from "luxon";
 
 import MoonDrawing from "@/components/astrology/Moon";
 
+/*
 // https://www.unicode.org/L2/L2017/17304-moon-var.pdf
 function uniMoon(moon, north = true, invert = true) {
   switch (moon) {
@@ -13,12 +13,13 @@ function uniMoon(moon, north = true, invert = true) {
     default:
   }
 }
+*/
 
 export default function Moon() {
   const now = new Date();
   const hunt = lune.phase_hunt(now);
   const huntNext = lune.phase_hunt(
-    new Date(hunt.nextnew_date.getTime() + 24 * 3600000)
+    new Date(hunt.nextnew_date.getTime() + 24 * 3600000),
   );
   const dateFmt = (d) =>
     DateTime.fromJSDate(d).toLocaleString(DateTime.DATETIME_FULL);

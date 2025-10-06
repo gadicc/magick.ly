@@ -1,17 +1,19 @@
-import {
-  MatchDecorator,
-  Decoration,
-  ViewPlugin,
-  RangeSet,
-} from "@uiw/react-codemirror";
-import SourceMapConsumer from "./SourceMapConsumer";
 import remapping from "@ampproject/remapping";
+import {
+  Decoration,
+  MatchDecorator,
+  RangeSet,
+  ViewPlugin,
+} from "@uiw/react-codemirror";
 import MagicString from "magic-string";
+import SourceMapConsumer from "./SourceMapConsumer";
 
+/*
 function posToLineCol(str: string, pos: number) {
   const lines = str.slice(0, pos).split("\n");
   return { line: lines.length, column: lines[lines.length - 1].length };
 }
+*/
 
 function lowerCaseFirstLetter(string) {
   return string
@@ -39,7 +41,7 @@ const shortcuts = [
         // say(role="hiero") hi there
         const pre = 'say(role="';
         const post = '")';
-        const replacement = pre + lowerCaseFirstLetter(role) + post;
+        // const replacement = pre + lowerCaseFirstLetter(role) + post;
 
         s.update(offset, offset + role.length, lowerCaseFirstLetter(role));
         s.remove(offset + role.length, offset + role.length + 1); // ":"
@@ -53,12 +55,12 @@ const shortcuts = [
       add(
         from + match[1].length,
         from + match[1].length + 1,
-        Decoration.mark(nonSpec)
+        Decoration.mark(nonSpec),
       );
       add(
         from + match[1].length + 1,
         from + match.input.length,
-        Decoration.mark(restSpec)
+        Decoration.mark(restSpec),
       );
     },
   },
@@ -80,7 +82,7 @@ const shortcuts = [
         s.update(
           offset + skip.length,
           offset + skip.length + role.length,
-          lowerCaseFirstLetter(role)
+          lowerCaseFirstLetter(role),
         );
         s.appendRight(offset + skip.length + role.length, post);
         s.remove(offset, offset + skip.length);
@@ -94,7 +96,7 @@ const shortcuts = [
       add(
         from + groups.skip.length,
         Math.min(to, from + groups.role.length + 2),
-        Decoration.mark(roleSpec)
+        Decoration.mark(roleSpec),
       );
     },
   },
@@ -109,8 +111,9 @@ const shortcuts = [
         const [_match, grade, space] = match;
 
         const gradePre = 'grade(grade="';
-        if (input.substring(offset - gradePre.length, offset) === gradePre)
+        if (input.substring(offset - gradePre.length, offset) === gradePre) {
           continue;
+        }
 
         const lineStartIdx = input.lastIndexOf("\n", offset) + 1;
         const lineStart = input.substring(lineStartIdx, offset);
@@ -125,11 +128,11 @@ const shortcuts = [
           offset + grade.length,
           ['")', space && "|", "|"]
             .filter(Boolean)
-            .join("\n" + (indent || "  "))
+            .join("\n" + (indent || "  ")),
         );
         s.prependLeft(
           offset,
-          ["", "|", 'grade(grade="'].join("\n" + (indent || "  "))
+          ["", "|", 'grade(grade="'].join("\n" + (indent || "  ")),
         );
       }
       return s.toString();
@@ -152,20 +155,20 @@ const shortcuts = [
         s.remove(
           // }
           offset + varName.length + 2,
-          offset + varName.length + (args.length ? args.length + 1 : 0) + 3
+          offset + varName.length + (args.length ? args.length + 1 : 0) + 3,
         );
         s.appendRight(
           offset + varName.length + 2,
           ['")', space && "|", "| "]
             .filter(Boolean)
-            .join("\n" + (indent || "  "))
+            .join("\n" + (indent || "  ")),
         );
         s.prependLeft(
           offset,
           (args === "b"
             ? ["", "|", "b", '  var(name="']
             : ["", "|", 'var(name="']
-          ).join("\n" + (indent || "  "))
+          ).join("\n" + (indent || "  ")),
         );
 
         s.remove(offset, offset + 2); // ${
@@ -179,7 +182,7 @@ const shortcuts = [
         from,
         to,
         // theme "var" token color
-        Decoration.mark({ attributes: { style: "color: #c678dd" } })
+        Decoration.mark({ attributes: { style: "color: #c678dd" } }),
       );
     },
   },
@@ -207,7 +210,7 @@ export function transformAndMapShortcuts(input: string) {
     transformed = shortcuts[i].transform(transformed, s, prev);
     // console.log("transformed", transformed);
     sourceMaps.push(
-      s.generateMap({ source: prev, file, hires: true }).toString()
+      s.generateMap({ source: prev, file, hires: true }).toString(),
     );
     prev = file;
   }
@@ -248,6 +251,6 @@ export const shortcutHighlighters = shortcutDecorators.map((decorator) =>
         this.decorations = decorator.updateDeco(update, this.decorations);
       }
     },
-    { decorations: (v) => v.decorations }
-  )
+    { decorations: (v) => v.decorations },
+  ),
 );

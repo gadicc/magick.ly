@@ -1,30 +1,22 @@
 "use client";
-import React from "react";
 import { Message, useChat } from "ai/react";
 import Image from "next/image";
+import React from "react";
 
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeAddClasses from "rehype-add-classes";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { dark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { ToastContainer, toast } from "react-toastify";
+import rehypeAddClasses from "rehype-add-classes";
+import remarkGfm from "remark-gfm";
 import "react-toastify/dist/ReactToastify.css";
-import { Document as LangChainDocument } from "@langchain/core/documents";
-
-import { UserAvatar } from "../MyAppBar";
-import type { ChatMessageMetaData } from "./api/route";
-import AndroidMagicianAvatar from "@/app/img/android-magician-avatar.png";
-import { useCodeMirror } from "@uiw/react-codemirror";
-
+// import { Document as LangChainDocument } from "@langchain/core/documents";
 import {
   Autorenew,
   DeleteForever,
-  Person,
   Send,
   StopCircle,
 } from "@mui/icons-material";
-
 import {
   Avatar,
   Chip,
@@ -32,8 +24,10 @@ import {
   IconButton,
   InputAdornment,
   TextField,
-  Typography,
 } from "@mui/material";
+import AndroidMagicianAvatar from "@/app/img/android-magician-avatar.png";
+import { UserAvatar } from "../MyAppBar";
+import type { ChatMessageMetaData } from "./api/route";
 
 const remarkPlugins = [remarkGfm];
 const rehypePlugins = [[rehypeAddClasses, { table: "rehype-table" }]];
@@ -148,9 +142,11 @@ export default function Chat() {
   const [cheatModeEnabled, setCheatModeEnabled] = React.useState(false);
   const cheatModeCount = React.useRef(0);
   const cheatModeLast = React.useRef(0);
+  /*
   const [sourcesForMessages, setSourcesForMessages] = React.useState<
     Record<string, LangChainDocument[]>
   >({});
+  */
 
   const {
     messages: _messages,
@@ -187,7 +183,7 @@ export default function Chat() {
     if (autoscroll.current) window.scrollTo(0, document.body.scrollHeight);
     // ref.current?.scrollIntoViewIfNeeded();
     // console.log({ messages });
-  }, [messages]);
+  }, []);
 
   React.useEffect(() => {
     function checkScroll() {
@@ -196,7 +192,6 @@ export default function Chat() {
       if (atBottom) autoscroll.current = true;
       else autoscroll.current = false;
     }
-    const func = (...args) => console.log(args);
     document.addEventListener("scrollend", checkScroll);
     return () => document.removeEventListener("scrollend", checkScroll);
   }, []);
@@ -225,7 +220,7 @@ export default function Chat() {
     }
     setCheatModeEnabled(!cheatModeEnabled);
     cheatModeCount.current = 0;
-  }, [cheatModeCount, cheatModeLast, cheatModeEnabled, setCheatModeEnabled]);
+  }, [cheatModeEnabled]);
 
   return (
     <>

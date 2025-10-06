@@ -2,10 +2,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import {
+  AWS,
+  AWS_S3_BUCKET,
   createFileFromBuffer,
   Files,
-  AWS_S3_BUCKET,
-  AWS,
 } from "./createFileFromBuffer";
 
 // shadowlang 2024-02-01
@@ -28,7 +28,7 @@ async function POST(req: NextRequest) {
       mimeType: file.type,
       size: file.size,
       sha256,
-    }
+    },
   );
 
   console.log(entry);
@@ -41,10 +41,11 @@ async function GET(req: NextRequest) {
   if (!sha256) return NextResponse.json({ $error: { code: "INVALID_SHA256" } });
 
   const entry = await Files.findOne({ sha256 });
-  if (!entry)
+  if (!entry) {
     return returnType === "meta"
       ? NextResponse.json({ $error: { code: "ENOENT" } })
       : new Response("Not Found", { status: 404 });
+  }
 
   // TODO, cache?
   if (returnType === "meta") return NextResponse.json(entry);
@@ -77,10 +78,11 @@ async function GET(req: NextRequest) {
   });
   if (entry.mimeType) headers.set("Content-Type", entry.mimeType);
   if (entry.size) headers.set("Content-Length", entry.size.toString());
-  if (entry.filename)
+  if (entry.filename) {
     headers.set("Content-Disposition", `inline; filename="${entry.filename}"`);
+  }
 
   return new Response(result.Body as Buffer, { status: 200, headers });
 }
 
-export { POST, GET };
+export { GET, POST };

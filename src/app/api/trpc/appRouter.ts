@@ -1,6 +1,6 @@
-import { router } from "./trpc";
-import * as queries from "./queries";
 import * as mutations from "./mutations";
+import * as queries from "./queries";
+import { router } from "./trpc";
 
 // GADI adds export
 export const appRouter = router({

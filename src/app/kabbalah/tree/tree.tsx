@@ -1,15 +1,13 @@
 "use client";
-import React from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import CopyPasteExport, { ToastContainer } from "@/copyPasteExport";
-
-import Container from "@mui/material/Container";
 
 import Box from "@mui/material/Box";
-import Link from "@/lib/link";
-
+import Container from "@mui/material/Container";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React from "react";
 import Data from "@/../data/data";
 import Tree from "@/components/kabbalah/TreeOfLife";
+import CopyPasteExport, { ToastContainer } from "@/copyPasteExport";
+import Link from "@/lib/link";
 
 /*
   Update: OLD, from pages router.  Need to re-investigate.
@@ -206,6 +204,7 @@ export default function TreeOfLife() {
             flip={opts.flip}
             showDaat={opts.showDaat}
             fontSize={opts.fontSize}
+            // @ts-expect-error: TODO, came up in recent linting update
             ref={ref}
           />
 

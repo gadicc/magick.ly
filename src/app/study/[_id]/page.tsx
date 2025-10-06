@@ -1,30 +1,27 @@
 "use client";
-import React, { use } from "react";
-import { supermemo } from "supermemo";
+import { Stack } from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
 import {
-  useGongoOne,
   useGongoIsPopulated,
+  useGongoOne,
   useGongoSub,
 } from "gongo-client-react";
-
-import Button from "@mui/material/Button";
-import Box from "@mui/material/Box";
-import Grid from "@mui/material/Grid";
-import Container from "@mui/material/Container";
-import Typography from "@mui/material/Typography";
-
-import Link from "@/lib/link";
-
-import getSet, { StudyCard, type StudySet } from "@/study/sets";
+import { useSession } from "next-auth/react";
+import React, { use } from "react";
+import { supermemo } from "supermemo";
 import db from "@/db";
-import { Stack } from "@mui/material";
-import { StudyCardStats, StudySetStats } from "./exports";
+import Link from "@/lib/link";
 import {
+  useRouter,
   useSearchParams,
   useSetSearchParam,
-  useRouter,
 } from "@/lib/navigation";
-import { useSession } from "next-auth/react";
+import getSet, { StudyCard, type StudySet } from "@/study/sets";
+import { StudyCardStats, StudySetStats } from "./exports";
 
 /*
 export async function getServerSideProps(context) {
@@ -52,7 +49,7 @@ function newCardStats(): StudyCardStats {
 
 function randomCard(
   set: StudyCard[],
-  prevCard: StudyCard | null = null
+  prevCard: StudyCard | null = null,
 ): StudyCard {
   const newCard = set[Math.floor(Math.random() * set.length)];
   return newCard === prevCard ? randomCard(set, prevCard) : newCard;
@@ -87,7 +84,7 @@ function updateCardSet(
   set,
   cardId,
   _studyData: StudySetStats,
-  { wrongCount, startTime, mode }
+  { wrongCount, startTime, mode },
 ) {
   const card = { ..._studyData.cards[cardId] };
 
@@ -180,7 +177,7 @@ function updateCardSet(
 
 function fetchDueCards(
   allCards: StudyCard[],
-  studyData: StudySetStats
+  studyData: StudySetStats,
 ): StudyCard[] {
   const now = new Date();
   const cards: StudyCard[] = [];
@@ -211,13 +208,12 @@ export default function StudySetLoad(props: {
   const set = React.useMemo(() => _id && getSet(_id), [_id]);
   const allCards = React.useMemo(() => set && set.generateCards(), [set]);
   const studyData = useGongoOne(
-    (db) => _id && db.collection("studySet").find({ setId: _id })
+    (db) => _id && db.collection("studySet").find({ setId: _id }),
   );
   useGongoSub("studySet");
 
   // console.log({ studyData });
 
-  const studyDataExists = !!studyData;
   React.useEffect(() => {
     if (!_id) return;
     if (isPopulated && !studyData) {
@@ -231,7 +227,7 @@ export default function StudySetLoad(props: {
         else console.error("Failure.  Set not defined");
       }
     }
-  }, [studyDataExists, isPopulated, _id, set, studyData, userId]);
+  }, [isPopulated, _id, set, studyData, userId]);
 
   if (!_id) return <div>No _id specified</div>;
   if (!isPopulated) return <div>Waiting for database population...</div>;
@@ -350,8 +346,9 @@ function StudySet({ set, cards, studyData, mode, setMode }) {
                 key={i}
                 size={{
                   xs: 12,
-                  sm: 6
-                }}>
+                  sm: 6,
+                }}
+              >
                 <Button
                   fullWidth
                   variant="outlined"
@@ -361,8 +358,8 @@ function StudySet({ set, cards, studyData, mode, setMode }) {
                       ? answer === wrong
                         ? "red"
                         : answer === card.answer
-                        ? "green"
-                        : "transparent"
+                          ? "green"
+                          : "transparent"
                       : "transparent",
                   }}
                   onClick={clicked.bind(this, answer)}

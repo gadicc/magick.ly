@@ -1,29 +1,28 @@
 "use client";
-import React from "react";
-import Split from "@uiw/react-split";
-import { EditorView, Prec, useCodeMirror } from "@uiw/react-codemirror";
 import { StreamLanguage } from "@codemirror/language";
-import { Diagnostic, setDiagnostics } from "@codemirror/lint";
 import { pug } from "@codemirror/legacy-modes/mode/pug";
+import { Diagnostic, setDiagnostics } from "@codemirror/lint";
+import { Close, ErrorOutline, Save } from "@mui/icons-material";
+import { Badge, IconButton, Tooltip } from "@mui/material";
+import { EditorView, Prec, useCodeMirror } from "@uiw/react-codemirror";
+import Split from "@uiw/react-split";
+import {
+  db,
+  GongoClientDocument,
+  useGongoOne,
+  useGongoSub,
+  useGongoUserId,
+} from "gongo-client-react";
 import pugLex from "pug-lexer";
 import pugParse from "pug-parser";
-import {
-  useGongoSub,
-  useGongoOne,
-  db,
-  useGongoUserId,
-  GongoClientDocument,
-} from "gongo-client-react";
-
-import DocRender from "../DocRender";
+import React from "react";
 import { toJrt } from "@/doc/prepare";
-import { Doc, DocNode, DocRevision } from "@/schemas";
-import { Close, ErrorOutline, Save, SaveAs } from "@mui/icons-material";
-import { Badge, IconButton, Tooltip } from "@mui/material";
+import { DocNode, DocRevision } from "@/schemas";
+import DocRender from "../DocRender";
 import { checkSrc } from "./checkSrc";
-import { shortcutHighlighters, transformAndMapShortcuts } from "./shortcuts";
 import SourceMapConsumer from "./SourceMapConsumer";
 import scripts from "./scripts";
+import { shortcutHighlighters, transformAndMapShortcuts } from "./shortcuts";
 
 const extensions = [
   StreamLanguage.define(pug),
@@ -95,7 +94,7 @@ export default function DocEdit({
   const _dbDoc = useGongoOne((db) => db.collection("docs").find({ _id }));
   const [dbDoc, setDbDoc] = React.useState(_dbDoc);
   const dbDocRevision = useGongoOne((db) =>
-    db.collection("docRevisions").find({ _id: dbDoc?.docRevisionId })
+    db.collection("docRevisions").find({ _id: dbDoc?.docRevisionId }),
   );
   const [initialValue, setInitialValue] = React.useState<string | null>(null);
 
@@ -110,7 +109,7 @@ export default function DocEdit({
   React.useEffect(() => {
     if (dbDocRevision && (initialValue === null || initialValue === "")) {
       console.log(
-        "Revision loaded, setting initialValue to dbDocRevision.text"
+        "Revision loaded, setting initialValue to dbDocRevision.text",
       );
       console.log(dbDocRevision);
       setInitialValue(dbDocRevision.text);
@@ -171,10 +170,10 @@ export default function DocEdit({
       } catch (error) {
         // console.log(error);
         const match = error.message.match(
-          /^Pug:(?<line>\d+):(?<column>\d+)\n(?<inline>[\s\S]+?)\n\n(?<message>.+)$/
+          /^Pug:(?<line>\d+):(?<column>\d+)\n(?<inline>[\s\S]+?)\n\n(?<message>.+)$/,
         );
         if (match) {
-          const { message, type } = match.groups;
+          const { message, type: _type } = match.groups;
           let line = Number(match.groups.line);
           let column = Number(match.groups.column);
           const orig = consumer.originalPositionFor({ line, column });
@@ -243,12 +242,10 @@ export default function DocEdit({
       const insertedDoc = db.collection("docRevisions").insert(newRevision);
       docRevisionId = insertedDoc._id as string;
     } else {
-      const result = db
-        .collection("docRevisions")
-        .update(
-          { _id: lastRevision._id },
-          { $set: { text, updatedAt: new Date() } }
-        );
+      db.collection("docRevisions").update(
+        { _id: lastRevision._id },
+        { $set: { text, updatedAt: new Date() } },
+      );
       // console.log("lastRevision", lastRevision);
       // console.log({ $set: { text, updatedAt: new Date() } });
       // console.log(result);
@@ -263,12 +260,12 @@ export default function DocEdit({
               // DocRender adds ref to html nodes, which we don't want to save.
               if (key === "ref") return undefined;
               return value;
-            })
+            }),
           ),
           docRevisionId,
           updatedAt: new Date(),
         },
-      }
+      },
     );
     (function () {
       const doc = db.collection("docs").findOne(_id) as GongoClientDocument;
@@ -286,7 +283,7 @@ export default function DocEdit({
         save();
       }
     },
-    [save]
+    [save],
   );
 
   React.useEffect(() => {
@@ -294,7 +291,8 @@ export default function DocEdit({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const { setContainer, state, view, setState } = useCodeMirror({
+  // state, setState - no longer used
+  const { setContainer, view } = useCodeMirror({
     theme: "dark",
     extensions,
     onChange,
@@ -302,9 +300,11 @@ export default function DocEdit({
     width: "100%",
   });
 
+  /*
   React.useEffect(() => {
-    // console.log("state", state);
+    console.log("state", state);
   }, [state]);
+  */
   React.useEffect(() => {
     if (view) {
       // console.log("view", view);
@@ -325,7 +325,7 @@ export default function DocEdit({
     (node) => {
       setContainer(node);
     },
-    [setContainer]
+    [setContainer],
   );
 
   if (initialValue === null) return <div>Loading or not found...</div>;

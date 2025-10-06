@@ -1,16 +1,13 @@
 "use client";
-import React, { use } from "react";
-import { decycle } from "cycle";
-
-import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
-
+import Container from "@mui/material/Container";
+import { decycle } from "cycle";
+import React from "react";
+import Data from "@/../data/data";
+import Chakras from "@/components/chakras/Chakras";
+import TreeOfLife from "@/components/kabbalah/TreeOfLife";
 import Link from "@/lib/link";
 
-import TreeOfLife from "@/components/kabbalah/TreeOfLife";
-import Chakras from "@/components/chakras/Chakras";
-
-import Data from "@/../data/data";
 const sephirot = Object.values(Data.sephirah);
 
 /*
@@ -22,7 +19,7 @@ export function generateStaticParams() {
 */
 
 export default function Sephirot(props: { params: Promise<{ id: string }> }) {
-  const params = use(props.params);
+  const params = React.use(props.params);
 
   const { id } = params;
 
@@ -45,7 +42,7 @@ export default function Sephirot(props: { params: Promise<{ id: string }> }) {
         "chakraId",
         "gdGrade",
         "gdGradeId",
-      ].includes(x)
+      ].includes(x),
   );
 
   return (

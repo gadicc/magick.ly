@@ -7,38 +7,36 @@ instances may cause problems. This can happen if multiple versions are used,
 or if multiple builds of the same version are used.
 */
 
-import React from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { DocNode } from "@/schemas";
-
 import {
-  Box,
-  Menu,
-  MenuItem,
-  IconButton,
-  Stack,
-  useScrollTrigger,
-  Slide,
-  TextField,
-  FormControl,
-  Select,
-  InputLabel,
-  SpeedDial,
-  Popover,
-  SpeedDialAction,
-} from "@mui/material";
-
-import {
-  List as ListIcon,
   Add as AddIcon,
-  Remove as RemoveIcon,
-  ZoomIn as ZoomInIcon,
   ArrowDownward as ArrowDownwardIcon,
   ArrowUpward as ArrowUpwardIcon,
+  List as ListIcon,
+  Remove as RemoveIcon,
+  ZoomIn as ZoomInIcon,
 } from "@mui/icons-material";
+import {
+  Box,
+  FormControl,
+  IconButton,
+  InputLabel,
+  Menu,
+  MenuItem,
+  Popover,
+  Select,
+  Slide,
+  SpeedDial,
+  SpeedDialAction,
+  Stack,
+  TextField,
+  useScrollTrigger,
+} from "@mui/material";
+import { useRouter, useSearchParams } from "next/navigation";
+import React from "react";
+import { Render } from "@/doc/blocks";
 
 import DocContext from "@/doc/context";
-import { Render } from "@/doc/blocks";
+import { DocNode } from "@/schemas";
 import "@/../public/fonts/FrankRuehlCLM-stylesheet.css";
 import Lamen from "@/app/gd/components/lamen";
 
@@ -46,7 +44,7 @@ import Lamen from "@/app/gd/components/lamen";
 // in this file, otherwise React Fast Refresh will need to do a
 // Full Reload.
 
-function PraemonstratorWand({ size }) {
+function _PraemonstratorWand({ size }) {
   return (
     <svg
       version="1.1"
@@ -93,7 +91,7 @@ function PraemonstratorWand({ size }) {
   );
 }
 
-function Cross({ size, bg, fg }) {
+function _Cross({ size, bg, fg }) {
   return (
     <svg width={size} height={size} viewBox="-5 -5 10 10">
       <circle cx="0" cy="0" r="5" fill={bg} />
@@ -182,7 +180,7 @@ for (const [alias, role] of Object.entries(roleAliases)) {
   roles[alias] = roles[role];
 }
 
-function HideOnScroll(props) {
+function _HideOnScroll(props) {
   const { children, window } = props;
   // Note that you normally won't need to set the window ref as useScrollTrigger
   // will default to window.
@@ -207,7 +205,7 @@ function ShowVar({ v, ctxVar }) {
       if (timeout.current) clearTimeout(timeout.current);
       timeout.current = setTimeout(() => ctxVar.set(value), 1000);
     },
-    [ctxVar, timeout]
+    [ctxVar],
   );
 
   return (
@@ -385,7 +383,9 @@ if (typeof window !== "undefined") {
 
 // Ok for whatever reason this stops the error but doesn't "catch" it (i.e. no logs)
 class ErrorBoundary extends React.Component<{
+  // biome-ignore lint/suspicious/noExplicitAny: another day
   fallback?: React.ReactElement<any>;
+  // biome-ignore lint/suspicious/noExplicitAny: another day
   children: React.ReactElement<any>;
 }> {
   state = { error: null as Error | null, info: null };
@@ -467,7 +467,7 @@ export default function DocRender({
   const vars = React.useMemo(
     () =>
       (doc.children?.filter((c) => c.type === "declareVar") || []) as VarDesc[],
-    [doc.children]
+    [doc.children],
   );
 
   const [sdOpen, setSdOpen] = React.useState(false);
@@ -478,7 +478,6 @@ export default function DocRender({
     (EventTarget & HTMLDivElement) | null
   >(null);
 
-  const navParts = [{ title: "Rituals", url: "/hogd/rituals" }];
   const [fontSize, setFontSize] = React.useState(100);
 
   const context = { vars: {}, roles };

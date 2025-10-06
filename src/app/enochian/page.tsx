@@ -1,14 +1,11 @@
-import React from "react";
-
 import { Box } from "@mui/material";
-
+import Tablet from "@/components/enochian/Tablet";
 import Tiles from "@/components/Tiles";
+import dictionaryImg from "./img/dictionary.jpg";
+import enochianAbc from "./img/enochianAbc.png";
+import firstKey from "./img/enochianFirstKey.png";
 //import aethyrs from './enochian/30aethyrs.jpg';
 import orationThumb from "./img/oration-thumb.jpg";
-import firstKey from "./img/enochianFirstKey.png";
-import enochianAbc from "./img/enochianAbc.png";
-import dictionaryImg from "./img/dictionary.jpg";
-import Tablet from "@/components/enochian/Tablet";
 
 const tiles = [
   {

@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { Grid, ImageListItemBar } from "@mui/material";
+import Image from "next/image";
 import Link from "@/lib/link";
 
 function Tiles({ tiles }) {
@@ -16,8 +16,9 @@ function Tiles({ tiles }) {
           size={{
             xs: 6,
             sm: 4,
-            md: 3
-          }}>
+            md: 3,
+          }}
+        >
           <Link href={tile.to} underline="none">
             {tile.Component ? (
               <div
@@ -36,8 +37,8 @@ function Tiles({ tiles }) {
             ) : null}
             {tile.img ? (
               typeof tile.img === "string" ? (
-                // eslint-disable-next-line
-                (<img
+                // biome-ignore lint/performance/noImgElement: conditional, check elsewhere
+                <img
                   src={typeof tile.img === "object" ? tile.img.src : tile.img}
                   alt={tile.title}
                   style={{
@@ -45,7 +46,7 @@ function Tiles({ tiles }) {
                     height: "100%",
                     objectFit: "cover",
                   }}
-                />)
+                />
               ) : (
                 <Image
                   src={tile.img}

@@ -1,23 +1,19 @@
 "use client";
-import React from "react";
 
-import Container from "@mui/material/Container";
+import MercuryWidget from "@magick-components/astrology/Mercury";
+import MoonWidget from "@magick-components/astrology/Moon";
 import Box from "@mui/material/Box";
-
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-
-import Link from "@/lib/link";
-
-import MercuryWidget from "@magick-components/astrology/Mercury";
-import MoonWidget from "@magick-components/astrology/Moon";
-import Tiles from "@/components/Tiles";
 import Data from "@/../data/data";
+import Tiles from "@/components/Tiles";
+import Link from "@/lib/link";
 import OpenSource from "@/OpenSource";
 
 const tiles = [
@@ -34,9 +30,6 @@ const tiles = [
 ];
 
 export default function Planets() {
-
-  const navParts = [{ title: "Astrology", url: "/astrology" }];
-
   return (
     <Container maxWidth="sm">
       <Box my={4}>

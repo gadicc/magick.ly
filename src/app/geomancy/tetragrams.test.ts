@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { compute } from "./tetragrams";
 
 describe("geomancy", () => {
@@ -15,7 +16,7 @@ describe("geomancy", () => {
       const all = mothers.concat(daughters, nephews, witnesses, judges);
       const str = JSON.stringify(all);
       expect(str).toBe(
-        "[[1,2,1,1],[1,1,1,2],[2,1,1,1],[1,2,1,2],[1,1,2,1],[2,1,1,2],[1,1,1,1],[1,2,1,2],[2,1,2,1],[1,1,2,1],[1,2,1,1],[2,1,2,1],[1,2,2,2],[1,1,1,2],[2,1,1,2]]"
+        "[[1,2,1,1],[1,1,1,2],[2,1,1,1],[1,2,1,2],[1,1,2,1],[2,1,1,2],[1,1,1,1],[1,2,1,2],[2,1,2,1],[1,1,2,1],[1,2,1,1],[2,1,2,1],[1,2,2,2],[1,1,1,2],[2,1,1,2]]",
       );
     });
   });

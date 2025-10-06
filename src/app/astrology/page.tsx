@@ -1,8 +1,6 @@
-import React from "react";
 import Tiles from "@/components/Tiles";
-
-import PlanetaryHoursPic from "./img/planetary-hours.webp";
 import AstrologyTile from "../img/astrology.jpeg";
+import PlanetaryHoursPic from "./img/planetary-hours.webp";
 
 const tiles = [
   {

@@ -1,21 +1,21 @@
 // Modified version of official MongoDBAdapter commit 87298a015058fbc3f5d7127f0a27de2a7d504f99
 // https://raw.githubusercontent.com/nextauthjs/next-auth/main/packages/adapter-mongodb/src/index.ts
 
+import { ObjectId } from "bson";
+import { WithId } from "gongo-client/lib/browser/Collection";
 import GongoServerless from "gongo-server";
 import MongoDBA from "gongo-server-db-mongo";
-import { ObjectId } from "bson";
+import {
+  EnhancedOmit,
+  GongoDocument,
+} from "gongo-server-db-mongo/lib/collection";
 import type {
   Adapter,
-  AdapterUser,
   AdapterAccount,
   AdapterSession,
+  AdapterUser,
   VerificationToken,
 } from "next-auth/adapters";
-import {
-  GongoDocument,
-  EnhancedOmit,
-} from "gongo-server-db-mongo/lib/collection";
-import { WithId } from "gongo-client/lib/browser/Collection";
 import { UserServer } from "../schemas";
 
 // https://github.com/microsoft/TypeScript/issues/54451
@@ -63,7 +63,7 @@ export const defaultCollections: Required<
 export const format = {
   /** Takes a mongoDB object and returns a plain old JavaScript object */
   from<T = Record<string, unknown>>(
-    object: Record<string, unknown> | WithId<GongoDocument>
+    object: Record<string, unknown> | WithId<GongoDocument>,
   ): T {
     const newObject: Record<string, unknown> = {};
     for (const key in object) {
@@ -102,7 +102,7 @@ export function _id(hex?: string) {
 export default function GongoAuthAdapter(
   // client: Promise<MongoClient>,
   gs: GongoServerless<MongoDBA>,
-  options: MongoDBAdapterOptions = {}
+  options: MongoDBAdapterOptions = {},
 ): Adapter {
   const { collections } = options;
   const { from, to } = format;
@@ -131,7 +131,7 @@ export default function GongoAuthAdapter(
     */
 
     async createUser(
-      data: MappedOmit<AdapterUser, "id">
+      data: MappedOmit<AdapterUser, "id">,
     ): Promise<AdapterUser> {
       console.log("createUser data", data);
 
@@ -156,9 +156,7 @@ export default function GongoAuthAdapter(
 
       console.log("createUser user", user);
 
-      const result = await (
-        await db
-      ).U.insertOne({
+      const result = await (await db).U.insertOne({
         // @ts-expect-error: fine for now
         _id,
         ...user,
@@ -166,7 +164,7 @@ export default function GongoAuthAdapter(
 
       if (!result.acknowledged) {
         throw new Error(
-          "Unexpected mongo result in createUser():" + JSON.stringify(result)
+          "Unexpected mongo result in createUser():" + JSON.stringify(result),
         );
       }
 
@@ -190,8 +188,7 @@ export default function GongoAuthAdapter(
       return from<AdapterUser>(user);
     },
     */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async getUser(id: any) {
+    async getUser(id: string | ObjectId) {
       if (!gs.dba) throw new Error("no gs.dba");
       const _id = typeof id === "string" ? new ObjectId(id) : id;
       const user = await gs.dba.Users.users.findOne({ _id });
@@ -218,7 +215,7 @@ export default function GongoAuthAdapter(
         if (user) {
           console.log("found oldschool user", user);
           const service = user.services.find(
-            (s) => s.service === provider_providerAccountId.provider
+            (s) => s.service === provider_providerAccountId.provider,
           )!;
           const account = {
             provider: service.service,
@@ -248,9 +245,9 @@ export default function GongoAuthAdapter(
       }
 
       if (!account) return null;
-      const user = await (
-        await db
-      ).U.findOne({ _id: new ObjectId(account.userId) });
+      const user = await (await db).U.findOne({
+        _id: new ObjectId(account.userId),
+      });
       if (!user) return null;
       return from<AdapterUser>(user);
     },
@@ -272,19 +269,18 @@ export default function GongoAuthAdapter(
         "accessToken",
         "refreshToken",
       )
-      */ /*
+      */
+    /*
     },
     */
 
     async updateUser(data) {
       const { _id, ...user } = to<AdapterUser>(data);
 
-      const result = await (
-        await db
-      ).U.findOneAndUpdate(
+      const result = await (await db).U.findOneAndUpdate(
         { _id },
         { $set: user },
-        { returnDocument: "after", includeResultMetadata: true }
+        { returnDocument: "after", includeResultMetadata: true },
       );
 
       return from<AdapterUser>(result.value!);
@@ -309,11 +305,12 @@ export default function GongoAuthAdapter(
       return from<AdapterAccount>(account);
     },
     async unlinkAccount(provider_providerAccountId) {
-      const { value: account } = await (
-        await db
-      ).A.findOneAndDelete(provider_providerAccountId, {
-        includeResultMetadata: true,
-      });
+      const { value: account } = await (await db).A.findOneAndDelete(
+        provider_providerAccountId,
+        {
+          includeResultMetadata: true,
+        },
+      );
       return from<AdapterAccount>(account!);
     },
 
@@ -322,9 +319,9 @@ export default function GongoAuthAdapter(
     async getSessionAndUser(sessionToken) {
       const session = await (await db).S.findOne({ sessionToken });
       if (!session) return null;
-      const user = await (
-        await db
-      ).U.findOne({ _id: new ObjectId(session.userId) });
+      const user = await (await db).U.findOne({
+        _id: new ObjectId(session.userId),
+      });
       if (!user) return null;
       return {
         user: from<AdapterUser>(user),
@@ -342,24 +339,20 @@ export default function GongoAuthAdapter(
     async updateSession(data) {
       const { _id, ...session } = to<MongoAdapterSession>(data);
 
-      const result = await (
-        await db
-      ).S.findOneAndUpdate(
+      const result = await (await db).S.findOneAndUpdate(
         { sessionToken: session.sessionToken },
         { $set: session },
-        { returnDocument: "after", includeResultMetadata: true }
+        { returnDocument: "after", includeResultMetadata: true },
       );
       return from<AdapterSession>(result.value!);
     },
 
     async deleteSession(sessionToken) {
-      const { value: session } = await (
-        await db
-      ).S.findOneAndDelete(
+      const { value: session } = await (await db).S.findOneAndDelete(
         {
           sessionToken,
         },
-        { includeResultMetadata: true }
+        { includeResultMetadata: true },
       );
       return from<AdapterSession>(session!);
     },
@@ -373,9 +366,10 @@ export default function GongoAuthAdapter(
     },
 
     async useVerificationToken(identifier_token) {
-      const { value: verificationToken } = await (
-        await db
-      ).V.findOneAndDelete(identifier_token, { includeResultMetadata: true });
+      const { value: verificationToken } = await (await db).V.findOneAndDelete(
+        identifier_token,
+        { includeResultMetadata: true },
+      );
 
       if (!verificationToken) return null;
       // @ts-expect-error: ok
@@ -387,8 +381,8 @@ export default function GongoAuthAdapter(
 
 export type {
   Adapter,
-  AdapterUser,
   AdapterAccount,
   AdapterSession,
+  AdapterUser,
   VerificationToken,
 };

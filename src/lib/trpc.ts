@@ -1,8 +1,8 @@
 "use client";
 import { createTRPCClient, unstable_httpBatchStreamLink } from "@trpc/client";
-import type { AppRouter } from "@/app/api/trpc/appRouter";
 //     👆 **type-only** import
 import superjson from "superjson";
+import type { AppRouter } from "@/app/api/trpc/appRouter";
 
 const origin =
   typeof window === "undefined"

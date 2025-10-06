@@ -1,17 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import { File } from "buffer";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-
-import { getEmbeddingsTransformer, searchArgs } from "../../openai";
 import { MongoDBAtlasVectorSearch } from "@langchain/mongodb";
+import { File } from "buffer";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { NextRequest, NextResponse } from "next/server";
+import { getEmbeddingsTransformer, searchArgs } from "../../openai";
 
 export async function POST(req: NextRequest) {
   try {
     const formData: FormData = await req.formData();
     const uploadedFiles = formData.getAll("filepond");
-    let fileName = "";
+    // let fileName = "";
     // let parsedText = "";
 
     if (uploadedFiles && uploadedFiles.length > 0) {
@@ -20,9 +18,9 @@ export async function POST(req: NextRequest) {
       console.log("Uploaded file:", uploadedFile);
 
       if (uploadedFile instanceof File) {
-        fileName = uploadedFile.name.toLowerCase();
+        // fileName = uploadedFile.name.toLowerCase();
 
-        const tempFilePath = `/tmp/${fileName}.pdf`;
+        // const tempFilePath = `/tmp/${fileName}.pdf`;
         const arrayBuffer = await uploadedFile.arrayBuffer();
         const loader = new PDFLoader(new Blob([arrayBuffer]));
         const rawDocs = await loader.load();
@@ -41,18 +39,18 @@ export async function POST(req: NextRequest) {
         await MongoDBAtlasVectorSearch.fromDocuments(
           splitDocs,
           getEmbeddingsTransformer(),
-          searchArgs()
+          searchArgs(),
         );
 
         return NextResponse.json(
           { message: "Uploaded to MongoDB" },
-          { status: 200 }
+          { status: 200 },
         );
       } else {
         console.log("Uploaded file is not in the expected format.");
         return NextResponse.json(
           { message: "Uploaded file is not in the expected format" },
-          { status: 500 }
+          { status: 500 },
         );
       }
     } else {

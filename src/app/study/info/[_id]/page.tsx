@@ -1,22 +1,22 @@
 "use client";
-import React from "react";
-import {
-  useGongoOne,
-  useGongoIsPopulated,
-  useGongoSub,
-} from "gongo-client-react";
-import { formatDistance } from "date-fns";
 
 import {
   Container,
   Paper,
   Table,
-  TableContainer,
-  TableCell,
-  TableRow,
   TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
   Typography,
 } from "@mui/material";
+import { formatDistance } from "date-fns";
+import {
+  useGongoIsPopulated,
+  useGongoOne,
+  useGongoSub,
+} from "gongo-client-react";
+import React from "react";
 
 export default function StudyInfo(props: { params: Promise<{ _id: string }> }) {
   const params = React.use(props.params);
@@ -24,7 +24,7 @@ export default function StudyInfo(props: { params: Promise<{ _id: string }> }) {
   const isPopulated = useGongoIsPopulated();
 
   const studyData = useGongoOne((db) =>
-    db.collection("studySet").find({ setId: _id })
+    db.collection("studySet").find({ setId: _id }),
   );
   useGongoSub("studySet");
 
@@ -59,7 +59,7 @@ export default function StudyInfo(props: { params: Promise<{ _id: string }> }) {
                 {Math.round(
                   (studyData.correct /
                     (studyData.correct + studyData.incorrect)) *
-                    100
+                    100,
                 ) + "%"}
               </TableCell>
             </TableRow>

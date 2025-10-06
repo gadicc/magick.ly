@@ -48,7 +48,7 @@ export default function FylfotCross({
     id: string | null,
     rowIndex: number,
     colIndex: number,
-    correctId: string
+    correctId: string,
   ) => void;
   showColors: boolean;
 }) {

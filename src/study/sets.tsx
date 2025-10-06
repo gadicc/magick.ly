@@ -1,13 +1,11 @@
-import React from "react";
 import Paper from "@mui/material/Paper";
-
-import data from "../../data/data";
 import Tetragram from "@/app/geomancy/Tetragram";
 import enochianFont from "@/components/enochian/enochianFont";
+import data from "../../data/data";
 
 // https://stackoverflow.com/a/56773391/1839099
 function omit(key, obj) {
-  const { [key]: omitted, ...rest } = obj;
+  const { [key]: _omitted, ...rest } = obj;
   return rest;
 }
 
@@ -58,7 +56,7 @@ export interface StudySetData<T = StudyCardDataItem> {
   // data
   id: string;
   data: Record<string, T>;
-  question: string | ((item: T) => string | JSX.Element);
+  question: string | ((item: T) => string | React.ReactNode);
   answer: string | ((item: T) => string);
   answers?: string[];
   gdGrade:
@@ -99,7 +97,7 @@ function generateCards(this: StudySet) {
   shuffle(array);
   return array.map((item) => {
     const otherItems = array.filter(
-      (oItem, i) => oItem !== item && array.indexOf(oItem) === i
+      (oItem, i) => oItem !== item && array.indexOf(oItem) === i,
     );
     shuffle(otherItems);
     const answers =
@@ -127,7 +125,7 @@ function dotProps(item, object) {
     else {
       console.error(object);
       throw new Error(
-        `No such key "${key}" of path "${item}" in ${JSON.stringify(object)}`
+        `No such key "${key}" of path "${item}" in ${JSON.stringify(object)}`,
       );
     }
   }
@@ -138,7 +136,7 @@ type UnwrapRecord<T> = T extends Record<string, infer U> ? U : T;
 
 function filter<T>(
   data: T,
-  func: ([id, item]: [string, UnwrapRecord<T>]) => boolean
+  func: ([id, item]: [string, UnwrapRecord<T>]) => boolean,
 ) {
   // @ts-expect-error: this broke on an upgrade, TODO anoter day
   return Object.fromEntries(Object.entries(data).filter(func));
@@ -216,7 +214,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     id: "alchemy-principals",
     data: filter(
       data.alchemySymbol,
-      ([id, item]) => item.category === "principles"
+      ([id, item]) => item.category === "principles",
     ),
     question: "altSymbol",
     answer: "name.en",
@@ -227,7 +225,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     id: "alchemy-planetary-metals",
     data: filter(
       data.alchemySymbol,
-      ([id, item]) => item.category === "planets"
+      ([id, item]) => item.category === "planets",
     ),
     question: "altSymbol",
     answer: "name.en",
@@ -262,7 +260,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     id: "planets-hebrew-hebrew",
     data: Object.fromEntries(
       // Only include cards that have a name.he (i.e. 7 traditional planets)
-      Object.entries(data.planet).filter(([id, data]) => data?.name?.he)
+      Object.entries(data.planet).filter(([id, data]) => data?.name?.he),
     ),
     question: "name.en.en",
     answer: "name.he.he",
@@ -273,7 +271,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     id: "planets-hebrew-romanized",
     data: Object.fromEntries(
       // Only include cards that have a name.he (i.e. 7 traditional planets)
-      Object.entries(data.planet).filter(([id, data]) => data?.name?.he)
+      Object.entries(data.planet).filter(([id, data]) => data?.name?.he),
     ),
     question: "name.en.en",
     answer: "name.he.roman",
@@ -284,7 +282,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     id: "planets-archangels-he",
     data: Object.fromEntries(
       // Only include archangels that have a planet associated with them
-      Object.entries(data.archangel).filter(([id, data]) => data?.planetId)
+      Object.entries(data.archangel).filter(([id, data]) => data?.planetId),
     ),
     question: "name.he",
     answer: "planet.name.he.he",
@@ -315,7 +313,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     tags: ["alchemy"],
     data: (function () {
       const gradeTerms = Object.values(data.alchemyTerm).filter(
-        (term) => term.gdGrade === 1
+        (term) => term.gdGrade === 1,
       );
 
       // Create a new card for each term, i.e. for data items with
@@ -360,7 +358,7 @@ const sets: Record<string, StudySetData<unknown>> = {
           question: kerub.title.en,
           answer: kerub.face.roman + " | " + kerub.face.he,
         },
-      ])
+      ]),
     ),
   } as StudySetData<Partial<typeof data.kerub.air>>,
   "kerubim-zodiac": {
@@ -377,7 +375,7 @@ const sets: Record<string, StudySetData<unknown>> = {
           question: kerub.title.en,
           answer: kerub.zodiac?.symbol + " " + kerub.zodiac?.name.en,
         },
-      ])
+      ]),
     ),
   } as StudySetData<Partial<typeof data.kerub.air>>,
   "four-worlds-desc": {
@@ -425,7 +423,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     answer: "english",
     tags: ["enochian"],
     gdGrade: "?",
-  } as StudySetData<typeof data.enochianLetter.un>,
+  } as StudySetData<typeof data.enochianLetter.A>,
   "enochian-letter-names": {
     id: "enochian-letter-names",
     data: data.enochianLetter,
@@ -434,7 +432,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     answer: "title",
     tags: ["enochian"],
     gdGrade: "?",
-  } as StudySetData<typeof data.enochianLetter.un>,
+  } as StudySetData<typeof data.enochianLetter.A>,
 };
 
 function getSet(id: string) {
@@ -461,8 +459,8 @@ const tags = Array.from(
   new Set(
     Object.values(sets)
       .flatMap((set) => set.tags)
-      .filter(Boolean)
-  )
+      .filter(Boolean),
+  ),
 );
 
 // console.log({ sets, tags });

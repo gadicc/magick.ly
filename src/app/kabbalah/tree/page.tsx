@@ -1,7 +1,8 @@
-import React, { Suspense } from "react";
+import type { Metadata } from "next";
+import React from "react";
 import TreeOfLife from "./tree";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Kabbalistic Tree of Life",
   openGraph: {
     title: "Kabbalistic Tree of Life",
@@ -21,8 +22,8 @@ export const metadata = {
 
 export default function TreeOfLifePage() {
   return (
-    <Suspense>
+    <React.Suspense>
       <TreeOfLife />
-    </Suspense>
+    </React.Suspense>
   );
 }

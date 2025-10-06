@@ -1,22 +1,22 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { get } from "radash";
 import {
-  FieldValues,
-  useForm as reactHookUseForm,
-  UseFormProps,
-  UseFormReturn,
-  UseFormRegisterReturn,
-  FieldPath,
-  RegisterOptions,
+  Controller,
   DeepPartial,
   FieldErrors,
-  Controller,
+  FieldPath,
+  FieldValues,
+  RegisterOptions,
+  useForm as reactHookUseForm,
+  UseFormProps,
+  UseFormRegisterReturn,
+  UseFormReturn,
 } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodDiscriminatedUnion, type ZodRawShape } from "zod";
-import { get } from "radash";
 
 interface FrProps<
   TFieldValues extends FieldValues = FieldValues,
-  TFieldName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TFieldName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > {
   required: boolean;
   defaultValue?: Readonly<DeepPartial<TFieldValues>>[TFieldName];
@@ -26,19 +26,19 @@ interface FrProps<
 
 export function useForm<
   TFieldValues extends FieldValues = FieldValues,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: can't remember
   TContext = any,
-  TTransformedValues extends FieldValues | undefined = undefined
+  TTransformedValues extends FieldValues | undefined = undefined,
 >(
   props?: UseFormProps<TFieldValues, TContext> & {
     schema?: Parameters<typeof zodResolver>[0];
-  }
+  },
 ): UseFormReturn<TFieldValues, TContext, TTransformedValues> & {
   fr<TFieldName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>>(
     name: TFieldName,
     options?: RegisterOptions<TFieldValues, TFieldName> & {
       onChangeTransform?: boolean;
-    }
+    },
   ): UseFormRegisterReturn<TFieldName> & FrProps<TFieldValues, TFieldName>;
 } & { Controller: typeof Controller } {
   if (!props?.schema) throw new Error("useForm requires a { schema } prop");
@@ -57,12 +57,12 @@ export function useForm<
 
   // function fr(name: keyof Omit<TFieldValues, "__ObjectIDs">) {
   function fr<
-    TFieldName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+    TFieldName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
   >(
     name: TFieldName,
     options = {} as RegisterOptions<TFieldValues, TFieldName> & {
       onChangeTransform?: boolean;
-    }
+    },
   ): UseFormRegisterReturn<TFieldName> & {
     required: boolean;
     defaultValue?: Readonly<DeepPartial<TFieldValues>>[TFieldName];
@@ -93,7 +93,7 @@ export function useForm<
 
     const error = get(
       formState.errors,
-      name
+      name,
     ) as FieldErrors<TFieldValues>[TFieldName];
 
     const frProps: FrProps<TFieldValues, TFieldName> = {

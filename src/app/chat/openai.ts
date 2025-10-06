@@ -1,10 +1,11 @@
-import { OpenAIEmbeddings } from "@langchain/openai";
 import {
   MongoDBAtlasVectorSearch,
   MongoDBAtlasVectorSearchLibArgs,
 } from "@langchain/mongodb";
-import { MongoClient } from "mongodb";
+import { OpenAIEmbeddings } from "@langchain/openai";
 import dotenv from "dotenv";
+import { MongoClient } from "mongodb";
+
 dotenv.config();
 
 let embeddingsInstance: OpenAIEmbeddings | null = null;
@@ -12,7 +13,7 @@ let embeddingsInstance: OpenAIEmbeddings | null = null;
 const client = new MongoClient(
   process.env.MONGODB_URI ||
     process.env.MONGODB_URL ||
-    "mongodb+srv://dev:rKsOnRp43OgvHMLL@cluster0.5tkfpiu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    "mongodb+srv://dev:rKsOnRp43OgvHMLL@cluster0.5tkfpiu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
 );
 const namespace = "chatter.training_data";
 const [dbName, collectionName] = namespace.split(".");
@@ -40,7 +41,7 @@ export function getEmbeddingsTransformer(): OpenAIEmbeddings {
     // If multiple retries fail, provide a clear fallback mechanism or throw a more specific error
     if (!embeddingsInstance) {
       throw new Error(
-        "Failed to create OpenAIEmbeddings instance after retries. Check the logs for details."
+        "Failed to create OpenAIEmbeddings instance after retries. Check the logs for details.",
       );
     }
 
@@ -51,7 +52,7 @@ export function getEmbeddingsTransformer(): OpenAIEmbeddings {
 export function vectorStore(): MongoDBAtlasVectorSearch {
   const vectorStore: MongoDBAtlasVectorSearch = new MongoDBAtlasVectorSearch(
     new OpenAIEmbeddings(),
-    searchArgs()
+    searchArgs(),
   );
   return vectorStore;
 }

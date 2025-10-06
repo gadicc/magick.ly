@@ -1,4 +1,3 @@
-import React from "react";
 import lune from "lune";
 
 import useGeoIP from "@/useGeoIP";

@@ -1,8 +1,9 @@
 "use client";
 console.log("db.ts");
+
 import db, { Collection } from "gongo-client";
-import { getSession } from "next-auth/react";
 import HTTPTransport from "gongo-client/lib/transports/http";
+import { getSession } from "next-auth/react";
 // import GongoAuth from "gongo-client/lib/auth";
 import { StudySetStats } from "@/app/study/[_id]/exports";
 import type {
@@ -41,12 +42,10 @@ function defineTransport() {
     const session = await getSession();
     const userId = session?.user.id;
     if (userId) {
-      const result = db
-        .collection("studySet")
-        .update(
-          { userId: { $exists: false } },
-          { $set: { userId }, $push: { __ObjectIDs: "userId" } }
-        );
+      db.collection("studySet").update(
+        { userId: { $exists: false } },
+        { $set: { userId }, $push: { __ObjectIDs: "userId" } },
+      );
       // console.log(result);
     }
     return await _origPoll();

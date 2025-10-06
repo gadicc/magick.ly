@@ -1,49 +1,48 @@
 "use client";
-import React from "react";
-import { useGongoOne, useGongoUserId } from "gongo-client-react";
-import { signIn, signOut } from "next-auth/react";
-import { usePathname, useSearchParams } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-
+import {
+  AccountCircle,
+  ArrowDropDown,
+  ArrowDropUp,
+  Close,
+  ExpandLess,
+  ExpandMore,
+  Login,
+  Menu as MenuIcon,
+  Search as SearchIcon,
+  Share,
+} from "@mui/icons-material";
 import {
   AppBar,
   Avatar,
-  Toolbar,
-  Typography,
-  IconButton,
-  MenuItem,
-  Menu,
-  InputBase,
   Box,
-  InputAdornment,
-  Drawer,
+  Collapse,
   Divider,
+  Drawer,
+  IconButton,
+  InputAdornment,
+  InputBase,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
-  Collapse,
-  useScrollTrigger,
+  Menu,
+  MenuItem,
   Slide,
+  Toolbar,
+  Typography,
+  useScrollTrigger,
 } from "@mui/material";
-import {
-  AccountCircle,
-  Login,
-  Menu as MenuIcon,
-  Share,
-  Search as SearchIcon,
-  Close,
-  ExpandLess,
-  ExpandMore,
-  ArrowDropDown,
-  ArrowDropUp,
-} from "@mui/icons-material";
-
-// import Link from "@/lib/link";
-import db, { enableNetwork } from "@/db";
-import pathnames, { PathnameValue } from "./pathnames";
+import { useGongoOne, useGongoUserId } from "gongo-client-react";
+import Image from "next/image";
+import Link from "next/link";
 import NextLink from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { signIn, signOut } from "next-auth/react";
+import React from "react";
+// import Link from "@/lib/link";
+import { enableNetwork } from "@/db";
+import pathnames, { PathnameValue } from "./pathnames";
+
 // import { SITE_TITLE } from "@/api-lib/consts";
 const SITE_TITLE = "Magick.ly";
 
@@ -94,7 +93,7 @@ export function UserAvatar({
 }) {
   const userId = useGongoUserId();
   const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId })
+    db.collection("users").find({ _id: userId }),
   );
   const avatarSrc = (user?.image as string) || user?.photos?.[0]?.value;
 
@@ -155,8 +154,8 @@ function MenuDrawer({
                       value === "Magick.ly"
                         ? "Home"
                         : typeof value === "string"
-                        ? value
-                        : value["/"]
+                          ? value
+                          : value["/"]
                     }
                   />
                 </ListItemButton>
@@ -197,7 +196,7 @@ function MenuDrawer({
                   </List>
                 </Collapse>
               </React.Fragment>
-            )
+            ),
           )}
       </List>
     </Box>
@@ -212,14 +211,14 @@ export default function ButtonAppBar() {
 
   const userId = useGongoUserId();
   const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId })
+    db.collection("users").find({ _id: userId }),
   );
   const avatarSrc = user?.image || user?.photos?.[0]?.value;
   const network = useGongoOne((db) => db.gongoStore.find({ _id: "network" }));
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [navAnchorEl, setNavAnchorEl] = React.useState<null | HTMLElement>(
-    null
+    null,
   );
 
   const handleUserMenu = (event: React.MouseEvent<HTMLElement>) => {
