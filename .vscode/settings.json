@@ -1,3 +1,33 @@
 {
-  "task.allowAutomaticTasks": "on"
+	"task.allowAutomaticTasks": "on",
+	// Use Biome as the default formatter
+	"biome.enabled": true,
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.formatOnSave": true,
+	// Enable Biome's lint fixes on save
+	"editor.codeActionsOnSave": {
+		"source.fixAll.biome": "explicit",
+		"source.organizeImports.biome": "explicit"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	// Explicit overrides for VS Code’s own config files
+	"[jsonc][file:.vscode/settings.json]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"[jsonc][file:.vscode/launch.json]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"[jsonc][file:.vscode/extensions.json]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"[jsonc][file:.vscode/tasks.json]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"eslint.enable": false,
+	"prettier.enable": false
 }
