@@ -3,7 +3,6 @@ import React from "react";
 
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
-import makeStyles from "@mui/styles/makeStyles";
 
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -21,12 +20,6 @@ import Tiles from "@/components/Tiles";
 import Data from "@/../data/data";
 import OpenSource from "@/OpenSource";
 
-const useStyles = makeStyles({
-  table: {
-    // minWidth: 650,
-  },
-});
-
 const tiles = [
   {
     Component: MoonWidget,
@@ -41,7 +34,7 @@ const tiles = [
 ];
 
 export default function Planets() {
-  const classes = useStyles();
+
   const navParts = [{ title: "Astrology", url: "/astrology" }];
 
   return (
@@ -50,7 +43,7 @@ export default function Planets() {
         <Tiles tiles={tiles} />
 
         <TableContainer component={Paper}>
-          <Table className={classes.table} aria-label="simple table">
+          <Table aria-label="simple table">
             <TableHead>
               <TableRow>
                 <TableCell>Symbol</TableCell>
