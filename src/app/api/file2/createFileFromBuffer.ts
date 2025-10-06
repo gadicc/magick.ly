@@ -96,7 +96,6 @@ async function createFileFromBuffer(
 ) {
   // TODO, check if it's an image.
 
-  // @ts-expect-error: broke on ts upgrade, fix later
   const _sha256 = crypto.createHash("sha256").update(buffer).digest("hex");
   if (sha256) {
     if (sha256 !== _sha256) {
@@ -127,7 +126,6 @@ async function createFileFromBuffer(
         },
       };
     } else if (mimeType.match(/audio/)) {
-      // @ts-expect-error: broke on ts upgrade, fix later
       const metadata = await mm.parseBuffer(buffer, mimeType);
       return {
         type: "audio" as const,

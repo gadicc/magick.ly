@@ -296,9 +296,9 @@ export default function Chat() {
                   // @ts-expect-error: its fine
                   rehypePlugins={rehypePlugins}
                   components={{
-                    code({ node, inline, className, children, ...props }) {
+                    code({ node, className, children, ...props }) {
                       const match = /language-(\w+)/.exec(className || "");
-                      return !inline && match ? (
+                      return match ? (
                         <SyntaxHighlighter
                           {...props}
                           style={dark}

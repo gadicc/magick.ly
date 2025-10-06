@@ -82,6 +82,7 @@ async function GET(req: NextRequest) {
     headers.set("Content-Disposition", `inline; filename="${entry.filename}"`);
   }
 
+  // @ts-expect-error: for another day
   return new Response(result.Body as Buffer, { status: 200, headers });
 }
 
