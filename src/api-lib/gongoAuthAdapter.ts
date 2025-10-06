@@ -1,5 +1,7 @@
 // Modified version of official MongoDBAdapter commit 87298a015058fbc3f5d7127f0a27de2a7d504f99
 // https://raw.githubusercontent.com/nextauthjs/next-auth/main/packages/adapter-mongodb/src/index.ts
+// hand updated to e20eb5b5835fe71b090153a6d91bcc1879e2f93f
+// updates until 3d1e2150533bc467e81ae2221e0cb00cde01e8aa seemed irrelevant
 
 import { ObjectId } from "bson";
 import { WithId } from "gongo-client/lib/browser/Collection";
@@ -280,10 +282,10 @@ export default function GongoAuthAdapter(
       const result = await (await db).U.findOneAndUpdate(
         { _id },
         { $set: user },
-        { returnDocument: "after", includeResultMetadata: true },
+        { returnDocument: "after", includeResultMetadata: false },
       );
 
-      return from<AdapterUser>(result.value!);
+      return from<AdapterUser>(result!);
     },
 
     async deleteUser(id) {
@@ -305,10 +307,10 @@ export default function GongoAuthAdapter(
       return from<AdapterAccount>(account);
     },
     async unlinkAccount(provider_providerAccountId) {
-      const { value: account } = await (await db).A.findOneAndDelete(
+      const account = await (await db).A.findOneAndDelete(
         provider_providerAccountId,
         {
-          includeResultMetadata: true,
+          includeResultMetadata: false,
         },
       );
       return from<AdapterAccount>(account!);
@@ -339,20 +341,20 @@ export default function GongoAuthAdapter(
     async updateSession(data) {
       const { _id, ...session } = to<MongoAdapterSession>(data);
 
-      const result = await (await db).S.findOneAndUpdate(
+      const updatedSession = await (await db).S.findOneAndUpdate(
         { sessionToken: session.sessionToken },
         { $set: session },
-        { returnDocument: "after", includeResultMetadata: true },
+        { returnDocument: "after", includeResultMetadata: false },
       );
-      return from<AdapterSession>(result.value!);
+      return from<AdapterSession>(updatedSession!);
     },
 
     async deleteSession(sessionToken) {
-      const { value: session } = await (await db).S.findOneAndDelete(
+      const session = await (await db).S.findOneAndDelete(
         {
           sessionToken,
         },
-        { includeResultMetadata: true },
+        { includeResultMetadata: false },
       );
       return from<AdapterSession>(session!);
     },
@@ -366,15 +368,14 @@ export default function GongoAuthAdapter(
     },
 
     async useVerificationToken(identifier_token) {
-      const { value: verificationToken } = await (await db).V.findOneAndDelete(
+      const verificationToken = await (await db).V.findOneAndDelete(
         identifier_token,
-        { includeResultMetadata: true },
+        { includeResultMetadata: false },
       );
 
       if (!verificationToken) return null;
-      // @ts-expect-error: ok
-      delete verificationToken._id;
-      return verificationToken;
+      const { _id, ...rest } = verificationToken;
+      return rest;
     },
   };
 }
