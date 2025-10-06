@@ -255,6 +255,9 @@ importers:
       '@testing-library/react':
         specifier: ^13.4.0
         version: 13.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@types/node':
+        specifier: 24.7.0
+        version: 24.7.0
       '@types/pdf-parse':
         specifier: ^1.1.4
         version: 1.1.4
@@ -7630,7 +7633,7 @@ snapshots:
   '@types/body-parser@1.19.2':
     dependencies:
       '@types/connect': 3.4.35
-      '@types/node': 18.19.39
+      '@types/node': 24.7.0
 
   '@types/chai@5.2.2':
     dependencies:
@@ -7638,7 +7641,7 @@ snapshots:
 
   '@types/connect@3.4.35':
     dependencies:
-      '@types/node': 18.19.39
+      '@types/node': 24.7.0
 
   '@types/debug@4.1.8':
     dependencies:
@@ -7660,7 +7663,7 @@ snapshots:
 
   '@types/express-serve-static-core@4.17.33':
     dependencies:
-      '@types/node': 18.19.39
+      '@types/node': 24.7.0
       '@types/qs': 6.9.7
       '@types/range-parser': 1.2.4
 
@@ -7689,7 +7692,7 @@ snapshots:
 
   '@types/node-fetch@2.6.11':
     dependencies:
-      '@types/node': 18.19.39
+      '@types/node': 24.7.0
       form-data: 4.0.0
 
   '@types/node@18.19.39':
@@ -7702,7 +7705,7 @@ snapshots:
 
   '@types/oauth@0.9.1':
     dependencies:
-      '@types/node': 18.19.39
+      '@types/node': 24.7.0
 
   '@types/parse-json@4.0.0': {}
 
@@ -7747,7 +7750,7 @@ snapshots:
   '@types/serve-static@1.15.1':
     dependencies:
       '@types/mime': 3.0.1
-      '@types/node': 18.19.39
+      '@types/node': 24.7.0
 
   '@types/slug@5.0.8': {}
 
@@ -7765,7 +7768,7 @@ snapshots:
 
   '@types/whatwg-url@8.2.2':
     dependencies:
-      '@types/node': 18.19.39
+      '@types/node': 24.7.0
       '@types/webidl-conversions': 7.0.0
 
   '@uiw/codemirror-extensions-basic-setup@4.23.0(@codemirror/autocomplete@6.17.0(@codemirror/language@6.11.3)(@codemirror/state@6.5.2)(@codemirror/view@6.38.4)(@lezer/common@1.2.3))(@codemirror/commands@6.6.0)(@codemirror/language@6.11.3)(@codemirror/lint@6.9.0)(@codemirror/search@6.5.6)(@codemirror/state@6.5.2)(@codemirror/view@6.38.4)':
