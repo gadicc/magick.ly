@@ -34,7 +34,7 @@
     "@mui/material-nextjs": "^7.3.3",
     "@mui/x-date-pickers": "^7.9.0",
     "@pinecone-database/pinecone": "2.2.2",
-    "@serwist/next": "^9.0.11",
+    "@serwist/next": "^9.2.1",
     "@trpc/client": "^11.0.0-rc.532",
     "@trpc/server": "^11.0.0-rc.532",
     "@uiw/react-codemirror": "^4.23.0",
@@ -108,7 +108,7 @@
     "pug-lexer": "^5.0.1",
     "pug-parser": "^6.0.0",
     "raw-loader": "^4.0.2",
-    "serwist": "^9.0.11",
+    "serwist": "^9.2.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },

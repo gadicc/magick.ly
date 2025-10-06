@@ -69,8 +69,8 @@ importers:
         specifier: 2.2.2
         version: 2.2.2
       '@serwist/next':
-        specifier: ^9.0.11
-        version: 9.0.11(next@15.5.4(@babel/core@7.21.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(webpack@5.102.0)
+        specifier: ^9.2.1
+        version: 9.2.1(next@15.5.4(@babel/core@7.21.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(webpack@5.102.0)
       '@trpc/client':
         specifier: ^11.0.0-rc.532
         version: 11.0.0-rc.532(@trpc/server@11.0.0-rc.532)
@@ -286,8 +286,8 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2(webpack@5.102.0)
       serwist:
-        specifier: ^9.0.11
-        version: 9.0.11(typescript@5.9.3)
+        specifier: ^9.2.1
+        version: 9.2.1(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -2242,8 +2242,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@serwist/build@9.0.11':
-    resolution: {integrity: sha512-mYBBpm6hWN40J/Sj2aNncVgl/o7Ch/CfyHHl3XvEecbowRuJNv8BfIch+Tvwlfd1cqBqNc65kCYvCL2XJms8DA==}
+  '@serwist/build@9.2.1':
+    resolution: {integrity: sha512-mMCBZi82jVCxIhOu/D3ifkfmiuhdFHuelWK1zRlASLbkogH7YsS6qvGTl37vWBTVAWNKcKfVWLR6tq9AUB7BSg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: '>=5.0.0'
@@ -2251,8 +2251,8 @@ packages:
       typescript:
         optional: true
 
-  '@serwist/next@9.0.11':
-    resolution: {integrity: sha512-Aa26qgJxnaxbGK8JYAWqAPeDcyfu0xjYUPpvSfc3d9GrIl9G9cdflkcsvcbmJGnOb3Oc4tHN4wncYO6cIKb2wQ==}
+  '@serwist/next@9.2.1':
+    resolution: {integrity: sha512-CCTvZYSWK1hCmANViGLd7LvVc9r9wd4aaVX4Uk0F6fC0/Xn05GY52di7LGZ2NveGr1g+NjQvQSBhfxCQK95NIg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       next: '>=14.0.0'
@@ -2261,8 +2261,8 @@ packages:
       typescript:
         optional: true
 
-  '@serwist/webpack-plugin@9.0.11':
-    resolution: {integrity: sha512-ZTxVJqv7nKlPWmhC3oMt7tZc0ssnd7SYr6L8zZLLF7ltJUub9TMyh1K1zL5TJtsr8DyfALNFPwPA/s2yjYSk+w==}
+  '@serwist/webpack-plugin@9.2.1':
+    resolution: {integrity: sha512-tBVlKifGP96aV7A8HD0xXIJAu6/sTyfRc827LFuLajNaX2d/dpo/0sMxO45jEI+GS7vaUdTcSl5DqcaRkkQ9wQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: '>=5.0.0'
@@ -2273,8 +2273,8 @@ packages:
       webpack:
         optional: true
 
-  '@serwist/window@9.0.11':
-    resolution: {integrity: sha512-hUJVNxZbqfnJbUTfuJew7SR3f1KBIv/4nwmP1YRxjR6EMthUfN4bVSLzWLW8/u3h5bNaVh7sOhopUVC8m1HTCQ==}
+  '@serwist/window@9.2.1':
+    resolution: {integrity: sha512-XkfV7+crhT4ArJCMcRle9AmzrxDjMRS6ExJwSPGmCqdb4JH/VyhcmJZljwoEpuZ1zh0cNvnWC8xEQ4p85jhxnQ==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -2964,8 +2964,8 @@ packages:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
 
-  chalk@5.3.0:
-    resolution: {integrity: sha512-dLitG79d+GV1Nb/VYcCDFivJeK1hiukt9QjRNVOsUtTy1rR1YJsmpGGTZ3qJos+uw7WmWF4wUwBd9jxjocFC2w==}
+  chalk@5.6.0:
+    resolution: {integrity: sha512-46QrSQFyVSEyYAgQ22hQ+zDa60YHA4fBstHmtSApj1Y5vKtG27fWowW03jCk5KcbXEWPZUIR894aARCA/G1kfQ==}
     engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
 
   character-entities-html4@2.1.0:
@@ -3664,8 +3664,8 @@ packages:
   idb@5.0.8:
     resolution: {integrity: sha512-K9xInRkVbT3ZsYimD2KVj6B4E93IBvOjEQTryu99WuuN7G+7x3SzA79+yubbX0QRN9V64Gi+L+ulG5QYTVydOg==}
 
-  idb@8.0.0:
-    resolution: {integrity: sha512-l//qvlAKGmQO31Qn7xdzagVPPaHTxXx199MhrAFuVBTPqydcPYBWjkrbv4Y0ktB+GmWOiwHl237UUOrLmQxLvw==}
+  idb@8.0.3:
+    resolution: {integrity: sha512-LtwtVyVYO5BqRvcsKuB2iUMnHwPVByPCXFXOpuU96IZPPoPN6xjOGxZQ74pgSVVLQWtUOYgyeL4GE98BY5D3wg==}
 
   ieee754@1.1.13:
     resolution: {integrity: sha512-4vf7I2LYV/HaWerSo3XmlMkp5eZ83i+/CDluXi/IGTs/O1sejBNhTtnxzmRZfvOUqj7lZjqHkeTvpgSFDlWZTg==}
@@ -5113,8 +5113,8 @@ packages:
   serialize-javascript@6.0.2:
     resolution: {integrity: sha512-Saa1xPByTTq2gdeFZYLLo+RFE35NHZkAbqZeWNd3BpzppeVisAqpDjcp8dyf6uIvEqJRd46jemmyA4iFIeVk8g==}
 
-  serwist@9.0.11:
-    resolution: {integrity: sha512-oUuyOuIFZoj+ZYdwWnPYVsndOw5CoGsTy106mHJ2wxjnz01TrDhg2l26yrsoJek1qT/Doi0pzknYLLXTIFs5og==}
+  serwist@9.2.1:
+    resolution: {integrity: sha512-icp1GQB3h9q1OqYeSw+iTTY0OZ3io+fzNG0Ot3p6Xe5DEZlSRn61FmGx9mq76q0CeMtZYBmmuw4tyIS1O76Lbw==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -5806,6 +5806,9 @@ packages:
 
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+
+  zod@4.1.5:
+    resolution: {integrity: sha512-rcUUZqlLJgBC33IT3PNMgsCq6TzLQEG/Ei/KTCU0PedSWRMAXoOUN+4t/0H+Q8bdnLPdqUYnvboJT0bn/229qg==}
 
   zwitch@1.0.5:
     resolution: {integrity: sha512-V50KMwwzqJV0NpZIZFwfOD5/lyny3WlSzRiXgA0G7VUnRlqttta1L6UQIHzd6EuBY/cHGfwTIck7w1yH6Q5zUw==}
@@ -7493,44 +7496,44 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.52.4':
     optional: true
 
-  '@serwist/build@9.0.11(typescript@5.9.3)':
+  '@serwist/build@9.2.1(typescript@5.9.3)':
     dependencies:
       common-tags: 1.8.2
       glob: 10.4.5
       pretty-bytes: 6.1.1
       source-map: 0.8.0-beta.0
-      zod: 3.23.8
+      zod: 4.1.5
     optionalDependencies:
       typescript: 5.9.3
 
-  '@serwist/next@9.0.11(next@15.5.4(@babel/core@7.21.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(webpack@5.102.0)':
+  '@serwist/next@9.2.1(next@15.5.4(@babel/core@7.21.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(webpack@5.102.0)':
     dependencies:
-      '@serwist/build': 9.0.11(typescript@5.9.3)
-      '@serwist/webpack-plugin': 9.0.11(typescript@5.9.3)(webpack@5.102.0)
-      '@serwist/window': 9.0.11(typescript@5.9.3)
-      chalk: 5.3.0
+      '@serwist/build': 9.2.1(typescript@5.9.3)
+      '@serwist/webpack-plugin': 9.2.1(typescript@5.9.3)(webpack@5.102.0)
+      '@serwist/window': 9.2.1(typescript@5.9.3)
+      chalk: 5.6.0
       glob: 10.4.5
       next: 15.5.4(@babel/core@7.21.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      serwist: 9.0.11(typescript@5.9.3)
-      zod: 3.23.8
+      serwist: 9.2.1(typescript@5.9.3)
+      zod: 4.1.5
     optionalDependencies:
       typescript: 5.9.3
     transitivePeerDependencies:
       - webpack
 
-  '@serwist/webpack-plugin@9.0.11(typescript@5.9.3)(webpack@5.102.0)':
+  '@serwist/webpack-plugin@9.2.1(typescript@5.9.3)(webpack@5.102.0)':
     dependencies:
-      '@serwist/build': 9.0.11(typescript@5.9.3)
+      '@serwist/build': 9.2.1(typescript@5.9.3)
       pretty-bytes: 6.1.1
-      zod: 3.23.8
+      zod: 4.1.5
     optionalDependencies:
       typescript: 5.9.3
       webpack: 5.102.0
 
-  '@serwist/window@9.0.11(typescript@5.9.3)':
+  '@serwist/window@9.2.1(typescript@5.9.3)':
     dependencies:
       '@types/trusted-types': 2.0.7
-      serwist: 9.0.11(typescript@5.9.3)
+      serwist: 9.2.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
 
@@ -8299,7 +8302,7 @@ snapshots:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
 
-  chalk@5.3.0: {}
+  chalk@5.6.0: {}
 
   character-entities-html4@2.1.0: {}
 
@@ -9000,7 +9003,7 @@ snapshots:
 
   idb@5.0.8: {}
 
-  idb@8.0.0: {}
+  idb@8.0.3: {}
 
   ieee754@1.1.13: {}
 
@@ -10422,9 +10425,9 @@ snapshots:
     dependencies:
       randombytes: 2.1.0
 
-  serwist@9.0.11(typescript@5.9.3):
+  serwist@9.2.1(typescript@5.9.3):
     dependencies:
-      idb: 8.0.0
+      idb: 8.0.3
     optionalDependencies:
       typescript: 5.9.3
 
@@ -11160,6 +11163,8 @@ snapshots:
       zod: 3.23.8
 
   zod@3.23.8: {}
+
+  zod@4.1.5: {}
 
   zwitch@1.0.5: {}
 
