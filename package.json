@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "^20.0.0"
+    "node": "^22.0.0",
+    "pnpm": "^10.18.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -61,7 +62,7 @@
     "magic-string": "^0.30.10",
     "mongodb": "6.2.0",
     "music-metadata": "7.14.0",
-    "next": "15.1.0",
+    "next": "15.5.4",
     "next-auth": "^5.0.0-beta.25",
     "nlopt-js": "^0.1.1",
     "openai-edge": "1.1.0",
@@ -118,5 +119,6 @@
   "resolutions": {
     "corpora": "https://github.com/dariusk/corpora/tarball/ff1941630dc5a7aa3d4459fc038cb7a04ec93cb0"
   },
-  "browser": {}
+  "browser": {},
+  "packageManager": "pnpm@10.18.0"
 }
