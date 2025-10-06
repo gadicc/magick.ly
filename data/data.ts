@@ -85,8 +85,6 @@ function insertRefs(row) {
   });
 }
 
-console.log(allData);
-
 for (const [set, data] of Object.entries(allData)) {
   if (Array.isArray(data)) continue;
   if (data) {
