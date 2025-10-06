@@ -9,17 +9,15 @@ function getSvgText(element) {
   if (!text.match(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/))
     throw new Error("No XMLNS attribute found on SVG element, it won't work.");
 
-  return (
-    text
-      .replace(
-        // since React doesn't support namespace tags
-        'xmlns="http://www.w3.org/2000/svg"',
-        'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
-      )
-      // assume this is only used for path annimations
-      .replace(/stroke-dasharray: [\d\\.]+;? ?/g, "")
-      .replace(/stroke-dashoffset: [\d\\.]+;? ?/g, "")
-  );
+  return (text
+    .replace(
+      // since React doesn't support namespace tags
+      'xmlns="http://www.w3.org/2000/svg"',
+      'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+    )
+    // assume this is only used for path annimations
+    .replace(/stroke-dasharray: [\d\\.]+;? ?/g, "")
+    .replace(/stroke-dashoffset: [\d\\.]+;? ?/g, ""));
 }
 
 function downloadSVG(event, element, filename) {

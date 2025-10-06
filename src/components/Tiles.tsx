@@ -7,17 +7,17 @@ function Tiles({ tiles }) {
     <Grid container spacing={0}>
       {tiles.map((tile) => (
         <Grid
-          item
           key={tile.to}
-          xs={6}
-          sm={4}
-          md={3}
           sx={{
             height: 180,
             position: "relative",
             overflow: "hidden",
           }}
-        >
+          size={{
+            xs: 6,
+            sm: 4,
+            md: 3
+          }}>
           <Link href={tile.to} underline="none">
             {tile.Component ? (
               <div
@@ -37,7 +37,7 @@ function Tiles({ tiles }) {
             {tile.img ? (
               typeof tile.img === "string" ? (
                 // eslint-disable-next-line
-                <img
+                (<img
                   src={typeof tile.img === "object" ? tile.img.src : tile.img}
                   alt={tile.title}
                   style={{
@@ -45,7 +45,7 @@ function Tiles({ tiles }) {
                     height: "100%",
                     objectFit: "cover",
                   }}
-                />
+                />)
               ) : (
                 <Image
                   src={tile.img}

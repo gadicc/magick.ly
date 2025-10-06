@@ -115,7 +115,7 @@ export default function FylfotCrossPage() {
       )}
       <div>
         <Grid container>
-          <Grid item xs={6}>
+          <Grid size={6}>
             <FormGroup>
               <FormControlLabel
                 control={
@@ -129,7 +129,7 @@ export default function FylfotCrossPage() {
             </FormGroup>
           </Grid>
           {!testing && (
-            <Grid item xs={6} sx={{ textAlign: "right" }}>
+            <Grid sx={{ textAlign: "right" }} size={6}>
               <Button variant="outlined" onClick={() => setTesting(true)}>
                 Test me!
               </Button>

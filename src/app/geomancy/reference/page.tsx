@@ -125,19 +125,19 @@ export default function Geomancy() {
           {tetragrams.map((tetragram) => (
             <Grid
               key={tetragram.id}
-              item
-              xs={6}
-              sm={byPairs ? 6 : 4}
-              md={byPairs ? 6 : 3}
-              lg={byPairs ? 6 : 2}
-              xl={byPairs ? 6 : 1}
-            >
+              size={{
+                xs: 6,
+                sm: byPairs ? 6 : 4,
+                md: byPairs ? 6 : 3,
+                lg: byPairs ? 6 : 2,
+                xl: byPairs ? 6 : 1
+              }}>
               <Grid container spacing={2}>
-                <Grid item xs={8}>
+                <Grid size={8}>
                   <b>{tetragram.title.en}</b>
                   <br />({tetragram.translation.en})
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={4}>
                   <Stack direction="row" spacing={1}>
                     <Tetragram rows={tetragram.rows} />
                     {showAssoc && (

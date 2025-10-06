@@ -360,7 +360,7 @@ function TreeOfLife({
       <g id="sephirot">
         {sephirot.map((s, i) => (
           // @ts-expect-error: later
-          <a key={i} id={s.data.id} xlinkHref={sephirahHref(s)}>
+          (<a key={i} id={s.data.id} xlinkHref={sephirahHref(s)}>
             <circle
               cx={s.x}
               cy={s.y}
@@ -585,7 +585,7 @@ function TreeOfLife({
                 </g>
               );
             })()}
-          </a>
+          </a>)
         ))}
       </g>
       {showConstructionCircles && (

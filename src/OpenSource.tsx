@@ -4,14 +4,11 @@ import React from "react";
 const github = "https://github.com/gadicc/magick.ly/";
 function url(str: string) {
   if (str.startsWith("http")) return str;
-  return (
-    github +
-    "blob/master/" +
-    str
-      .replace(/^@\//, "src/")
-      .replace(/^@magick-data\//, "data/")
-      .replace(/^@magick-components\//, "src/components/")
-  );
+  return (github +
+  "blob/master/" + str
+    .replace(/^@\//, "src/")
+    .replace(/^@magick-data\//, "data/")
+    .replace(/^@magick-components\//, "src/components/"));
 }
 
 export default function OpenSource({
