@@ -3,6 +3,8 @@ const {
   PHASE_PRODUCTION_BUILD,
 } = require("next/constants");
 
+const JSON5 = require("json5");
+
 /** @type {(phase: string, defaultConfig: import("next").NextConfig) => Promise<import("next").NextConfig>} */
 module.exports = async (phase) => {
   /** @type {import("next").NextConfig} */
@@ -21,8 +23,8 @@ module.exports = async (phase) => {
 
       config.module.rules.push({
         test: /\.json5$/i,
-        loader: "json5-loader",
-        type: "javascript/auto",
+        type: "json", // emit as JSON module
+        parser: { parse: JSON5.parse },
       });
 
       config.module.rules.push({
