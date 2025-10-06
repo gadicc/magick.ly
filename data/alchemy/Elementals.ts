@@ -1,4 +1,5 @@
 import type { Element, ElementId } from "./Elements";
+import _elementals from "./elementals.json5" with { type: "json" };
 
 type ElementalId = "gnome" | "sylph" | "undine" | "salamander";
 
@@ -17,7 +18,7 @@ type Elementals = {
   [key in ElementalId]: Elemental;
 };
 
-const elementals: Elementals = require("./elementals.json5").default;
+const elementals: Elementals = _elementals as Elementals;
 
-export type { Elemental, Elementals, ElementalId };
+export type { Elemental, ElementalId, Elementals };
 export default elementals;

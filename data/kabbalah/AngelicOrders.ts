@@ -1,3 +1,5 @@
+import _angelicOrders from "./angelicOrders.json5" with { type: "json" };
+
 type AngelicOrderId =
   | "chayot-hakodesh"
   | "auphanim"
@@ -19,7 +21,7 @@ interface AngelicOrder {
 
 type AngelicOrders = Record<AngelicOrderId, AngelicOrder>;
 
-const angelicOrders: AngelicOrders = require("./angelicOrders.json5").default;
+const angelicOrders: AngelicOrders = _angelicOrders as AngelicOrders;
 
-export type { AngelicOrder, AngelicOrders, AngelicOrderId };
+export type { AngelicOrder, AngelicOrderId, AngelicOrders };
 export default angelicOrders;

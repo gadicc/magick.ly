@@ -1,9 +1,10 @@
 import type { Element, ElementId } from "../alchemy/Elements";
-import type { Planet, PlanetId } from "./Planets";
 import type {
   TribeOfIsrael,
   TribeOfIsraelId,
 } from "../kabbalah/TribesOfIsrael";
+import type { Planet, PlanetId } from "./Planets";
+import _zodiacs from "./zodiac.json5" with { type: "json" };
 
 type ZodiacId =
   | "aries"
@@ -51,7 +52,7 @@ type Zodiacs = {
   [key in ZodiacId]: Zodiac;
 };
 
-const zodiacs: Zodiacs = require("./zodiac.json5").default;
+const zodiacs: Zodiacs = _zodiacs as Zodiacs;
 
-export type { Zodiac, Zodiacs, ZodiacId };
+export type { Zodiac, ZodiacId, Zodiacs };
 export default zodiacs;

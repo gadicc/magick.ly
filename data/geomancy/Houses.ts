@@ -1,3 +1,5 @@
+import _houses from "./houses.json5" with { type: "json" };
+
 type LangObject = { en: string };
 
 interface House {
@@ -7,7 +9,7 @@ interface House {
 
 type Houses = House[];
 
-const houses: Houses = require("./houses.json5").default;
+const houses: Houses = _houses as Houses;
 
 export type { House, Houses };
 export default houses;

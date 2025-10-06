@@ -1,3 +1,5 @@
+import _dictionary from "./dictionary.json5" with { type: "json" };
+
 interface EnochianDictionary {
   [key: string]: {
     gematria: number[];
@@ -14,6 +16,6 @@ interface EnochianDictionary {
   };
 }
 
-const dictionary: EnochianDictionary = require("./dictionary.json5").default;
+const dictionary: EnochianDictionary = _dictionary as EnochianDictionary;
 
 export default dictionary;

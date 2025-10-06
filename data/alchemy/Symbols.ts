@@ -1,4 +1,5 @@
 import { PlanetId } from "../astrology/Planets";
+import _alchemySymbols from "./symbols.json5" with { type: "json" };
 
 type AlchemySymbolID =
   | "sulphur"
@@ -11,8 +12,6 @@ type AlchemySymbolID =
   | "copper"
   | "quicksilver"
   | "silver";
-
-type LangObject = { en?: string };
 
 interface AlchemySymbol {
   id: AlchemySymbolID;
@@ -30,7 +29,7 @@ type AlchemySymbols = {
   [key in AlchemySymbolID]: AlchemySymbol;
 };
 
-const alchemySymbols: AlchemySymbols = require("./symbols.json5").default;
+const alchemySymbols: AlchemySymbols = _alchemySymbols as AlchemySymbols;
 
-export type { AlchemySymbol, AlchemySymbols, AlchemySymbolID };
+export type { AlchemySymbol, AlchemySymbolID, AlchemySymbols };
 export default alchemySymbols;

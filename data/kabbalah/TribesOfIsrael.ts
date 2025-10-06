@@ -1,3 +1,5 @@
+import _tribesOfIsrael from "./tribesOfIsrael.json5" with { type: "json" };
+
 type TribeOfIsraelId =
   | "reuben"
   | "simeon"
@@ -21,8 +23,7 @@ interface TribeOfIsrael {
 
 type TribesOfIsrael = Record<TribeOfIsraelId, TribeOfIsrael>;
 
-const tribesOfIsrael: TribesOfIsrael =
-  require("./tribesOfIsrael.json5").default;
+const tribesOfIsrael: TribesOfIsrael = _tribesOfIsrael as TribesOfIsrael;
 
-export type { TribeOfIsrael, TribesOfIsrael, TribeOfIsraelId };
+export type { TribeOfIsrael, TribeOfIsraelId, TribesOfIsrael };
 export default tribesOfIsrael;

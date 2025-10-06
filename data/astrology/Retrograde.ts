@@ -1,3 +1,5 @@
+import _retrogrades from "./retrograde.json5" with { type: "json" };
+
 type RetrogradeId = "mercury";
 
 type RetrogradeList = [[number, number, number], [number, number, number]];
@@ -6,7 +8,7 @@ type Retrogrades = {
   [key in RetrogradeId]: RetrogradeList;
 };
 
-const retrogrades: Retrogrades = require("./retrograde.json5").default;
+const retrogrades: Retrogrades = _retrogrades as Retrogrades;
 
-export type { RetrogradeList, Retrogrades, RetrogradeId };
+export type { RetrogradeId, RetrogradeList, Retrogrades };
 export default retrogrades;

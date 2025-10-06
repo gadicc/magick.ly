@@ -1,6 +1,4 @@
-// import type { AngelicOrder } from "./AngelicOrders";
-
-// type LangObject = { he: string; roman: string };
+import _angels from "./seventyTwoAngels.json5" with { type: "json" };
 
 interface Angel {
   name: { en: string; he: string };
@@ -14,7 +12,7 @@ interface Angel {
 
 type Angels = Angel[];
 
-const angels: Angels = require("./seventyTwoAngels.json5").default;
+const angels: Angels = _angels as Angels;
 
 export type { Angel, Angels };
 export default angels;

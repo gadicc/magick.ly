@@ -1,3 +1,5 @@
+import _fourWorlds from "./fourWorlds.json5" with { type: "json" };
+
 type FourWorldId = "atzilut" | "briah" | "yetzirah" | "assiah";
 
 interface FourWorld {
@@ -9,7 +11,7 @@ interface FourWorld {
 
 type FourWorlds = Record<FourWorldId, FourWorld>;
 
-const fourWorlds: FourWorlds = require("./fourWorlds.json5").default;
+const fourWorlds: FourWorlds = _fourWorlds as FourWorlds;
 
-export type { FourWorld, FourWorlds, FourWorldId };
+export type { FourWorld, FourWorldId, FourWorlds };
 export default fourWorlds;

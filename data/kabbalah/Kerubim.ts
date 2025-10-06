@@ -1,5 +1,6 @@
-import type { Zodiac, ZodiacId } from "../astrology/Zodiac";
 import type { Element, ElementId } from "../alchemy/Elements";
+import type { Zodiac, ZodiacId } from "../astrology/Zodiac";
+import _kerubim from "./kerubim.json5" with { type: "json" };
 
 type KerubId = "earth" | "air" | "water" | "fire";
 
@@ -15,7 +16,7 @@ interface Kerub {
 
 type Kerubim = Record<KerubId, Kerub>;
 
-const kerubim: Kerubim = require("./kerubim.json5").default;
+const kerubim: Kerubim = _kerubim as Kerubim;
 
-export type { Kerub, Kerubim, KerubId };
+export type { Kerub, KerubId, Kerubim };
 export default kerubim;

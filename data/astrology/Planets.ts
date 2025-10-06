@@ -1,6 +1,7 @@
 import { HebrewLetter, HebrewLetterId } from "../HebrewLetters";
 import { Archangel, ArchangelId } from "../kabbalah/Archangels";
 import { GodNameId } from "../kabbalah/GodNames";
+import _planets from "./planets.json5" with { type: "json" };
 
 type PlanetId =
   | "sol"
@@ -41,7 +42,7 @@ type Planets = {
   [key in PlanetId]: Planet;
 };
 
-const planets: Planets = require("./planets.json5").default;
+const planets: Planets = _planets as Planets;
 
-export type { Planet, Planets, PlanetId };
+export type { Planet, PlanetId, Planets };
 export default planets;

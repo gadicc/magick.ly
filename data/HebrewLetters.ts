@@ -2,6 +2,8 @@
 
 // type LangObject = { he: string; roman: string };
 
+import _hebrewLetters from "./hebrewLetters.json5" with { type: "json" };
+
 type HebrewLetterId =
   | "aleph"
   | "beth"
@@ -42,7 +44,7 @@ interface HebrewLetter {
 
 type HebrewLetters = Record<HebrewLetterId, HebrewLetter>;
 
-const hebrewLetters: HebrewLetters = require("./hebrewLetters.json5").default;
+const hebrewLetters: HebrewLetters = _hebrewLetters as HebrewLetters;
 
-export type { HebrewLetter, HebrewLetters, HebrewLetterId };
+export type { HebrewLetter, HebrewLetterId, HebrewLetters };
 export default hebrewLetters;

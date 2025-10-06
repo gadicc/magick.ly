@@ -1,3 +1,5 @@
+import _tablets from "./tablets.json5" with { type: "json" };
+
 type EnochianTabletID = "earth" | "air" | "water" | "fire";
 
 type EnochianTablets = {
@@ -9,7 +11,7 @@ interface EnochianTablet {
   grid: string[][]; // 12x13 grid of letters
 }
 
-const tablets: EnochianTablets = require("./tablets.json5").default;
+const tablets: EnochianTablets = _tablets as EnochianTablets;
 
 export default tablets;
-export type { EnochianTabletID, EnochianTablet, EnochianTablets };
+export type { EnochianTablet, EnochianTabletID, EnochianTablets };

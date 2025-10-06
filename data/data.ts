@@ -1,6 +1,10 @@
+// biome-ignore assist/source/organizeImports: organized by hand
 import planet from "./astrology/Planets";
 import zodiac from "./astrology/Zodiac";
 import house from "./astrology/Houses";
+
+import chakra from "./chakras.json5" with { type: "json" };
+import enochianLetter from "./enochian/letters.json5" with { type: "json" };
 
 import gdGrade from "./gd/Grades";
 
@@ -14,6 +18,7 @@ import godName from "./kabbalah/GodNames";
 import kerub from "./kabbalah/Kerubim";
 import tolPath from "./kabbalah/Paths";
 import sephirah from "./kabbalah/Sephirot";
+import soul from "./kabbalah/souls.json5" with { type: "json" };
 
 import alchemySymbol from "./alchemy/Symbols";
 import alchemyTerm from "./alchemy/Terms";
@@ -24,17 +29,16 @@ import hebrewLetter from "./HebrewLetters";
 
 const allData = {
   // ASTROLOGY
-  planet, // : require("./astrology/planets.json5").default,
-  zodiac, // : require("./astrology/zodiac.json5").default,
+  planet,
+  zodiac,
   house,
 
-  hebrewLetter, // : require("./hebrewLetters.json5").default,
+  hebrewLetter,
 
   // ENOCHIAN
-  enochianLetter: require("./enochian/letters.json5").default,
+  enochianLetter,
 
   // GEOMANCY
-  // tetragram: require("./geomancy/tetragrams.json5").default,
   tetragram,
   geomanicHouse,
 
@@ -48,12 +52,12 @@ const allData = {
   kerub,
   sephirah,
   tolPath,
-  soul: require("./kabbalah/souls.json5").default,
+  soul,
 
-  chakra: require("./chakras.json5").default,
+  chakra,
 
   // ALCHEMY
-  alchemySymbol, // : require("./alchemy/symbols.json5").default,
+  alchemySymbol,
   alchemyTerm,
   element,
   elemental,
@@ -81,10 +85,16 @@ function insertRefs(row) {
   });
 }
 
+console.log(allData);
+
 for (const [set, data] of Object.entries(allData)) {
   if (Array.isArray(data)) continue;
-  for (const row of Object.values(data)) {
-    insertRefs(row);
+  if (data) {
+    for (const row of Object.values(data)) {
+      insertRefs(row);
+    }
+  } else {
+    console.warn("No data for", set);
   }
 }
 
@@ -94,4 +104,4 @@ if (typeof window !== "undefined") window.magickData = allData;
 // module.exports = allData;
 export default allData;
 
-export { tetragram, geomanicHouse };
+export { geomanicHouse, tetragram };

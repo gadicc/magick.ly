@@ -1,7 +1,8 @@
-import { GodName, GodNameId } from "./GodNames";
 import { Planet, PlanetId } from "../astrology/Planets";
-import { Archangel, ArchangelId } from "./Archangels";
 import { AngelicOrder, AngelicOrderId } from "./AngelicOrders";
+import { Archangel, ArchangelId } from "./Archangels";
+import { GodName, GodNameId } from "./GodNames";
+import _sephirot from "./sephirot.json5" with { type: "json" };
 
 type SephirahId =
   | "keter"
@@ -49,7 +50,7 @@ interface Sephirah {
 
 type Sephirot = Record<SephirahId, Sephirah>;
 
-const sephirot: Sephirot = require("./sephirot.json5").default;
+const sephirot: Sephirot = _sephirot as Sephirot;
 
-export type { Sephirah, Sephirot, SephirahId };
+export type { Sephirah, SephirahId, Sephirot };
 export default sephirot;

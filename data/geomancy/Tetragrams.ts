@@ -1,6 +1,7 @@
 import { ElementId } from "../alchemy/Elements";
 import { PlanetId } from "../astrology/Planets";
 import { ZodiacId } from "../astrology/Zodiac";
+import _tetragrams from "./tetragrams.json5" with { type: "json" };
 
 type TetragramID =
   | "acquisitio"
@@ -39,7 +40,7 @@ type Tetragrams = {
   [key in TetragramID]: Tetragram;
 };
 
-const tetragrams: Tetragrams = require("./tetragrams.json5").default;
+const tetragrams: Tetragrams = _tetragrams as Tetragrams;
 
-export type { Tetragram, Tetragrams, TetragramID };
+export type { Tetragram, TetragramID, Tetragrams };
 export default tetragrams;

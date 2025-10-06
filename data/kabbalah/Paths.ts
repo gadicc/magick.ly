@@ -1,4 +1,5 @@
 import { HebrewLetter, HebrewLetterId } from "../HebrewLetters";
+import _paths from "./paths.json5" with { type: "json" };
 
 // TODO
 type PathId = string;
@@ -19,7 +20,7 @@ interface Path {
 
 type Paths = Record<PathId, Path>;
 
-const paths: Paths = require("./paths.json5").default;
+const paths: Paths = _paths as Paths;
 
-export type { Path, Paths, PathId };
+export type { Path, PathId, Paths };
 export default paths;

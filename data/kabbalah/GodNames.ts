@@ -1,4 +1,4 @@
-import type { Planet, PlanetId } from "../astrology/Planets";
+import _godNames from "./godNames.json5" with { type: "json" };
 
 type GodNameId =
   | "ehiyeh"
@@ -21,7 +21,7 @@ interface GodName {
 
 type GodNames = Record<GodNameId, GodName>;
 
-const godNames: GodNames = require("./godNames.json5").default;
+const godNames: GodNames = _godNames as GodNames;
 
-export type { GodName, GodNames, GodNameId };
+export type { GodName, GodNameId, GodNames };
 export default godNames;

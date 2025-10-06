@@ -1,4 +1,5 @@
 import type { Planet, PlanetId } from "../astrology/Planets";
+import _archangels from "./archangels.json5" with { type: "json" };
 
 type ArchangelId =
   | "kassiel"
@@ -22,7 +23,7 @@ interface Archangel {
 
 type Archangels = Record<ArchangelId, Archangel>;
 
-const archangels: Archangels = require("./archangels.json5").default;
+const archangels: Archangels = _archangels as Archangels;
 
-export type { Archangel, Archangels, ArchangelId };
+export type { Archangel, ArchangelId, Archangels };
 export default archangels;

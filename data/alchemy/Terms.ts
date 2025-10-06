@@ -1,3 +1,5 @@
+import _alchemyTerms from "./terms.json5" with { type: "json" };
+
 type AlchemyTermID =
   | "sol-philosophorum"
   | "luna-philosophorum"
@@ -20,7 +22,7 @@ type AlchemyTerms = {
   [key in AlchemyTermID]: AlchemyTerm;
 };
 
-const alchemyTerms: AlchemyTerms = require("./terms.json5").default;
+const alchemyTerms: AlchemyTerms = _alchemyTerms as AlchemyTerms;
 
-export type { AlchemyTerm, AlchemyTerms, AlchemyTermID };
+export type { AlchemyTerm, AlchemyTermID, AlchemyTerms };
 export default alchemyTerms;

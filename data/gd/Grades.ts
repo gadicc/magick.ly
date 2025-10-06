@@ -1,6 +1,7 @@
 import type { Element, ElementId } from "../alchemy/Elements";
 import type { Planet, PlanetId } from "../astrology/Planets";
 import type { Sephirah, SephirahId } from "../kabbalah/Sephirot";
+import _grades from "./grades.json5" with { type: "json" };
 
 type GDGradeId =
   | "0=0"
@@ -34,7 +35,7 @@ interface GDGrade {
   next: GDGradeId;
 }
 
-const grades: GDGrades = require("./grades.json5").default;
+const grades: GDGrades = _grades as GDGrades;
 
 export default grades;
-export type { GDGradeId, GDGrade, GDGrades };
+export type { GDGrade, GDGradeId, GDGrades };
