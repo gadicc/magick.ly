@@ -64,7 +64,7 @@
 		"mongodb": "6.2.0",
 		"music-metadata": "7.14.0",
 		"next": "15.5.4",
-		"next-auth": "^5.0.0-beta.25",
+		"next-auth": "5.0.0-beta.29",
 		"nlopt-js": "^0.1.1",
 		"openai-edge": "1.1.0",
 		"passport": "^0.5.2",
