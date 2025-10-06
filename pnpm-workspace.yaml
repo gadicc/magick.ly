@@ -1,0 +1,4 @@
+onlyBuiltDependencies:
+  - aws-sdk
+  - core-js
+  - sharp
