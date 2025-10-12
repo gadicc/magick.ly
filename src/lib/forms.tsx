@@ -12,7 +12,13 @@ import {
   UseFormRegisterReturn,
   UseFormReturn,
 } from "react-hook-form";
-import { ZodDiscriminatedUnion, type ZodRawShape } from "zod";
+import {
+  ZodDiscriminatedUnion,
+  ZodObject,
+  type ZodRawShape,
+  ZodTypeAny,
+  z,
+} from "zod";
 
 interface FrProps<
   TFieldValues extends FieldValues = FieldValues,
@@ -24,10 +30,17 @@ interface FrProps<
   helperText?: string;
 }
 
+// ✅ only the first generic; avoid $ZodObjectConfig
+function isZodObject(x: ZodTypeAny): x is ZodObject<ZodRawShape> {
+  return x instanceof ZodObject;
+}
+function isZodArray(x: ZodTypeAny): x is z.ZodArray<ZodTypeAny> {
+  return x instanceof z.ZodArray;
+}
+
 export function useForm<
   TFieldValues extends FieldValues = FieldValues,
-  // biome-ignore lint/suspicious/noExplicitAny: can't remember
-  TContext = any,
+  TContext = unknown,
   TTransformedValues extends FieldValues | undefined = undefined,
 >(
   props?: UseFormProps<TFieldValues, TContext> & {
@@ -55,7 +68,6 @@ export function useForm<
     TTransformedValues
   >({ ...defaults, ...props });
 
-  // function fr(name: keyof Omit<TFieldValues, "__ObjectIDs">) {
   function fr<
     TFieldName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
   >(
@@ -63,28 +75,47 @@ export function useForm<
     options = {} as RegisterOptions<TFieldValues, TFieldName> & {
       onChangeTransform?: boolean;
     },
-  ): UseFormRegisterReturn<TFieldName> & {
-    required: boolean;
-    defaultValue?: Readonly<DeepPartial<TFieldValues>>[TFieldName];
-    error: boolean;
-    helperText?: string;
-  } {
+  ): UseFormRegisterReturn<TFieldName> & FrProps<TFieldValues, TFieldName> {
     if (!(props && props.schema))
       throw new Error("useForm requires a { schema } prop");
     const { formState, register } = useFormProps;
 
     const shape = (function () {
-      let shape = props.schema;
+      let shape: ZodTypeAny = props.schema as ZodTypeAny;
 
       if (shape instanceof ZodDiscriminatedUnion) {
-        const discriminator = shape.discriminator;
+        // Read internals with strict structural types
+        type DUInternals = { _def: { discriminator: string } };
+        const discriminator = (shape as unknown as DUInternals)._def
+          .discriminator as FieldPath<TFieldValues>;
+
         const discriminatorValue = useFormProps.getValues(discriminator);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        shape = shape.optionsMap.get(discriminatorValue)!;
+
+        // ✅ options typed as ZodObject<ZodRawShape>[]
+        type DUOptions = { options: ReadonlyArray<ZodObject<ZodRawShape>> };
+        const optionsArr = (shape as unknown as DUOptions).options;
+
+        const matched = optionsArr.find((opt) => {
+          const discSchema = (opt.shape as ZodRawShape)[
+            discriminator as string
+          ] as ZodTypeAny | undefined;
+          return discSchema?.safeParse(discriminatorValue).success === true;
+        });
+
+        if (matched) shape = matched;
       }
 
-      for (const key of name.split(".")) {
-        if ("shape" in shape) shape = (shape.shape as ZodRawShape)[key];
+      // Walk path: objects + a simple "arr.0" hop
+      for (const key of (name as string).split(".")) {
+        if (isZodObject(shape)) {
+          shape = (shape.shape as ZodRawShape)[key] as ZodTypeAny;
+          continue;
+        }
+        if (isZodArray(shape) && key === "0") {
+          shape = shape.element;
+          continue;
+        }
+        break;
       }
       return shape;
     })();
@@ -101,7 +132,6 @@ export function useForm<
       defaultValue: get(formState.defaultValues, name),
       error: !!error,
     };
-    // console.log(name, frProps, shape, shape.isOptional());
 
     if (error?.message) frProps.helperText = (error.message as string) || "";
 
