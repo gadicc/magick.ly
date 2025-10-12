@@ -15,36 +15,76 @@ export interface TempleMembership extends GongoClientDocument {
 */
 
 import dayjs, { type Dayjs } from "dayjs";
-import { z } from "zod";
+import {
+  boolean,
+  custom,
+  date,
+  type InferOutput,
+  instance,
+  integer,
+  minValue,
+  null_,
+  number,
+  object,
+  optional,
+  pipe,
+  string,
+  transform,
+  union,
+} from "valibot";
 
-export const templeMembershipServerSchema = z.object({
-  _id: z.instanceof(ObjectId),
-  userId: z.instanceof(ObjectId),
-  motto: z.string().optional(),
-  templeId: z.instanceof(ObjectId),
-  grade: z.coerce.number().int().positive(),
-  admin: z.boolean().optional(),
-  addedAt: z.date(),
-  memberSince: z
-    .date()
-    .or(z.instanceof(dayjs as unknown as typeof Dayjs))
-    .or(z.null())
-    .optional(),
+// Accept number or number-like string, then enforce int >= 1
+const gradeSchema = pipe(
+  union([
+    number(),
+    pipe(
+      string(),
+      transform((v) => Number(v)),
+    ),
+  ]),
+  integer(),
+  minValue(0),
+);
+
+export const templeMembershipServerSchema = object({
+  _id: instance(ObjectId),
+  userId: instance(ObjectId),
+  motto: optional(string()),
+  templeId: instance(ObjectId),
+  grade: gradeSchema,
+  admin: optional(boolean()),
+  addedAt: date(),
+  memberSince: optional(
+    union([
+      date(),
+      // Dayjs objects aren't constructed via a public class; use a custom guard.
+      custom<Dayjs>((v): v is Dayjs => dayjs.isDayjs(v)),
+      null_(),
+    ]),
+  ),
 });
 
-export const templeMembershipClientSchema = templeMembershipServerSchema
-  .omit({
-    _id: true,
-    userId: true,
-    templeId: true,
-  })
-  .extend({
-    _id: z.string(),
-    userId: z.string(),
-    templeId: z.string(),
-  });
+export const templeMembershipClientSchema = object({
+  // string ids on the client
+  _id: string(),
+  userId: string(),
+  templeId: string(),
+
+  // shared fields
+  motto: optional(string()),
+  grade: gradeSchema,
+  admin: optional(boolean()),
+  addedAt: date(),
+  memberSince: optional(
+    union([
+      date(),
+      custom<Dayjs>((v): v is Dayjs => dayjs.isDayjs(v)),
+      null_(),
+    ]),
+  ),
+});
 
 export type TempleMembershipClient = GongoClientDocument &
-  z.infer<typeof templeMembershipClientSchema>;
+  InferOutput<typeof templeMembershipClientSchema>;
 export type TempleMembershipServer = GongoServerDocument &
-  z.infer<typeof templeMembershipServerSchema>;
+  InferOutput<typeof templeMembershipServerSchema>;
