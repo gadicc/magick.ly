@@ -220,8 +220,8 @@ export async function discourseSync({
         }
       }
       if (!user) {
-        msg(`- creating new discourse user: `);
         const username = motto || dbUser.emails[0]?.value.split("@")[0];
+        msg(`- creating new discourse user: ${username}`);
         const result = await discourse.createUser({
           name: dbUser.displayName,
           email: dbUser.emails[0].value,
