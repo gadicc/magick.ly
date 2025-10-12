@@ -1,10 +1,12 @@
 "use client";
 
+import { readStreamableValue } from "@ai-sdk/rsc";
 import {
   Box,
   Button,
   Checkbox,
   Container,
+  Dialog,
   FormControl,
   FormControlLabel,
   FormGroup,
@@ -27,7 +29,6 @@ import {
 } from "@mui/material";
 import { db, useGongoLive, useGongoOne, useGongoSub } from "gongo-client-react";
 import React, { use } from "react";
-import trpc from "@/lib/trpc";
 
 import "@/db";
 import {
@@ -42,6 +43,7 @@ import {
 } from "@mui/icons-material";
 import { QRCode } from "react-qrcode";
 import { Temple } from "@/schemas";
+import * as actions from "./actions";
 
 function JoinInfo({ temple }: { temple: Temple }) {
   const joinUrl =
@@ -179,6 +181,8 @@ function JoinInfo({ temple }: { temple: Temple }) {
 function Users({ templeId }: { templeId: string }) {
   const [sortBy, setSortBy] = React.useState("addedAt");
   const [useMotto, setUseMotto] = React.useState(false);
+  const [dLogOpen, setDLogOpen] = React.useState(false);
+  const dLogs = React.useRef<{ message: string }[]>([]);
   const [discourseSyncResult, setDiscourseSyncResult] = React.useState({
     color: "",
     message: "",
@@ -235,12 +239,14 @@ function Users({ templeId }: { templeId: string }) {
   }, [_users, sortBy, useMotto]);
 
   const discourseSync = React.useCallback(async () => {
-    const iterator = await trpc.discourseSync.mutate({ templeId });
-    for await (const value of iterator) {
+    dLogs.current = [];
+    const stream = await actions.discourseSync({ templeId });
+    for await (const value of readStreamableValue(stream)) {
       setDiscourseSyncResult({
-        message: value.message,
+        message: value?.message || "",
         color: /* value?.color || */ "",
       });
+      if (value) dLogs.current.push(value);
     }
   }, [templeId]);
 
@@ -278,11 +284,42 @@ function Users({ templeId }: { templeId: string }) {
         </RadioGroup>
       </FormControl>
 
+      {dLogOpen && (
+        <Dialog
+          open={dLogOpen}
+          onClose={() => setDLogOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <Box
+            sx={{
+              p: 2,
+              whiteSpace: "pre-wrap",
+              fontFamily: "monospace",
+              maxHeight: "80vh",
+              overflowY: "auto",
+            }}
+          >
+            {dLogs.current.map((line, index) => (
+              <div
+                key={index}
+                style={{
+                  color: line.message.startsWith("Error") ? "red" : "inherit",
+                }}
+              >
+                {line.message}
+              </div>
+            ))}
+          </Box>
+        </Dialog>
+      )}
+
       <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-        <Button disabled onClick={discourseSync}>
-          Discourse Sync
-        </Button>
-        <div style={{ color: discourseSyncResult.color }}>
+        <Button onClick={discourseSync}>Discourse Sync</Button>
+        <div
+          style={{ color: discourseSyncResult.color }}
+          onClick={() => setDLogOpen(true)}
+        >
           {discourseSyncResult.message}
         </div>
       </Stack>

@@ -15,6 +15,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@ai-sdk/rsc": "1.0.60",
     "@ampproject/remapping": "^2.3.0",
     "@biomejs/biome": "^2.2.5",
     "@codemirror/language": "^6.11.3",
@@ -47,7 +48,7 @@
     "cycle": "^1.0.3",
     "date-fns": "^2.29.1",
     "dayjs": "^1.11.11",
-    "discourse2": "^1.1.20",
+    "discourse2": "^1.2.0",
     "dot-prop": "^6.0.1",
     "dotenv": "^16.3.1",
     "file-type": "19.0.0",
@@ -94,7 +95,7 @@
     "xml-beautifier": "^0.5.0",
     "yaml-loader": "^0.6.0",
     "zlib": "^1.0.5",
-    "zod": "^3.23.8"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@svgr/webpack": "^6.2.1",
