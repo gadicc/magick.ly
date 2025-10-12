@@ -221,22 +221,20 @@ export async function discourseSync({
       }
       if (!user) {
         msg(`- creating new discourse user: `);
+        const username = motto || dbUser.emails[0]?.value.split("@")[0];
         const result = await discourse.createUser({
           name: dbUser.displayName,
           email: dbUser.emails[0].value,
           password: crypto.randomUUID(),
-          username: motto || dbUser.displayName,
+          username,
           active: true,
           approved: true,
         });
-        console.log("result", result);
         if (result.success) {
-          const _user = await discourse.getUser({
-            username: motto || dbUser.displayName,
-          });
-          console.log("_user", _user);
+          const _user = await discourse.getUser({ username });
           user = await discourse.adminGetUser({ id: _user.user.id });
-          console.log("user", user);
+        } else {
+          msg(`- error creating user: ${JSON.stringify(result)}`);
         }
       }
       if (!user) {
