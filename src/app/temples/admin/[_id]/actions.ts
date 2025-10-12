@@ -266,7 +266,7 @@ export async function discourseSync({
         continue;
       }
 
-      for (let i = 0; i <= groups.length; i++) {
+      for (let i = 0; i < groups.length; i++) {
         const group = groups.find((g) => g.grade === i);
         if (!group) throw new Error("No group for grade " + i);
         const userInGroup = group.members.some((m) => m.id === user?.id);
