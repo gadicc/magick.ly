@@ -229,12 +229,14 @@ export async function discourseSync({
           active: true,
           approved: true,
         });
-        // console.log("result", result);
+        console.log("result", result);
         if (result.success) {
           const _user = await discourse.getUser({
             username: motto || dbUser.displayName,
           });
+          console.log("_user", _user);
           user = await discourse.adminGetUser({ id: _user.user.id });
+          console.log("user", user);
         }
       }
       if (!user) {
@@ -264,13 +266,22 @@ export async function discourseSync({
         continue;
       }
 
-      for (let i = 0; i <= grade; i++) {
+      for (let i = 0; i <= groups.length; i++) {
         const group = groups.find((g) => g.grade === i);
         if (!group) throw new Error("No group for grade " + i);
-        const userGroup = user?.groups?.find((g) => g.id === group.id);
+        const userInGroup = group.members.some((m) => m.id === user?.id);
+        // const userGroup = user?.groups?.find((g) => g.id === group.id);
         // console.log({ group, userGroup });
 
-        if (!group.members.some((m) => m.id === user?.id)) {
+        if (userInGroup && i > grade) {
+          msg(
+            `- removing user ${user?.username} from group ${group.name} (${group.id})`,
+          );
+          await discourse.removeGroupMembers({
+            id: group.id,
+            usernames: user!.username,
+          });
+        } else if (!userInGroup && i <= grade) {
           msg(
             `- adding user ${user?.username} to group ${group.name} (${group.id})`,
           );
