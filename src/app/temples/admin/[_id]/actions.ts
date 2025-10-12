@@ -203,7 +203,8 @@ export async function discourseSync({
             break;
           }
         }
-      } else {
+      }
+      if (!user) {
         msg(`- creating new discourse user`);
         const result = await discourse.createUser({
           name: dbUser.displayName,
