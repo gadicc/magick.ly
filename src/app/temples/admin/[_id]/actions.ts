@@ -63,6 +63,19 @@ const groupSeed = [
   },
 ];
 
+function normalizeMotto(motto?: string) {
+  const MAX_USERNAME_LENGTH = 20;
+  if (!motto) return null;
+
+  motto = motto.trim().replace(/\s+/g, "_");
+  if (motto.length > MAX_USERNAME_LENGTH) {
+    const pos = motto.lastIndexOf("_", MAX_USERNAME_LENGTH);
+    if (pos > 0) motto = motto.substring(0, pos);
+    else motto = motto.substring(0, MAX_USERNAME_LENGTH);
+  }
+  return motto;
+}
+
 export async function discourseSync({
   templeId: templeIdStr,
 }: {
@@ -171,6 +184,8 @@ export async function discourseSync({
     // 3. Look through dbUsers and sync with discourse
     for (let userI = 0; userI < users.length; userI++) {
       const dbUser = users[userI];
+      const motto = normalizeMotto(dbUser.membership?.motto);
+
       // console.log("dbUser", dbUser);
       msg(
         `Processing user ${userI + 1}/${users.length}: ${dbUser.displayName} (grade ${dbUser.membership?.grade})`,
@@ -205,19 +220,21 @@ export async function discourseSync({
         }
       }
       if (!user) {
-        msg(`- creating new discourse user`);
+        msg(`- creating new discourse user: `);
         const result = await discourse.createUser({
           name: dbUser.displayName,
           email: dbUser.emails[0].value,
           password: crypto.randomUUID(),
-          username:
-            dbUser.membership?.motto?.replace(/\s/g, "_") || dbUser.displayName,
+          username: motto || dbUser.displayName,
           active: true,
           approved: true,
         });
         // console.log("result", result);
         if (result.success) {
-          user = await discourse.adminGetUser({ id: result.user_id! });
+          const _user = await discourse.getUser({
+            username: motto || dbUser.displayName,
+          });
+          user = await discourse.adminGetUser({ id: _user.user.id });
         }
       }
       if (!user) {
@@ -232,19 +249,6 @@ export async function discourseSync({
       }
       // console.log("user", user);
 
-      const motto = (function () {
-        const MAX_USERNAME_LENGTH = 20;
-        let motto = dbUser.membership?.motto;
-        if (!motto) return null;
-
-        motto = motto.trim().replace(/\s+/g, "_");
-        if (motto.length > MAX_USERNAME_LENGTH) {
-          const pos = motto.lastIndexOf("_", MAX_USERNAME_LENGTH);
-          if (pos > 0) motto = motto.substring(0, pos);
-          else motto = motto.substring(0, MAX_USERNAME_LENGTH);
-        }
-        return motto;
-      })();
       if (user.username !== motto && motto) {
         msg(`- updating username to "${motto}"`);
         await discourse.updateUsername({
