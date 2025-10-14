@@ -271,7 +271,7 @@ export async function discourseSync({
         // const userGroup = user?.groups?.find((g) => g.id === group.id);
         // console.log({ group, userGroup });
 
-        if (userInGroup && i > grade) {
+        if (userInGroup && i !== grade) {
           msg(
             `- removing user ${user?.username} from group ${group.name} (${group.id})`,
           );
@@ -279,7 +279,7 @@ export async function discourseSync({
             id: group.id,
             usernames: user!.username,
           });
-        } else if (!userInGroup && i <= grade) {
+        } else if (!userInGroup && i === grade) {
           msg(
             `- adding user ${user?.username} to group ${group.name} (${group.id})`,
           );
