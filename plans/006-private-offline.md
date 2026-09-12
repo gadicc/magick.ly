@@ -1,6 +1,6 @@
 # Private ritual offline storage and 14-day authorization
 
-Status: reviewed integration design plus the implemented pure [lease policy](../src/offline/lease.ts). This unit adds no Dexie dependency, app activation, provider calls, data migration or browser acceptance.
+Status: the pure [lease policy](../src/offline/lease.ts) and account-scoped [Dexie repository](../src/offline/repository.ts) are implemented. Dexie 4.4.6 is pinned, with fake-indexeddb 6.2.5 for tests. Native IndexedDB acceptance covers this repository; the app's auth, reader/editor, service worker and migration integration remain inactive.
 
 ## Agreed contract
 
@@ -114,4 +114,37 @@ The 14-day policy starts only after the new client/migration is installed. A nev
 - **Recovery/migration:** mixed old accounts, raw pending insert/update/delete, corrupt/unattributed records, a pending unconfirmed create, and new draft text inside the debounce window survive migration/sign-out/expiry byte-for-byte but remain locked. A full/quota-blocked recovery store aborts destructive migration. Fresh verified target capability is required before reopen/export. No automatic adoption or replay under another identity/backend.
 - **Cleanup:** crash after epoch invalidation but before blob purge resumes cleanup on next start. Blocked deletion reports failure and stays locked. Other accounts' unique recovery, anonymous study data and unrelated browser databases remain untouched.
 
-The pure tests cover lease transitions only. They do not establish transaction, renderer, asset, auth transport or browser offline acceptance; those integration checks remain required.
+## Implemented repository evidence
+
+The repository uses one dedicated database and explicit renewable-store cleanup.
+Sign-out commits its account fence before purge; failure leaves cleanup pending
+and blocks reauthentication from bypassing it. Protected reads bracket IDB access
+and commit with permission/time checks. Latest check IDs fence old responses;
+each complete bundle keeps its own lease so a different download cannot extend
+old bytes. Source permission gates source, draft recovery, copy/export and outbox
+claims separately from rendered reading.
+
+Draft CAS preserves conflicting local work as a separate variant. The SQL-v2
+save outbox retains exact payload JSON, checksum and operation ID. Checksum
+verification occurs outside IDB, followed by an exact payload/checksum comparison
+inside the claim transaction. Two tabs claim once; a lost sender's lease expires
+after 60 seconds and retries the same operation. A late acknowledgement may be
+retained as locked metadata but cannot renew access or overwrite a newer draft.
+
+The 58 repository cases pass with real Dexie over fake-indexeddb, including
+transaction rollback, input mutation during awaits, expiry during reads/commit,
+account fencing, source downgrade and preservation of conflicting work. Nine
+native Chromium 152 scenarios verify real PNG Blob persistence and decoding,
+full browser restart, two-tab check/claim coordination, exact retries, expiry,
+revocation, cleanup failure across restart and account isolation. Scoped injected
+quota/deletion failures prove native transaction rollback; they do not simulate
+actual disk exhaustion or browser eviction. No external requests or page errors
+occurred, and the owned browser/server were stopped. Evidence:
+`/tmp/magickli-dexie-repository/browser/`. Root and browser source hashes match;
+the lease copy differs only in a documentation word (`proposal` versus `policy`).
+
+These tests do not establish runtime auth transport, BFCache UI, renderer/media
+cleanup, a private service-worker shell or legacy migration acceptance. Those
+integration checks remain required before downloads activate. A check-only
+permission renewal without a complete bundle is the next protocol integration;
+it must never mark missing content ready or extend an unrelated bundle's lease.

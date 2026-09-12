@@ -339,3 +339,18 @@ No SQL write route or runtime identity switch was activated. Legacy v1 commands,
 Mongo receipts and browser recovery must be reconciled before the new protocol
 boundary ships. Migration 0008 and the preceding domain migrations remain local;
 no new Neon migration or private import ran.
+
+The account-scoped ritual repository now uses exact Dexie 4.4.6 and test driver
+fake-indexeddb 6.2.5. It atomically gates private reads, publishes only complete
+hashed bundles, fences stale account/check replies, and preserves unique recovery
+through expiry, revocation and failed sign-out cleanup. Draft CAS retains separate
+conflicting variants. The SQL-v2 save outbox verifies immutable payload checksums,
+serializes claims across tabs and retries the original operation after uncertainty.
+
+All 1,103 default tests, 39-module coverage, types, Biome, ordinary Loom checks
+and production build pass. Nine native Chromium scenarios verify Blob persistence/decoding across a
+full restart, two-tab checks/claims, locked recovery, account isolation and native
+rollback after injected quota/deletion errors. The owned browser/server were
+stopped. Evidence: `/tmp/magickli-dexie-repository/browser/` and
+`/tmp/magickli-dexie-*.log`. This is repository acceptance; runtime private-reader,
+auth, service-worker, lifecycle and legacy recovery integration remain separate.
