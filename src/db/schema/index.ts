@@ -4,6 +4,7 @@ export * from "./legacyIds";
 export * from "./loomFiles";
 export * from "./memberships";
 export * from "./ritualCommands";
+export * from "./ritualFiles";
 export * from "./rituals";
 export * from "./studyProgress";
 export * from "./templeCommands";

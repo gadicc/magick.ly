@@ -45,6 +45,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Preserved SQL rendered rituals | Complete locally | Exact current compiled archives under ordinary read permissions; nine query regressions and installed JRT legacy-shape test; 855 tests, scoped coverage/types/Biome/build; protected backup preflight passes with reviewed exceptions |
 | Files metadata SQL foundation | Complete locally; runtime planned | Exact Loom UUIDv7 schema and protected legacy provenance; 71 new tests, 926 full-suite tests, coverage/types/Biome/build and real Postgres migration/date/metadata/rollback/rerun acceptance; all ten actual metadata rows pass read-only preflight |
 | Protected image finalization | Complete locally; adapters pending | Strict v1 requests, actual bytes/hash/all-frame decoding, Loom private save and current-policy atomic publication contract; 98 new tests, 1,344 default tests, coverage/types/Biome/Loom/build; native decode deadline smoke passes |
+| SQL ritual upload publication | Complete locally; provider/UI pending | Immutable intents, current grants, fenced claims and atomic file/link/receipt; 97 new cases, 1,441 default tests, coverage/types/Biome/Loom/build; 16 real Postgres race/constraint gates and unchanged ten-migration/29-table rerun |
 | Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
 | Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
@@ -412,3 +413,14 @@ Storage MIME headers differ from Mongo on all ten; legacy delivery must preserve
 Mongo MIME precedence. Bucket privacy/CORS and direct-upload restrictions remain
 unverified. The [preflight](005-protected-backup-preflight.md) supersedes the earlier
 local-configuration limitation with this narrower direct-read evidence.
+
+The protected Files SQL adapter now implements immutable initiation, bounded worker
+claims, current-policy atomic publication and replay without resurrection. The
+actual PostgreSQL duplicate race exposed postgres-js's `constraint_name` field;
+the corrected mapping has direct/wrapped driver regressions and only recognizes
+the managed digest constraint. All 1,441 default tests, 47-module coverage, types,
+Biome, ordinary Loom checks and production build pass. Sixteen real Postgres
+acceptance gates and unchanged migration rerun across 29 tables pass; the owned
+database was removed. See the [Files contract](008-protected-ritual-files.md) and
+`/tmp/magickli-upload-postgres-rehearsal/`. Migration 0009 is local only; no route,
+auth, provider or private-data cutover occurred.

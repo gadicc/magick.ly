@@ -43,6 +43,16 @@ Mongo MIME precedence. Unsupported/not-found bucket-policy and CORS probes do
 not establish privacy or missing policy. See the [Files contract](008-protected-ritual-files.md)
 for the verified resource fingerprint and remaining provider acceptance gates.
 
+An aggregate-only traversal of the five exact stored compiled trees accounts for
+17 image nodes and 17 distinct references: six legacy file URLs, four local
+`/pics/` images, four external images, two inline data images and one generated
+tree-of-life diagram. All six legacy hashes resolve to file metadata. No non-image
+`src` fields or CSS `url()` references occurred in these trees. This pass made no
+resource requests and left all backup fingerprints unchanged. Evidence:
+`/tmp/magickli-protected-preflight/asset-inventory.json`. Renderer fonts and future
+source edits still need their own dependencies accounted for; the four external
+images require an explicit supported fetch policy before complete offline Ready.
+
 ## Reviewed study duplicate
 
 The reviewed duplicate contains the same 11 card keys as its retained counterpart. Its set/card correct, incorrect and time counters are zero; all cards have initial SM2 interval/repetition/ease and repetition weight 1. Every card due date is a genuine Date at the same instant as the set due date. Historical creation/update dates are absent, while legacy sync bookkeeping is present.

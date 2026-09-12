@@ -40,6 +40,7 @@ export default defineConfig({
         "src/files/finalizeRitualUpload.ts",
         "src/files/validateRitualImage.ts",
         "src/files/ritualImageFrames.ts",
+        "src/files/sqlRitualUploads.ts",
         "src/app/geomancy/tetragrams.ts",
         "src/app/chat/train/access.ts",
         "src/app/chat/train/ingestPdf.ts",

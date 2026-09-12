@@ -64,6 +64,13 @@
       "when": 1789223023237,
       "tag": "0008_ritual_write_commands",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789230661974,
+      "tag": "0009_ritual_file_uploads",
+      "breakpoints": true
     }
   ]
 }

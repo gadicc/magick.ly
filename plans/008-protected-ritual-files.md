@@ -96,3 +96,50 @@ orphan reconciliation, private bucket/CORS proof, bounded direct-upload
 capabilities, current-policy download/source/rendered binding, offline asset
 manifests and authenticated browser acceptance remain required. Loom Files stays
 `planned`; its generic upload route must not bypass the ritual finalizer.
+
+## SQL publication adapter
+
+The app-owned `ritual_upload_intents` and `ritual_file_links` tables now implement
+the publication boundary locally. Managed Loom Files columns remain unchanged.
+An intent retains its immutable request/hash, exact filename, actor/ritual,
+preallocated UUIDv7 file/link identities, explicit staging/canonical locations and
+completion evidence. It contains no signed URL or credential. Historical domain
+IDs in receipts do not reference deletable domain rows; live associations have
+restrictive foreign keys and an exact composite intent binding.
+
+Initiation, claim, publication and replay recheck current verified identity and
+persisted edit grants. Read-committed transactions use the same grant-lock order
+as ritual writes, an operation advisory lock and a five-second lock timeout.
+Location allocation also serializes both namespaces to prevent cross-namespace
+collisions. The location factory is synchronous server configuration; signing and
+all provider I/O occur outside SQL.
+
+Intent lifetime is at most 24 hours, worker claims at most 120 seconds and direct
+capabilities at most ten minutes, clipped to the intent deadline. Retries preserve
+the original request, locations and deadline. Expired uncompleted intents remain
+recorded; an uncertain operation must not be automatically replaced. Claim start
+and expiry are persisted, and stale workers cannot publish or release a newer
+claim. Completed receipts remain available indefinitely subject to current access
+and existing domain rows.
+
+Publication validates every supplied Loom file fact against the intent and actual
+decoder evidence. File/link/completion commit together or roll back together.
+Global duplicate lookup returns only a safe error, including for tombstones.
+The real postgres-js driver exposes uniqueness details as `constraint_name`,
+where PGlite uses `constraint`; the adapter recognizes both on the same underlying
+error without classifying unrelated constraints as duplicates.
+
+All 1,441 default tests, 47-module coverage, types, Biome, ordinary Loom checks and
+production build pass. The adapter adds 97 SQL/schema/error-shape cases, including
+actual Loom/Sharp integration for all four accepted formats. Real PostgreSQL
+acceptance passes 16 concurrency/preservation/constraint gates: initiation and
+claim contention, stale-worker fencing, atomic replay, all three grant revocations,
+parent policy/deletion, actual lock timeout, rollback, unknown acknowledgement,
+global digest race and generated constraints. Eleven completed synthetic intents
+reconcile to eleven files and links with no missing publication row. Ten migration
+records and all 29 tables remain unchanged on rerun; the owned database was removed.
+
+Evidence: `/tmp/magickli-sql-upload-*.log` and
+`/tmp/magickli-upload-postgres-rehearsal/{README.md,result.json,source-manifest.json}`.
+Migration 0009 and the preceding domain migrations remain local. No SQL upload
+route, identity switch, private Neon import or provider adapter is activated.
