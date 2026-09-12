@@ -16,6 +16,8 @@ export default defineConfig({
       include: [
         "src/doc/prepare.js",
         "src/doc/shortcuts.ts",
+        "src/doc/access.ts",
+        "src/doc/legacyAccess.ts",
         "src/study/scheduling.ts",
         "src/app/geomancy/tetragrams.ts",
         "src/app/chat/train/access.ts",
