@@ -44,6 +44,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Authorized SQL ritual reads | Complete locally | Server-only repository shares policy and loads current grants/source in read-only repeatable-read transactions; 20 new tests, 765 full-suite tests, coverage/types/Biome/build and real Postgres concurrent-demotion/source-preservation acceptance pass |
 | Preserved SQL rendered rituals | Complete locally | Exact current compiled archives under ordinary read permissions; nine query regressions and installed JRT legacy-shape test; 855 tests, scoped coverage/types/Biome/build; protected backup preflight passes with reviewed exceptions |
 | Files metadata SQL foundation | Complete locally; runtime planned | Exact Loom UUIDv7 schema and protected legacy provenance; 71 new tests, 926 full-suite tests, coverage/types/Biome/build and real Postgres migration/date/metadata/rollback/rerun acceptance; all ten actual metadata rows pass read-only preflight |
+| Protected image finalization | Complete locally; adapters pending | Strict v1 requests, actual bytes/hash/all-frame decoding, Loom private save and current-policy atomic publication contract; 98 new tests, 1,344 default tests, coverage/types/Biome/Loom/build; native decode deadline smoke passes |
 | Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
 | Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
@@ -393,3 +394,21 @@ types, Biome, ordinary Loom checks and production build pass. Evidence:
 `/tmp/magickli-permission-*.log`. No HTTP route, auth switch or download activation
 occurred; transport validation, source response binding and complete asset
 manifests remain integration work.
+
+The [protected Files finalizer](008-protected-ritual-files.md) validates exact
+staged bytes and every supported image frame before a private Loom save. The SQL
+publication callback must recheck current identity/edit access and atomically
+commit file/link/receipt after provider I/O. Staging replacement, cross-owner
+deduplication, truncated animations, late completion and mutable limit settings
+are covered. Actual native deadline/cancellation smoke checks passed, with the
+remaining native-memory/concurrency limit explicitly recorded. All 1,344 default
+tests, 46-module coverage, types, Biome, ordinary Loom checks and production build
+pass. No provider adapter or route is activated by this unit.
+
+Authenticated Vercel CLI inspection also established the existing provider as
+Cloudflare R2. Direct reads verified all ten objects (7,790,234 bytes) against
+backup SHA/size without retaining raw bodies or changing provider/backup state.
+Storage MIME headers differ from Mongo on all ten; legacy delivery must preserve
+Mongo MIME precedence. Bucket privacy/CORS and direct-upload restrictions remain
+unverified. The [preflight](005-protected-backup-preflight.md) supersedes the earlier
+local-configuration limitation with this narrower direct-read evidence.

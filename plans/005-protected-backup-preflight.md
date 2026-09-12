@@ -12,7 +12,7 @@ The backup contains 190 documents across 10 collections. A separate metadata inv
 | [Membership import](../src/migration/planLegacyMembershipImport.ts) | 1 group, 2 combined membership/admin grants, 1 temple, 1 protected invite and 7 temple memberships, including grade zero. The global access projection retains 1 administrator. |
 | [Ritual import](../src/migration/planLegacyRitualImport.ts) | 5 rituals, 59 revisions and 5 exact original compiled archives. One unresolved creator remains nullable with explicit evidence; the current revision author is not substituted. |
 | [Study import](../src/migration/planLegacyStudyImport.ts) | 49 source rows become 48 active baselines and 1 protected duplicate archive. All 49 full EJSON snapshots and hashes match the source. |
-| [File metadata import](../src/migration/planLegacyFileImport.ts) | 10 public file rows, 10 exact protected EJSON snapshots and 10 typed aliases; original fields and null ownership retained. Synthetic storage-location inputs validate the source shape only. A later public-route check verifies all 10 object bodies; direct production storage binding remains outstanding. |
+| [File metadata import](../src/migration/planLegacyFileImport.ts) | 10 public file rows, 10 exact protected EJSON snapshots and 10 typed aliases; original fields and null ownership retained. Synthetic planning locations validate source shape. Subsequent public-route and direct R2 reads verify all 10 bodies; durable production location binding remains outstanding. |
 
 No new source-shape rejection required a mapper or schema relaxation.
 
@@ -30,7 +30,18 @@ no provider/database write ran, and all 21 backup fingerprints remained unchange
 Evidence: `/tmp/magickli-file-object-preflight/public-route-report.json` and its
 runner. This proves current public delivery, not an object-body backup, direct
 bucket access, storage policy/CORS or private-upload readiness. Local env loading
-found no AWS/S3 configuration, so direct provider verification remains outstanding.
+found no AWS/S3 configuration at that checkpoint.
+
+A subsequent authenticated Vercel CLI read loaded the existing Production storage
+configuration in process. The actual endpoint is Cloudflare R2. Direct HEAD/GET
+verified the same ten sizes and hashes, totaling 7,790,234 bytes, with no raw
+object bytes retained, no provider writes and all backup fingerprints unchanged.
+Evidence: `/tmp/magickli-file-object-preflight/report.json`. The configured signing
+region `weur` is not evidence of physical placement. All ten object MIME headers
+differ from Mongo metadata; the compatibility route must retain the original
+Mongo MIME precedence. Unsupported/not-found bucket-policy and CORS probes do
+not establish privacy or missing policy. See the [Files contract](008-protected-ritual-files.md)
+for the verified resource fingerprint and remaining provider acceptance gates.
 
 ## Reviewed study duplicate
 
