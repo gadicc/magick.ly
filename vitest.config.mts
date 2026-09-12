@@ -23,6 +23,7 @@ export default defineConfig({
         "src/app/chat/train/upload/route.ts",
         "src/lib/ids.ts",
         "src/db/legacyIds.ts",
+        "src/migration/normalizeLegacyAuth.ts",
         "src/app/chat/contracts.ts",
         "src/app/chat/conversation.ts",
         "src/app/chat/providers.ts",
