@@ -3,7 +3,7 @@ import { ObjectId } from "bson";
 import crypto from "crypto";
 import { fileTypeFromBuffer } from "file-type";
 import * as mm from "music-metadata";
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 import gs /* Auth, User, Order,  ObjectId */ from "@/api-lib/db-full";
 
 // import { format } from 'date-fns';
@@ -60,7 +60,7 @@ interface FileEntryOther extends FileEntryBase {
 interface FileEntryImage extends FileEntryBase {
   type: "image";
   image: {
-    format: sharp.Metadata["format"];
+    format: Metadata["format"];
     size?: number;
     width?: number;
     height?: number;

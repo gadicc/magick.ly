@@ -87,7 +87,7 @@
     "react-toastify": "10.0.5",
     "rehype-add-classes": "^1.0.0",
     "remark-gfm": "^4.0.1",
-    "sharp": "^0.29.2",
+    "sharp": "^0.35.4",
     "slug": "^9.1.0",
     "source-map": "^0.7.4",
     "suncalc": "^1.9.0",
