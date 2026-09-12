@@ -166,10 +166,21 @@ The same module enumerates all 17 images in the five protected archived trees
 without changing any backup bytes. Four trees enumerate completely. Two PNG paths
 in the remaining tree are absent from the current static catalog and return 404
 in production. Git commit `05d4c96` renamed both files from `magickli` to `magickly`
-with identical blobs; their stored references were left behind. Exact public path
-compatibility is a separate small fix; no blanket `/pics` allowance or source
-rewrite is used to make the inventory pass. Four external images and generated
-TreeOfLife/font dependencies still require complete resolver support.
+with identical blobs; their stored references were left behind. Two exact aliases
+now drive permanent redirects to the current canonical PNGs. Commit `6c71d32`
+subsequently changed both images, including their pixels; compatibility restores
+the current locations, not historical bytes. Built HTTP checks verify 308/200,
+PNG MIME/size/SHA, query values and unrelated-path 404s; target decode tests,
+types, Biome, ordinary Loom checks and production build pass.
+
+Adding only those validated alias targets to the read-only preflight catalog
+makes all five trees enumerate completely, still with 17 occurrences and all 21
+backup fingerprints unchanged. The shared alias map is available to the later
+offline resolver; redirects alone do not supply offline bytes. No blanket `/pics`
+allowance or source rewrite is used. Four external images and generated
+TreeOfLife/font dependencies still require complete resolver support. Evidence:
+`/tmp/magickli-legacy-static-images/http-results.json` and
+`/tmp/magickli-protected-preflight/asset-inventory-aliases.json`.
 
 ## Lifecycle, timing and draft locks
 

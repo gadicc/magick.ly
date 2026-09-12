@@ -4,9 +4,16 @@ import {
   PHASE_DEVELOPMENT_SERVER,
   PHASE_PRODUCTION_BUILD,
 } from "next/constants";
+import { legacyStaticImageAliases } from "./src/files/legacyStaticImages";
 
 export default async function (phase: string): Promise<NextConfig> {
   const nextConfig: NextConfig = {
+    redirects: () =>
+      Object.entries(legacyStaticImageAliases).map(([source, destination]) => ({
+        source,
+        destination,
+        permanent: true,
+      })),
     // See also alternative with patch-package:
     // https://stackoverflow.com/a/77722836/1839099
     serverExternalPackages: ["pdf-parse"],

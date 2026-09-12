@@ -112,4 +112,13 @@ the aggregate reports; all 21 backup fingerprints remain unchanged. Evidence:
 `/tmp/magickli-protected-preflight/asset-inventory-module.json`,
 `missing-static-assets.json` and `missing-static-history.json`.
 
+The two exact static aliases now redirect to the current canonical PNGs locally.
+Those PNGs changed after the original rename; no historical-byte parity is claimed.
+Built HTTP responses verify their current size/SHA/MIME and preserved query values.
+The bounded aggregate rerun with only those validated aliases has five complete
+enumerations, 17 occurrences, no issues and unchanged source/backup fingerprints.
+Evidence: `/tmp/magickli-protected-preflight/asset-inventory-aliases.json` and
+`/tmp/magickli-legacy-static-images/http-results.json`. The fix is not deployed;
+complete offline byte resolution remains separate from enumeration.
+
 This preflight validates the pure planning boundaries, not a live import. Transactional import and durable UUID aliases, a final backup under the approved write pause, legacy write-receipt handling, file migration, the one-time reauthentication switch and private offline acceptance remain separate gates. Follow the [migration contract](003-data-migration-contract.md) and [implementation ledger](002-implementation-ledger.md) for their status.
