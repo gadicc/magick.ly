@@ -8,7 +8,7 @@ Implementation began on 12 September 2026, following the approved [modernization
 | Compiler characterization | Complete | 33 tests; output and source-map parity across eight samples including three complete built-in rituals; typecheck and scoped Biome pass |
 | Study characterization | Complete | 24 tests cover grading boundaries, schedules, totals, anonymous initialization and nonmutation; contained edge fixes follow separately |
 | Study edge cases | Complete | Six additional tests; new cards initialize and become due; single-card selection and repetition cannot get stuck |
-| Data mapping audit | In progress | Aggregate inspection only; never commit private dump values |
+| Data mapping audit | Complete | Aggregate-only [migration contract](./003-data-migration-contract.md) records identity/reference conversions, duplicate study disposition, auth merge, import and recovery gates |
 | Pinecone ingestion restoration | Complete | 28 tests including real PDF parsing; server-side global-admin checks, validation, stable retry keys and preserved embedding/index/namespace contract; Mongo vector path/dependency removed |
 | Tarot module import | Complete | Correct namespace import; six card lookup/local-image tests pass; production build confirms the missing-default-export warning is gone |
 | Tarot image filenames | Complete | Correct four existing filename mismatches; 11 tarot tests verify all 22 major-arcana images and numeric/string ranks |
