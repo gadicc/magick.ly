@@ -2,6 +2,39 @@
 
 Status: the pure [lease policy](../src/offline/lease.ts), account-scoped [Dexie repository](../src/offline/repository.ts), [SQL permission checker](../src/offline/sqlPermissionCheck.ts) and strict [wire parser](../src/offline/permissionContract.ts) are implemented. Dexie 4.4.6 is pinned, with fake-indexeddb 6.2.5 for tests. Native IndexedDB acceptance covers the initial repository; the app's HTTP/auth, reader/editor, service worker and migration integration remain inactive.
 
+The installed JRT 1.3.1 now has a one-line pnpm patch changing its private node
+cache from Map to WeakMap. Live blocks retain their node identity and editing
+behavior; discarded trees can be collected once application references are gone.
+This permits garbage collection, without promising immediate memory erasure or
+changing the existing hook architecture. The app records the patched node module's
+exact SHA in its compiler/renderer identity. Output compatibility remains profile 1,
+so previously selected compatible artifacts and exact legacy archives still render.
+
+Independent controlled-GC tests retained all 128 discarded objects with the old
+Map and collected all 128 with WeakMap, while preserving a deliberately live node.
+Forced GC is outside ordinary CI. Package compatibility and source-build evidence
+is in `/tmp/magickli-jrt-cache/`; the upstream checkout and publication remain
+unchanged. Private-view integration must still remove application references:
+in particular, the current editor's `window.doc` scripting handle needs an owned
+unmount cleanup before it can be included in private lifetime acceptance.
+
+All 1,573 default tests, scoped coverage, types, Biome, frozen install, ordinary
+Loom checks and a clean production build pass. Five installed-package regressions
+cover live identity, mutation callbacks, ancestor rekeying, moved nodes and valid
+object keys. Nine additional actual-package/app-renderer cases pass with both
+Map and WeakMap. Ten native Chromium stages cover source edits, stateful component
+insertion/removal, roles, navigation, recovery, account replacement and saving.
+Both builds emit the known hook-order errors (#310 on insertion, #300 on removal)
+and recover through the existing preview boundary; no new hook fix is claimed.
+
+The first incremental build retained the old JRT module despite the patched
+installation. Only the subsequent empty-`.next` build is patched browser evidence:
+the browser verified the served `1355-8f616ae039a21a6f.js` WeakMap module with SHA
+`f670e3b2476ff9138e672c31411b00982d2b4f2396b8a7386e27985c1006125a`.
+Future dependency patches require emitted-bundle inspection and cache invalidation
+when needed, not just an installed-file check. Detailed baseline/patch evidence:
+`/tmp/magickli-jrt-app-browser/` and `/tmp/magickli-jrt-*.log`.
+
 ## Agreed contract
 
 A successful **server ritual permission check** may issue at most 14 × 24 hours of offline access. Local reads, an existing cached grant, successful session lookup, `navigator.onLine`, firewall/VPN changes and failed requests cannot renew it. Keep read and source/edit capabilities separate. Ordinary readers receive rendered content, not source/history.

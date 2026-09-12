@@ -48,6 +48,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | SQL ritual upload publication | Complete locally; provider/UI pending | Immutable intents, current grants, fenced claims and atomic file/link/receipt; 97 new cases, 1,441 default tests, coverage/types/Biome/Loom/build; 16 real Postgres race/constraint gates and unchanged ten-migration/29-table rerun |
 | Verified legacy file locations | Complete locally; import pending | All ten canonical R2 reads prove bucket-prefixed keys; explicit import prefix/provenance preserves public URLs; 1,506 tests, full checks/build, production-bound in-memory preflight and real Postgres upgrade/rerun pass |
 | Protected R2 storage adapter | Complete locally; activation pending | Explicit SQL-bound locations, signed size/SHA/provenance, cancellable reads and same-operation orphan reconciliation through Loom; 62 new cases, 1,568 tests, coverage/types/Biome/Loom/build pass |
+| JRT discarded-tree cache | Complete locally | Pinned one-line WeakMap patch preserves live identity/mutations and output profile; 1,573 tests, full checks, clean emitted-bundle verification and ten Chromium stages pass; known hook recovery unchanged |
 | Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
 | Offline storage and view lifecycle | Complete locally; runtime integration pending | Dexie repository plus synchronous view guards, two-tab sign-out fence, owned Blob cleanup and opaque locked recovery; 1,499 tests, coverage/types/Biome/Loom/build; ten native lifecycle scenarios pass |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
@@ -462,3 +463,15 @@ production build pass. No existing package version changed when adding SDK v3;
 legacy AWS v2 remains until the old file route is replaced. Private bucket setup,
 authenticated upload/download integration and complete browser acceptance remain
 required before activating Files.
+
+JRT's private node cache now uses WeakMap through a pinned pnpm patch. The exact
+installed module hash enters compiler/renderer identity; compatible output profile
+1 remains unchanged. All 1,573 default tests, coverage, types, Biome, frozen install,
+ordinary Loom checks and a clean production build pass. Actual browser bytes prove
+the patch reached the editor after stale incremental output was detected and
+discarded. Ten browser stages preserve rendering, editing, recovery and saving;
+known hook-order errors still recover as before. Controlled GC evidence remains
+outside CI. See the [offline record](006-private-offline.md) for evidence and the
+separate editor-console reference cleanup. No JRT release or private UI activation
+occurred. Production Loom validation still fails only on the missing migration
+release workflow.

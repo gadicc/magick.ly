@@ -1,0 +1,12 @@
+diff --git a/lib/esm/blocks/node.js b/lib/esm/blocks/node.js
+--- a/lib/esm/blocks/node.js
++++ b/lib/esm/blocks/node.js
+@@ -12,7 +12,7 @@
+ // Used to make sure we're rending with the same class as before.
+ // Useful for "fast-refresh", should probably disable in production.  TODO?
+ var check = typeof window === "object";
+-var nodeMap = new Map();
++var nodeMap = new WeakMap();
+ export var blocks = {};
+ var Node = /** @class */ (function () {
+     function Node(block, parent, pos, root) {

@@ -12,6 +12,9 @@ export const RITUAL_COMPILER_COMPONENTS = {
   "magic-string": "0.30.10",
   "@ampproject/remapping": "2.3.0",
   "json-rich-text": "1.3.1",
+  // Consumer patch changes cache lifetime, not the compatible JRT output shape.
+  jrtNodeSha256:
+    "7b74b47db616f868b53d20329bf5ce2078aadce1b931c4bb4cab4b26f846f774",
 } as const;
 export const RITUAL_COMPILER_VERSION = JSON.stringify(
   RITUAL_COMPILER_COMPONENTS,

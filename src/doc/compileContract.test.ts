@@ -21,6 +21,17 @@ it("records the actual reviewed prepare/shortcut sources and installed compiler/
   expect(hash(readFileSync(resolve(here, "shortcuts.ts"), "utf8"))).toBe(
     RITUAL_COMPILER_COMPONENTS.shortcutsSha256,
   );
+  expect(
+    hash(
+      readFileSync(
+        resolve(
+          here,
+          "../../node_modules/json-rich-text/lib/esm/blocks/node.js",
+        ),
+        "utf8",
+      ),
+    ),
+  ).toBe(RITUAL_COMPILER_COMPONENTS.jrtNodeSha256);
   for (const name of [
     "pug-lexer",
     "pug-parser",
