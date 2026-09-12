@@ -4,7 +4,7 @@ The 2026-09-12 backup passes the current pure auth, membership, ritual and study
 
 ## Results
 
-The backup contains 190 documents across 10 collections. A separate metadata inventory found 10 images: 3 JPEG and 7 SVG, all with valid creation dates and no owner field. Stored image formats, MIME types and byte sizes agree. Legacy SVG links must remain supported independently of the new-upload format allowlist; file import planning is separate.
+The backup contains 190 documents across 10 collections. A separate metadata inventory found 10 images: 3 JPEG and 7 SVG, all with valid creation dates and no owner field. Stored image formats, MIME types and byte sizes agree. Legacy SVG links must remain supported independently of the new-upload format allowlist.
 
 | Boundary | Preserved result |
 | --- | --- |
@@ -12,8 +12,14 @@ The backup contains 190 documents across 10 collections. A separate metadata inv
 | [Membership import](../src/migration/planLegacyMembershipImport.ts) | 1 group, 2 combined membership/admin grants, 1 temple, 1 protected invite and 7 temple memberships, including grade zero. The global access projection retains 1 administrator. |
 | [Ritual import](../src/migration/planLegacyRitualImport.ts) | 5 rituals, 59 revisions and 5 exact original compiled archives. One unresolved creator remains nullable with explicit evidence; the current revision author is not substituted. |
 | [Study import](../src/migration/planLegacyStudyImport.ts) | 49 source rows become 48 active baselines and 1 protected duplicate archive. All 49 full EJSON snapshots and hashes match the source. |
+| [File metadata import](../src/migration/planLegacyFileImport.ts) | 10 public file rows, 10 exact protected EJSON snapshots and 10 typed aliases; original fields and null ownership retained. Explicitly synthetic storage-location inputs validate the source shape only, with production binding and all 10 object-byte checks outstanding. |
 
 No new source-shape rejection required a mapper or schema relaxation.
+
+The separate file planning pass reads the same protected backup in memory and
+retains only aggregate results. An identical rerun produces the same plan with
+disposable aliases; all source values and the 21 backup fingerprints remain
+unchanged. It does not inspect stored object bodies or infer a production bucket.
 
 ## Reviewed study duplicate
 

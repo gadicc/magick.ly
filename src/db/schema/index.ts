@@ -1,5 +1,7 @@
 export * from "./auth";
+export * from "./legacyFiles";
 export * from "./legacyIds";
+export * from "./loomFiles";
 export * from "./memberships";
 export * from "./rituals";
 export * from "./studyProgress";

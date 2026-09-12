@@ -132,6 +132,16 @@ remain separate work.
 
 **Files and offline clients are part of import acceptance.** Ten file records have unique hashes; six distinct legacy hash URLs found in compiled documents all resolve to metadata. Absolute URLs also occur. Keep `/api/file2?sha256=...` aliases working and inventory actual image/font/resource dependencies before claiming a ritual is offline-ready. A metadata-only migration does not prove an image is retrievable. The operator approved preserving legacy public links while making new attachments follow ritual permissions. Do not invent owners for the ten legacy records or infer attachment authority merely from a URL embedded in source.
 
+The metadata planner and generated Files schema now preserve all ten historical
+rows, including seven SVGs, with UUIDv7 aliases and separate protected source
+evidence. Legacy `meta` stays empty and ownership stays null. Source storage
+provider and bucket must be explicit inputs; no object is copied or verified by
+the planner. Duplicate digests, conflicting identities and unknown/lossy fields
+fail instead of selecting a winner. Files remains a planned Loom feature until
+permission-aware runtime adapters, legacy compatibility and the approved direct
+20 MiB upload/finalization flow are verified. The new-upload allowlist does not
+restrict existing public files.
+
 Server import cannot recover unsynchronized browser data. Ship the Gongo export/recovery path before removing persisted collection registrations or turning off the legacy backend. Retain pending inserts/updates/deletes, bases, ObjectId metadata and account ownership in the browser migration. Use a separate Dexie database, resumable checkpoints and verification before cleaning old stores. Anonymous progress must not become another account's data through login switching. New offline operations need UUIDv7 operation IDs and durable idempotent receipts; an old cumulative snapshot must not be replayed as a new review event.
 
 A downloaded private ritual must reopen after a cold start with no session/network request, including its required assets. Test reconnect, permission refresh, logout/account switching, two-tab migration, interrupted imports, stale service workers and long-offline clients. The operator now specifies a renewable **14-day offline-access window**. Only a

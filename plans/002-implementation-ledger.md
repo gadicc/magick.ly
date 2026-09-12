@@ -42,6 +42,8 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Public ritual offline query shells | Complete locally | Three literal static ritual shells, anonymous build-bound worker cache and exact deployment asset matching; 43 new tests, 845 full-suite tests, coverage/types/Biome/build and nine two-build Chromium scenarios pass |
 | Atomic SQL temple creation | Complete locally; UI activation pending | Any verified existing user creates temple, first grade-zero admin and durable retry receipt atomically; no automatic invite; 37 new tests, 802 full-suite tests, coverage/types/Biome/build and real Postgres races/lock-timeout/replay checks pass |
 | Authorized SQL ritual reads | Complete locally | Server-only repository shares policy and loads current grants/source in read-only repeatable-read transactions; 20 new tests, 765 full-suite tests, coverage/types/Biome/build and real Postgres concurrent-demotion/source-preservation acceptance pass |
+| Preserved SQL rendered rituals | Complete locally | Exact current compiled archives under ordinary read permissions; nine query regressions and installed JRT legacy-shape test; 855 tests, scoped coverage/types/Biome/build; protected backup preflight passes with reviewed exceptions |
+| Files metadata SQL foundation | Complete locally; runtime planned | Exact Loom UUIDv7 schema and protected legacy provenance; 71 new tests, 926 full-suite tests, coverage/types/Biome/build and real Postgres migration/date/metadata/rollback/rerun acceptance; all ten actual metadata rows pass read-only preflight |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
 | Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
 | SuperMemo compatibility upgrade | Complete locally | 2.0.17→2.0.23 keeps the algorithm and moves package entrypoints to ESM/CJS; 14,320 exact old/new comparisons, all 692 tests, unchanged scoped coverage, typecheck, Biome, frozen install and production build pass |
@@ -266,3 +268,29 @@ installed-JRT renderer test preserves the observed legacy empty-text-child shape
 and proves identical markup without mutating it. Evidence:
 `/tmp/magickli-rendered-sql-*.log` and `/tmp/magickli-protected-preflight/`.
 No private SQL import or runtime repository switch was performed.
+
+The Files foundation uses Loom's unchanged v3 managed schema with UUIDv7 IDs.
+An app-owned protected table retains full legacy EJSON/hash, typed identity,
+original public path, storage location and sync bookkeeping. None of that
+provenance enters public `meta`. Legacy files stay public with null ownership;
+all object keys, MIME/size claims, filenames, image metadata and creation dates
+are preserved. The canonical update date explicitly records import time.
+Unknown fields, lossy metadata, duplicate hashes and alias conflicts stop the
+planner. Array accessors and hidden fields are rejected before values are read.
+
+All 926 default tests, 33-module coverage, types, Biome, ordinary Loom checks and
+the production build pass. Eight generated migrations create 26 tables in a
+disposable Postgres rehearsal. The actual Loom driver preserves BOM/CRLF/Unicode
+filenames, nested metadata, source EJSON/hashes and dates, including under a
+London database session timezone. Constraints, UUIDv7/private defaults, rollback
+and unchanged migration rerun pass; the owned database was removed. Evidence:
+`/tmp/magickli-files-postgres/` and `/tmp/magickli-files-*.log`.
+
+A separate read-only preflight accepts the ten actual file metadata rows with
+all source snapshots, fields and aliases accounted for and all 21 backup
+fingerprints unchanged. It uses explicitly synthetic storage-location inputs;
+production location binding and all ten object-byte checks remain outstanding.
+Evidence: `/tmp/magickli-protected-preflight/files-plan-report.json`.
+Files remains `planned` in Loom until the closed runtime adapters are complete.
+No new routes, provider writes, private attachment grants or Neon migrations
+were activated by this unit.

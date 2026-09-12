@@ -57,6 +57,11 @@
   },
   "overrides": [
     {
+      "includes": ["src/db/schema/loomFiles.ts"],
+      "formatter": { "enabled": false },
+      "assist": { "enabled": false }
+    },
+    {
       "includes": ["src/doc/blocks.js"],
       "linter": {
         "rules": {

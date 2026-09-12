@@ -20,6 +20,32 @@
     }
   },
   "features": {
+    "files": {
+      "status": "planned",
+      "config": {
+        "entrypoints": {
+          "routeHandler": "src/app/api/files/route.ts"
+        },
+        "modules": {
+          "accessModule": "src/files/access.ts",
+          "repositoryModule": "src/files/repository.ts",
+          "storageModule": "src/files/storage.ts"
+        },
+        "schema": {
+          "blueprint": "files",
+          "exports": ["loomFilesTable"],
+          "idGeneration": "uuid-v7",
+          "mode": "managed-local",
+          "module": "src/db/schema/loomFiles.ts",
+          "tableName": "loom_files",
+          "version": 3,
+          "hash": "f5d9773b3245df85231782ee42d292823bd6b474b406efa1c97a41bea7ac9bcf"
+        },
+        "storage": {
+          "adapter": "custom"
+        }
+      }
+    },
     "db": {
       "status": "active",
       "activatedOn": "2026-09-12",
