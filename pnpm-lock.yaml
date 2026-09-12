@@ -45,8 +45,8 @@ importers:
         specifier: 11.14.1
         version: 11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)
       '@gadicc/loom':
-        specifier: 1.23.0
-        version: 1.23.0(@biomejs/biome@2.5.13)(@electric-sql/pglite@0.3.16)(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@neondatabase/serverless@1.1.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(postgres@3.4.9)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(server-only@0.0.1)(superjson@2.2.6)(typescript@5.9.3)(valibot@1.5.0(typescript@5.9.3))
+        specifier: 1.24.0
+        version: 1.24.0(@biomejs/biome@2.5.13)(@electric-sql/pglite@0.3.16)(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@neondatabase/serverless@1.1.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(postgres@3.4.9)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(server-only@0.0.1)(superjson@2.2.6)(typescript@5.9.3)(valibot@1.5.0(typescript@5.9.3))
       '@hookform/resolvers':
         specifier: ^5.9.1
         version: 5.9.1(@standard-schema/spec@1.1.0)(ajv-errors@3.0.0(ajv@8.17.1))(ajv-formats@2.1.1(ajv@8.17.1))(ajv@8.17.1)(react-hook-form@7.88.0(react@19.3.0))(valibot@1.5.0(typescript@5.9.3))(zod@4.1.12)
@@ -1802,8 +1802,8 @@ packages:
   '@floating-ui/utils@0.2.3':
     resolution: {integrity: sha512-XGndio0l5/Gvd6CLIABvsav9HHezgDFFhDfHk1bvLfr9ni8dojqLSvBbotJEjmIwNHL7vK4QzBJTdBRoB+c1ww==}
 
-  '@gadicc/loom@1.23.0':
-    resolution: {integrity: sha512-HpfmH0tMDwF9JocbYnqWjGF5MNpi4Vjo9Gvmf+iuBp0z9F3Z5BjlhU2nXc/LaOETQffzXZa8wEAPPqsAWzYhdg==}
+  '@gadicc/loom@1.24.0':
+    resolution: {integrity: sha512-RboEmaP88FcSGxrbvtUq38cvBFuvMgrshLFHm8PfTckJYWUJL+sJTlbdKfcU7WjChpMdThS8TOrCVgfKSvpwYw==}
     hasBin: true
     peerDependencies:
       '@electric-sql/pglite': '>=0.3.15'
@@ -7889,7 +7889,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.3': {}
 
-  '@gadicc/loom@1.23.0(@biomejs/biome@2.5.13)(@electric-sql/pglite@0.3.16)(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@neondatabase/serverless@1.1.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(postgres@3.4.9)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(server-only@0.0.1)(superjson@2.2.6)(typescript@5.9.3)(valibot@1.5.0(typescript@5.9.3))':
+  '@gadicc/loom@1.24.0(@biomejs/biome@2.5.13)(@electric-sql/pglite@0.3.16)(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@neondatabase/serverless@1.1.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(postgres@3.4.9)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(server-only@0.0.1)(superjson@2.2.6)(typescript@5.9.3)(valibot@1.5.0(typescript@5.9.3))':
     dependencies:
       '@next/env': 16.3.5
       jsonc-parser: 3.3.1

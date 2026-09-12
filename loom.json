@@ -49,6 +49,9 @@
           "region": "lhr1",
           "resourceName": "magickli-db",
           "vercelEnvironments": ["production", "preview"]
+        },
+        "release": {
+          "productionBranch": "master"
         }
       }
     }

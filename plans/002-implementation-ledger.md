@@ -39,6 +39,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Atomic ritual writes and editor recovery | Complete locally | Versioned save/create/publication commands, compare-and-swap tokens, exact source, server compilation and durable operation receipts; converted editor/creation UI, full authorized snapshots and explicit legacy recovery; 646 default tests plus 14 disposable Mongo cases, scoped coverage, types, Biome and production build pass; six browser scenarios with synthetic HTTP responses pass |
 | Ritual and revision SQL foundation | Complete locally | Four tables distinguish exact source, original compiled archives and versioned artifacts; strict typed import plan and parent/source-hash constraints; 46 new tests, 692 full-suite tests, types/Biome/coverage/build and real Postgres migration/rollback/unchanged rerun pass; no live import |
 | Shared form dependencies | Complete locally | React Hook Form 7.88.0, resolvers 5.9.1 and Radash 12.1.1; no source changes; 28 actual membership form/schema tests, all 692 tests, unchanged coverage, typecheck, Biome, frozen install and production build pass |
+| Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
 | SuperMemo compatibility upgrade | Complete locally | 2.0.17→2.0.23 keeps the algorithm and moves package entrypoints to ESM/CJS; 14,320 exact old/new comparisons, all 692 tests, unchanged scoped coverage, typecheck, Biome, frozen install and production build pass |
 | Unused dependency removal | Complete locally | Removed Passport, Google Passport strategy, dotenv, npm zlib and the obsolete Jade CodeMirror package after source/config/peer audit; 441 tests, coverage, typecheck, lint, frozen install and production build pass |
 
@@ -46,7 +47,7 @@ Pinecone is the authoritative vector store. The unused Mongo ingestion experimen
 
 The Node 24 baseline production build completes with existing tarot import and BSON target warnings, expected local-placeholder Mongo connection errors from eager initialization, and an invalid sitemap base URL caused by the old config loader. These are tracked for separate fixes. Service credentials were overridden with local/build-only values; Google Font downloads were allowed. CI is configured but has not run on GitHub yet.
 
-Coverage currently gates twenty-six extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.46% statements, 99.18% lines, 100% functions and 96.41% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 692 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
+Coverage currently gates twenty-six extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.46% statements, 99.18% lines, 100% functions and 96.41% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 698 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
 
 Loom is bootstrapped with no application features active yet. Its required formatter compatibility prompted the Biome update and configuration migration. The new SVG parser is excluded from existing designer assets. The explicitly intentional JRT hook model has a file-scoped exception; an unrelated unused hook component was removed. Forty-four newly reported array-index-key findings remain warnings while their owning features are migrated: changing component identity as a formatting fix would be unsafe. Import ordering uses the new defaults.
 
@@ -113,3 +114,29 @@ The ritual SQL foundation adds four tables and a strict dependency-ordered impor
 The shared form dependency unit upgrades React Hook Form 7.65.0→7.88.0, resolvers 5.2.2→5.9.1 and Radash 12.1.0→12.1.1. Their sole app consumer remains the Valibot-backed temple membership form. Existing real-control tests cover date selection, partial/invalid input, clearing/correction and both submit actions; all 28 form/schema tests and the full 692-test suite pass without source changes. The lockfile package/snapshot inventory confirms only these three versions changed. Regeneration from the verified lock with `pnpm install --prefer-offline` avoids the unrelated transitive editor/tooling refresh performed by `pnpm update`. Typecheck, Biome, frozen install, coverage and production build pass. `loom check --production` still fails solely on the recorded migration-workflow/deployment-fence gaps, including the published checker's main-versus-master assumption; this upgrade does not enable release.
 
 SuperMemo 2.0.23 changes package entrypoints to explicit ESM/CJS exports while retaining the same SM2 algorithm. Source inspection and 14,320 exact comparisons cover every grade across interval/repetition/ease boundaries, frozen input and one hundred deterministic hundred-review sequences. Existing study characterization and the full 692-test suite pass with unchanged schedules and coverage. Typecheck, Biome, frozen install, ordinary Loom check and the production/browser bundle pass. Only the SuperMemo package resolution changes; no stored schedules are recomputed or migrated by this dependency unit.
+
+The operator approved publishing the two reviewed shared Loom commits. The normal
+[release workflow](https://github.com/gadicc/loom/actions/runs/34697003106)
+published [1.24.0](https://github.com/gadicc/loom/releases/tag/v1.24.0), whose npm
+gitHead is exactly `3a84d424bb19d3b82bd3de2263d820912670e323`. Magickly now pins
+that registry artifact and integrity; no local override remains. The installed
+PWA JavaScript modules match the reviewed, browser-rehearsed package byte for
+byte, with the client directive first. Six tests use the actual published
+lifecycle: acceptance/decline, first install, cleanup, polling and async errors.
+The app keeps its confirmation dialog and 60-second interval, waits for consent
+before worker activation, and no longer unregisters on component cleanup.
+
+All 698 default tests, unchanged scoped coverage, TypeScript, Biome, frozen
+offline install and production build pass. Ordinary Loom checks pass; production
+checks correctly still fail for the missing deployment fence and migration
+workflow, now naming the configured `master` branch. Those remain release work,
+not waived checks. No Magickly deployment or other consumer upgrade occurred.
+Evidence: `/tmp/magickli-loom-1.24-adoption/`; the prior two-build Chromium
+acceptance remains in `/tmp/magickli-loom-release-review.md`. Public query-shell
+caching and private offline storage remain separate units.
+
+Temple creation policy is now approved: any signed-in user may create a temple
+and become its first administrator atomically. The creation screen must explain
+that this is for someone setting up/managing a temple, and direct existing
+members toward joining their temple instead. Preserve the existing separate
+invite setup. SQL commands and explanatory UI remain to be integrated.
