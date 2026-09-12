@@ -365,3 +365,13 @@ This file has not been pushed or deployed, so the live Paris compute and existin
 provider settings remain unchanged. A reviewed migration/release workflow,
 preview database isolation and staged acceptance are still required before
 release; the production Loom check must continue failing on the missing workflow.
+
+A read-only verification of all ten legacy public image URLs returned HTTP 200
+with matching backup SHA-256, size and MIME type: 7,790,234 bytes in total. Streams
+were bounded and no raw image bodies retained. All 21 backup fingerprints stayed
+unchanged. The local environment has no AWS/S3 settings, so this verifies the
+existing application delivery path, not direct bucket access, private policy or
+CORS. Evidence: `/tmp/magickli-file-object-preflight/public-route-report.json`.
+Provider binding and private-upload acceptance remain required. Separately,
+`fb07660` removed session-token and full profile/user debug logs from the legacy
+authentication path; types/Biome pass without changing sign-in behavior.

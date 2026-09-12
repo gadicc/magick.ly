@@ -12,7 +12,7 @@ The backup contains 190 documents across 10 collections. A separate metadata inv
 | [Membership import](../src/migration/planLegacyMembershipImport.ts) | 1 group, 2 combined membership/admin grants, 1 temple, 1 protected invite and 7 temple memberships, including grade zero. The global access projection retains 1 administrator. |
 | [Ritual import](../src/migration/planLegacyRitualImport.ts) | 5 rituals, 59 revisions and 5 exact original compiled archives. One unresolved creator remains nullable with explicit evidence; the current revision author is not substituted. |
 | [Study import](../src/migration/planLegacyStudyImport.ts) | 49 source rows become 48 active baselines and 1 protected duplicate archive. All 49 full EJSON snapshots and hashes match the source. |
-| [File metadata import](../src/migration/planLegacyFileImport.ts) | 10 public file rows, 10 exact protected EJSON snapshots and 10 typed aliases; original fields and null ownership retained. Explicitly synthetic storage-location inputs validate the source shape only, with production binding and all 10 object-byte checks outstanding. |
+| [File metadata import](../src/migration/planLegacyFileImport.ts) | 10 public file rows, 10 exact protected EJSON snapshots and 10 typed aliases; original fields and null ownership retained. Synthetic storage-location inputs validate the source shape only. A later public-route check verifies all 10 object bodies; direct production storage binding remains outstanding. |
 
 No new source-shape rejection required a mapper or schema relaxation.
 
@@ -20,6 +20,17 @@ The separate file planning pass reads the same protected backup in memory and
 retains only aggregate results. An identical rerun produces the same plan with
 disposable aliases; all source values and the 21 backup fingerprints remain
 unchanged. It does not inspect stored object bodies or infer a production bucket.
+
+A subsequent read-only pass on 12 September fetched the ten existing
+`https://magick.ly/api/file2?sha256=...` URLs without authentication. All returned
+HTTP 200 and the expected MIME type; streamed byte sizes and SHA-256 hashes
+matched every backup file record exactly, totaling 7,790,234 bytes. Streams were
+bounded by each expected size and a deadline. No raw image bytes were retained,
+no provider/database write ran, and all 21 backup fingerprints remained unchanged.
+Evidence: `/tmp/magickli-file-object-preflight/public-route-report.json` and its
+runner. This proves current public delivery, not an object-body backup, direct
+bucket access, storage policy/CORS or private-upload readiness. Local env loading
+found no AWS/S3 configuration, so direct provider verification remains outstanding.
 
 ## Reviewed study duplicate
 
@@ -43,7 +54,7 @@ The remaining difference is one stored text node with `children: []`, where the 
 
 All **5/5 current trees are semantically equivalent under the two named comparison rules**, `derived-forMe` and `empty-text-children`; the result remains **4/5 after `forMe` alone**. These rules apply only to comparison copies. Original compiled archives remain exact, including `forMe`, empty arrays and unknown JRT attributes.
 
-The initial [SQL ritual reader](../src/doc/sqlReads.ts) may return an original archive only when its claimed revision is the current revision of that same authorized ritual. Missing or stale archives fail closed. New saves must introduce explicitly versioned artifact selection as part of their write contract; this preflight does not authorize automatic replacement with recompiled import output.
+The [SQL ritual reader](../src/doc/sqlReads.ts) may return an original archive only when no artifact is selected and its claimed revision is the current revision of that same authorized ritual. The implemented [SQL v2 write contract](007-sql-ritual-write-contract.md) selects explicitly versioned output for new saves. Missing, stale or incompatible selected output fails closed without archive fallback. This preflight does not authorize automatic replacement with recompiled import output.
 
 ## Remaining cutover gates
 
