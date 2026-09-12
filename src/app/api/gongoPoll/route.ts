@@ -4,9 +4,14 @@ import {
   userIdMatches,
   userIsAdmin,
 } from "gongo-server-db-mongo/lib/collection";
-import type { Document, Filter } from "mongodb";
+import type { Document } from "mongodb";
 import gs, { ObjectId /* User */ } from "@/api-lib/db";
 import { auth } from "@/auth";
+import {
+  publishRitualDoc,
+  publishRitualDocs,
+  publishRitualRevisions,
+} from "@/doc/publications";
 
 // TODO, later... with separate db.ts and db-full.ts and mongodb-rest-relay.
 // export const runtime = "edge";
@@ -27,28 +32,7 @@ gs.publish("studySet", async (db, _opts, { auth }) => {
   return cursor;
 });
 
-gs.publish("docs", async (db, opts, { auth }) => {
-  const userId = await auth.userId();
-  const user =
-    userId && (await db.collection("users").findOne({ _id: userId }));
-
-  const templeMemberships =
-    userId &&
-    (await db.collection("templeMemberships").find({ userId }).toArray());
-  const templeIds = templeMemberships?.map((tm) => tm.templeId);
-
-  const query = {
-    $or: [{ groupId: { $exists: false }, templeId: { $exists: false } }],
-  } as Filter<Document>;
-
-  if (user?.groupIds) query.$or?.push({ groupId: { $in: user.groupIds } });
-
-  // TODO, minGrade check.
-  if (templeIds) query.$or?.push({ templeId: { $in: templeIds } });
-
-  console.log(JSON.stringify(query, null, 2));
-  return db.collection("docs").find(query);
-});
+gs.publish("docs", publishRitualDocs);
 
 // TODO, don't publish secrets :)
 // gs.publish("accounts", (db) => db.collection("accounts").find());
@@ -132,55 +116,8 @@ gs.publish("userGroups", async (db, opts, { auth }) => {
   if (!user?.admin) return [];
 });
 
-gs.publish("doc", async (db, opts, { auth }) => {
-  const userId = await auth.userId();
-  if (!userId) return [];
-
-  const _idStr = opts && opts._id;
-  const user = await db.collection("users").findOne({ _id: userId });
-  const doc = await db
-    .collection("docs")
-    .findOne({ _id: new ObjectId(_idStr) });
-  if (!doc) return [];
-
-  const membership = await db.collection("templeMemberships").findOne({
-    userId,
-    templeId: doc.templeId,
-  });
-
-  if (
-    user?.admin ||
-    membership?.admin ||
-    (!doc.groupId && !doc.templeId) ||
-    user?.groupIds.includes(doc.groupId)
-  ) {
-    return [
-      {
-        coll: "docs",
-        entries: [doc],
-      },
-    ];
-  }
-
-  return [];
-});
-gs.publish("docRevisions", async (db, { docId: docIdStr }, { auth }) => {
-  const userId = await auth.userId();
-  if (!userId) return [];
-
-  const docId = new ObjectId(docIdStr);
-
-  const doc = await db.collection("docs").findOne({ _id: docId });
-  if (!doc) return [];
-
-  const membership = await db.collection("templeMemberships").findOne({
-    userId,
-    templeId: doc.templeId,
-  });
-
-  if (!membership?.admin) return [];
-  return db.collection("docRevisions").find({ docId });
-});
+gs.publish("doc", publishRitualDoc);
+gs.publish("docRevisions", publishRitualRevisions);
 
 async function templeAdminHelper(auth, db, templeIdStr) {
   const userId = await auth.userId();
