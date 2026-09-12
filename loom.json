@@ -40,6 +40,15 @@
           "refinementsCommonModule": "src/db/valibot/refinements/_common.ts",
           "scriptsTsconfig": "scripts/tsconfig.scripts.json",
           "valibotBarrelModule": "src/db/valibot/index.ts"
+        },
+        "provider": {
+          "connectionStatus": "connected",
+          "development": false,
+          "kind": "neon",
+          "provisionedBy": "vercel-marketplace",
+          "region": "lhr1",
+          "resourceName": "magickli-db",
+          "vercelEnvironments": ["production", "preview"]
         }
       }
     }

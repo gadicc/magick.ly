@@ -1,5 +1,7 @@
 Implementation began on 12 September 2026, following the approved [modernization plan](./001-modernization-research.md). Commit each verified, isolated change. Keep package/configuration changes and final integration under one owner; bounded agents own compiler tests, study tests and a read-only migration audit.
 
+Current infrastructure boundary: the new London Neon database is connected and has the identity foundation, while the live application and all domain data remain on Mongo. No deployment or compute move has occurred. See the [provisioning record](./004-neon-provisioning.md) for verified state and remaining release gates. Earlier verification paragraphs below describe their individual checkpoints.
+
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
 | Planning and backup protection | Complete | Production dump checksums, gzip, BSON and JSON verified; isolated Mongo restore validated all 190 documents, 10 collections and 20 indexes; dump directory ignored; London/London confirmed |
@@ -19,6 +21,7 @@ Implementation began on 12 September 2026, following the approved [modernization
 | Canonical sitemap URLs | Complete | next-sitemap 2.5.28→4.2.3 with explicit ESM config; full build and postbuild pass; XML validation proves all 58 page URLs use the canonical origin, with route parity apart from four excluded admin/utility pages; index and robots verified |
 | SQL identity foundation | Complete locally | Loom DB wiring, Drizzle 0.45.2, UUID 14.0.1 and typed durable aliases; 26 new tests; real Postgres 15.17 migration/rerun/concurrency/rollback rehearsal passes and disposable databases removed; app still uses Mongo |
 | Chat SDK and wire protocol | Complete locally | AI SDK 7.0.99, React adapter 4.0.102, OpenAI adapter 4.0.66, RSC 3.0.99; shared service with legacy/plaintext and v2/SSE adapters; 40 additional tests, full build and browser error/retry/reset checks pass; no live provider calls |
+| London Neon provisioning | Complete | Separate `magickli-db` resource, existing Free plan preserved, Production/Preview connected, Development excluded; PostgreSQL 18.6 and London direct endpoint verified; both foundation migrations, rerun, UUIDv7 defaults and rollback checks pass with zero imported aliases |
 
 Pinecone is the authoritative vector store. The unused Mongo ingestion experiment and its dependency are removed. History contained no reusable Pinecone ingestion path, so the uploader now uses the installed Pinecone API directly through a small service. Ingestion pins `text-embedding-ada-002` and newline stripping to match the installed retrieval defaults; retain this compatibility during the AI dependency upgrade. Uploads are limited to 4 MiB by the existing Vercel request path; larger-file ingestion can follow Loom Files/jobs adoption. No live vectors were written. Existing unrelated vector IDs cannot be deduplicated by the new content-derived retry IDs. Defer pgvector migration until retrieval parity and operational tradeoffs can be measured.
 
