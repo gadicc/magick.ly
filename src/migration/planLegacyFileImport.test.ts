@@ -41,6 +41,7 @@ function options(
     lookup: () => firstId,
     storageProvider: "s3",
     sourceBucket: "synthetic-legacy-bucket",
+    sourceObjectKeyPrefix: "",
     importedAt: new Date(importedAt),
     ...overrides,
   };
@@ -99,6 +100,7 @@ describe("legacy Files import plan", () => {
       sourceStorageProvider: "s3",
       sourceBucket: "synthetic-legacy-bucket",
       sourceObjectKey: input.sha256,
+      sourceObjectKeyPrefix: "",
       serializationVersion: "bson-canonical-ejson-v1",
       legacySyncUpdatedAtMilliseconds: 1234567890123,
       importedAt,
@@ -119,6 +121,77 @@ describe("legacy Files import plan", () => {
         canonicalId: firstId,
       },
     ]);
+  });
+  it("uses only an explicit verified key prefix while preserving source, digest and public URL", () => {
+    const input = file();
+    const bare = planLegacyFileImport([input], options());
+    const settings = options({ sourceObjectKeyPrefix: "verified-prefix/" });
+    const prefixed = planLegacyFileImport([input], settings);
+    expect(prefixed.files[0]).toEqual({
+      ...bare.files[0],
+      objectKey: `verified-prefix/${input.sha256}`,
+    });
+    expect(prefixed.snapshots[0]).toEqual({
+      ...bare.snapshots[0],
+      sourceObjectKey: `verified-prefix/${input.sha256}`,
+      sourceObjectKeyPrefix: "verified-prefix/",
+    });
+    expect(prefixed.aliases).toEqual(bare.aliases);
+    expect(prefixed.objectVerificationRequired).toEqual([firstId]);
+    expect(planLegacyFileImport([input], settings)).toEqual(prefixed);
+    settings.sourceObjectKeyPrefix = "changed-later/";
+    expect(prefixed.snapshots[0].sourceObjectKeyPrefix).toBe(
+      "verified-prefix/",
+    );
+  });
+  it("never derives a key prefix from the provider or bucket", () => {
+    const plan = planLegacyFileImport(
+      [file()],
+      options({
+        storageProvider: "r2",
+        sourceBucket: "different-bucket",
+        sourceObjectKeyPrefix: "independently-verified/",
+      }),
+    );
+    expect(plan.files[0]).toMatchObject({
+      storageProvider: "r2",
+      bucket: "different-bucket",
+      objectKey: `independently-verified/${"a".repeat(64)}`,
+    });
+  });
+  it("preserves exact prefix bytes instead of URL encoding, trimming or Unicode normalization", () => {
+    const prefix = " exact e\u0301 é/";
+    const plan = planLegacyFileImport(
+      [file()],
+      options({ sourceObjectKeyPrefix: prefix }),
+    );
+    expect(plan.files[0].objectKey).toBe(prefix + "a".repeat(64));
+    expect(plan.snapshots[0].sourceObjectKeyPrefix).toBe(prefix);
+  });
+  it("requires an explicit prefix choice and rejects invalid or oversized key prefixes", () => {
+    for (const prefix of [
+      undefined,
+      null,
+      1,
+      "missing-delimiter",
+      "x\0/",
+      "\ud800/",
+      "x".repeat(960) + "/",
+      "é".repeat(480) + "/",
+    ]) {
+      expect(() =>
+        planLegacyFileImport(
+          [file()],
+          options({ sourceObjectKeyPrefix: prefix as string }),
+        ),
+      ).toThrow(LegacyFileImportError);
+    }
+    const prefix = "x".repeat(959) + "/";
+    const plan = planLegacyFileImport(
+      [file()],
+      options({ sourceObjectKeyPrefix: prefix }),
+    );
+    expect(Buffer.byteLength(plan.files[0].objectKey, "utf8")).toBe(1024);
   });
   it("keeps old audio and other metadata outside the future image upload allowlist", () => {
     const audio = file({
@@ -429,6 +502,81 @@ describe("Loom managed Files schema and protected provenance", () => {
       Buffer.from(expectedFilename as string).toString("hex"),
     );
     expect(await db.select().from(legacyFileSnapshots)).toEqual(plan.snapshots);
+  });
+  it("persists a verified prefixed key independently of its unchanged public URL", async () => {
+    const prefix = " verified e\u0301 é/";
+    const plan = planLegacyFileImport(
+      [file()],
+      options({ sourceObjectKeyPrefix: prefix }),
+    );
+    await db.transaction(async (tx) => {
+      await tx.insert(loomFilesTable).values(plan.files);
+      await tx.insert(legacyFileSnapshots).values(plan.snapshots);
+    });
+    const [stored] = await db.select().from(legacyFileSnapshots);
+    expect(stored).toEqual(plan.snapshots[0]);
+    const [metadata] = await db.select().from(loomFilesTable);
+    expect(metadata.objectKey).toBe(prefix + "a".repeat(64));
+    expect(stored.legacyPublicPath).toBe(`/api/file2?sha256=${"a".repeat(64)}`);
+    const bytes = await db.execute(
+      sql`select encode(convert_to(source_object_key, 'UTF8'), 'hex') as bytes from legacy_file_snapshots`,
+    );
+    expect(bytes.rows[0].bytes).toBe(
+      Buffer.from(metadata.objectKey).toString("hex"),
+    );
+  });
+  it("retains the bare-key default for existing snapshot insertions", async () => {
+    const plan = planLegacyFileImport([file()], options());
+    const { sourceObjectKeyPrefix: _explicitEmpty, ...oldSnapshot } =
+      plan.snapshots[0];
+    await db.insert(loomFilesTable).values(plan.files);
+    await db.insert(legacyFileSnapshots).values(oldSnapshot);
+    expect(await db.select().from(legacyFileSnapshots)).toEqual(plan.snapshots);
+  });
+  it("rejects prefix/key/public-path mismatch and absent or malformed archived digest", async () => {
+    const plan = planLegacyFileImport(
+      [file()],
+      options({ sourceObjectKeyPrefix: "verified/" }),
+    );
+    const modifiedSource = (digest: unknown) => {
+      const input = file();
+      if (digest === undefined) delete input.sha256;
+      else input.sha256 = digest;
+      const sourceEjson = EJSON.stringify(input, { relaxed: false });
+      return {
+        sourceEjson,
+        sourceSha256: createHash("sha256").update(sourceEjson).digest("hex"),
+      };
+    };
+    for (const changes of [
+      { sourceObjectKey: "a".repeat(64) },
+      { sourceObjectKeyPrefix: "other/" },
+      {
+        sourceObjectKeyPrefix: "wrong",
+        sourceObjectKey: `wrong${"a".repeat(64)}`,
+      },
+      {
+        sourceObjectKeyPrefix: "é".repeat(480) + "/",
+        sourceObjectKey: `${"é".repeat(480)}/${"a".repeat(64)}`,
+      },
+      { legacyPublicPath: `/api/file2?sha256=verified/${"a".repeat(64)}` },
+      modifiedSource(undefined),
+      modifiedSource(null),
+      modifiedSource(1),
+      modifiedSource("A".repeat(64)),
+      modifiedSource("b".repeat(64)),
+    ]) {
+      await expect(
+        db.transaction(async (tx) => {
+          await tx.insert(loomFilesTable).values(plan.files);
+          await tx
+            .insert(legacyFileSnapshots)
+            .values({ ...plan.snapshots[0], ...changes });
+        }),
+      ).rejects.toThrow();
+      expect(await db.select().from(loomFilesTable)).toEqual([]);
+      expect(await db.select().from(legacyFileSnapshots)).toEqual([]);
+    }
   });
   it("keeps the untouched managed UUIDv7 and private defaults for newly inserted metadata", async () => {
     const [inserted] = await db

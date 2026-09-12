@@ -21,6 +21,8 @@ export interface LegacyFileImportOptions {
   lookup: (source: LegacyAliasKey) => string | null;
   storageProvider: string;
   sourceBucket: string;
+  /** Verified object-key bytes before the digest, including a trailing slash; "" explicitly means a bare digest. Never inferred from an endpoint or bucket. */
+  sourceObjectKeyPrefix: string;
   importedAt: Date;
 }
 /** Safe categories and input positions only; no filenames, identifiers or metadata in messages. */
@@ -158,6 +160,15 @@ export function planLegacyFileImport(
     true,
   );
   const sourceBucket = text(options.sourceBucket, "options.sourceBucket", true);
+  const sourceObjectKeyPrefix = text(
+    options.sourceObjectKeyPrefix,
+    "options.sourceObjectKeyPrefix",
+  );
+  if (
+    (sourceObjectKeyPrefix !== "" && !sourceObjectKeyPrefix.endsWith("/")) ||
+    Buffer.byteLength(sourceObjectKeyPrefix, "utf8") > 960
+  )
+    fail("invalid-object-key-prefix", "options.sourceObjectKeyPrefix");
   const importedAt = date(options.importedAt, "options.importedAt");
   const plan: LegacyFileImportPlan = {
     files: [],
@@ -195,8 +206,8 @@ export function planLegacyFileImport(
     if (ids.has(canonicalId)) fail("canonical-alias-collision", path);
     ids.add(canonicalId);
     const sha256 = entry.sha256;
-    // The old writer used lowercase crypto output as the actual object key. Do not
-    // trim/lowercase an unexpected key and thereby invent another storage location.
+    // The old writer passed this unchanged digest as Key. Endpoint addressing may
+    // have added a verified prefix; neither component may be normalized or guessed.
     if (
       typeof sha256 !== "string" ||
       !isSha256Hex(sha256) ||
@@ -243,6 +254,7 @@ export function planLegacyFileImport(
     )
       fail("invalid-sync-timestamp", path);
     const sourceEjson = snapshot(entry, path);
+    const objectKey = sourceObjectKeyPrefix + sha256;
     plan.files.push({
       id: canonicalId,
       sha256,
@@ -253,7 +265,7 @@ export function planLegacyFileImport(
       kind,
       storageProvider,
       bucket: sourceBucket,
-      objectKey: sha256,
+      objectKey,
       ownerType: null,
       ownerId: null,
       visibility: "public",
@@ -278,7 +290,8 @@ export function planLegacyFileImport(
       legacyPublicPath: `/api/file2?sha256=${sha256}`,
       sourceStorageProvider: storageProvider,
       sourceBucket,
-      sourceObjectKey: sha256,
+      sourceObjectKey: objectKey,
+      sourceObjectKeyPrefix,
       legacySyncUpdatedAtMilliseconds:
         sync === undefined ? null : (sync as number),
       importedAt: new Date(importedAt),

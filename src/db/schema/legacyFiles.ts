@@ -33,6 +33,10 @@ export const legacyFileSnapshots = pgTable(
     sourceStorageProvider: text("source_storage_provider").notNull(),
     sourceBucket: text("source_bucket").notNull(),
     sourceObjectKey: text("source_object_key").notNull(),
+    // Explicit verified addressing evidence, separate from the unchanged public digest.
+    sourceObjectKeyPrefix: text("source_object_key_prefix")
+      .notNull()
+      .default(""),
     legacySyncUpdatedAtMilliseconds: bigint(
       "legacy_sync_updated_at_milliseconds",
       { mode: "number" },
@@ -67,11 +71,19 @@ export const legacyFileSnapshots = pgTable(
     ),
     check(
       "legacy_file_source_location",
-      sql`length(btrim(${table.sourceStorageProvider})) > 0 and length(btrim(${table.sourceBucket})) > 0 and ${table.sourceObjectKey} ~ '^[0-9a-f]{64}$'`,
+      sql`length(btrim(${table.sourceStorageProvider})) > 0 and length(btrim(${table.sourceBucket})) > 0 and ${table.sourceObjectKey} = ${table.sourceObjectKeyPrefix} || (${table.sourceEjson}::json ->> 'sha256')`,
+    ),
+    check(
+      "legacy_file_source_digest",
+      sql`coalesce(json_typeof(${table.sourceEjson}::json -> 'sha256') = 'string' and (${table.sourceEjson}::json ->> 'sha256') ~ '^[0-9a-f]{64}$', false)`,
+    ),
+    check(
+      "legacy_file_source_prefix",
+      sql`octet_length(${table.sourceObjectKeyPrefix}) <= 960 and (${table.sourceObjectKeyPrefix} = '' or right(${table.sourceObjectKeyPrefix}, 1) = '/')`,
     ),
     check(
       "legacy_file_public_path",
-      sql`${table.legacyPublicPath} = '/api/file2?sha256=' || ${table.sourceObjectKey}`,
+      sql`${table.legacyPublicPath} = '/api/file2?sha256=' || (${table.sourceEjson}::json ->> 'sha256')`,
     ),
   ],
 );

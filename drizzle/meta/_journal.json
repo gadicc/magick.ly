@@ -71,6 +71,13 @@
       "when": 1789230661974,
       "tag": "0009_ritual_file_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789231533628,
+      "tag": "0010_legacy_file_locations",
+      "breakpoints": true
     }
   ]
 }

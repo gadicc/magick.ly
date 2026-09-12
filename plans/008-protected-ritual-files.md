@@ -143,3 +143,47 @@ Evidence: `/tmp/magickli-sql-upload-*.log` and
 `/tmp/magickli-upload-postgres-rehearsal/{README.md,result.json,source-manifest.json}`.
 Migration 0009 and the preceding domain migrations remain local. No SQL upload
 route, identity switch, private Neon import or provider adapter is activated.
+
+## Verified legacy key mapping and R2 capabilities
+
+Canonical-origin SDK v3 reads establish that every legacy object is stored at
+`<configured bucket>/<unchanged sha256>` within that bucket. Bare digest keys all
+return 404. The old endpoint already included the bucket path and SDK v2 appended
+the bucket again. The importer now requires an explicit verified key prefix;
+it never derives one from an endpoint or bucket. Prefix bytes remain exact, with
+no Unicode/path normalization, and public URLs still use only the original hash.
+Protected provenance stores the prefix, with SQL constraints binding the key and
+public path independently to the archived digest. Migration 0010 defaults existing
+bare-key rows to an empty prefix without changing their stored values.
+
+All 1,506 default tests, 49-module coverage, types, Biome, ordinary Loom checks and
+production build pass. Real PostgreSQL accepts an upgrade with a pre-existing
+bare-key row, exact BOM/space/Unicode and 1024-byte keys, and eleven invalid cases
+that roll back both file and snapshot. Eleven journal entries and 29 tables remain
+unchanged on rerun; both owned rehearsal databases were removed. All ten actual
+file rows also pass a production-config-bound in-memory plan with disposable IDs
+and unchanged backup fingerprints. No durable private import ran. Evidence:
+`/tmp/magickli-file-locations-postgres/`, `/tmp/magickli-file-location-*.log` and
+`/tmp/magickli-protected-preflight/files-plan-bound-report.json`.
+
+The live R2 capability probe created only fresh 64/65-byte synthetic test objects.
+Correct bytes returned 200 and matched GET size/SHA; unchanged checksum with altered
+bytes returned 400 BadDigest; altered signed length returned 403
+SignatureDoesNotMatch; same-key conditional replay returned 412 PreconditionFailed.
+All test objects were removed and absence verified. Native Chromium separately
+proves that Blob PUT automatically supplies exact Content-Length for 64-byte and
+20 MiB bodies under real SDK signatures. This is not yet an authenticated browser
+upload through production CORS or a 20 MiB production decode/load acceptance.
+
+R2 ignored metadata hoisted into the signed URL query. The corrected probe signs
+and sends checksum/provenance as explicit HTTP headers. Its preceding 64-byte
+object was verified against the exact sent bytes and original absent-key/PUT
+evidence before exact-key cleanup. No existing objects or bucket settings changed.
+Evidence: `/tmp/magickli-file-object-preflight/r2-capability-report.json`,
+`r2-capability-v1-report.json`, `r2-probe-cleanup-report.json`, and browser evidence
+under `/tmp/magickli-files-s3-adapter/output/playwright/`.
+
+Canonical bucket-level CORS inspection returns 403 AccessDenied with the existing
+object credentials. Earlier CORS/policy probes through the bucket-prefixed legacy
+endpoint were not valid bucket-level evidence. Private Production/Preview bucket
+configuration, CORS and full browser/runtime acceptance remain separate gates.

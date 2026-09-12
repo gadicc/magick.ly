@@ -1,0 +1,7 @@
+ALTER TABLE "legacy_file_snapshots" DROP CONSTRAINT "legacy_file_source_location";--> statement-breakpoint
+ALTER TABLE "legacy_file_snapshots" DROP CONSTRAINT "legacy_file_public_path";--> statement-breakpoint
+ALTER TABLE "legacy_file_snapshots" ADD COLUMN "source_object_key_prefix" text DEFAULT '' NOT NULL;--> statement-breakpoint
+ALTER TABLE "legacy_file_snapshots" ADD CONSTRAINT "legacy_file_source_digest" CHECK (coalesce(json_typeof("legacy_file_snapshots"."source_ejson"::json -> 'sha256') = 'string' and ("legacy_file_snapshots"."source_ejson"::json ->> 'sha256') ~ '^[0-9a-f]{64}$', false));--> statement-breakpoint
+ALTER TABLE "legacy_file_snapshots" ADD CONSTRAINT "legacy_file_source_prefix" CHECK (octet_length("legacy_file_snapshots"."source_object_key_prefix") <= 960 and ("legacy_file_snapshots"."source_object_key_prefix" = '' or right("legacy_file_snapshots"."source_object_key_prefix", 1) = '/'));--> statement-breakpoint
+ALTER TABLE "legacy_file_snapshots" ADD CONSTRAINT "legacy_file_source_location" CHECK (length(btrim("legacy_file_snapshots"."source_storage_provider")) > 0 and length(btrim("legacy_file_snapshots"."source_bucket")) > 0 and "legacy_file_snapshots"."source_object_key" = "legacy_file_snapshots"."source_object_key_prefix" || ("legacy_file_snapshots"."source_ejson"::json ->> 'sha256'));--> statement-breakpoint
+ALTER TABLE "legacy_file_snapshots" ADD CONSTRAINT "legacy_file_public_path" CHECK ("legacy_file_snapshots"."legacy_public_path" = '/api/file2?sha256=' || ("legacy_file_snapshots"."source_ejson"::json ->> 'sha256'));

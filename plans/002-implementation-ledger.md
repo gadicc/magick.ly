@@ -46,6 +46,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Files metadata SQL foundation | Complete locally; runtime planned | Exact Loom UUIDv7 schema and protected legacy provenance; 71 new tests, 926 full-suite tests, coverage/types/Biome/build and real Postgres migration/date/metadata/rollback/rerun acceptance; all ten actual metadata rows pass read-only preflight |
 | Protected image finalization | Complete locally; adapters pending | Strict v1 requests, actual bytes/hash/all-frame decoding, Loom private save and current-policy atomic publication contract; 98 new tests, 1,344 default tests, coverage/types/Biome/Loom/build; native decode deadline smoke passes |
 | SQL ritual upload publication | Complete locally; provider/UI pending | Immutable intents, current grants, fenced claims and atomic file/link/receipt; 97 new cases, 1,441 default tests, coverage/types/Biome/Loom/build; 16 real Postgres race/constraint gates and unchanged ten-migration/29-table rerun |
+| Verified legacy file locations | Complete locally; import pending | All ten canonical R2 reads prove bucket-prefixed keys; explicit import prefix/provenance preserves public URLs; 1,506 tests, full checks/build, production-bound in-memory preflight and real Postgres upgrade/rerun pass |
 | Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
 | Offline storage and view lifecycle | Complete locally; runtime integration pending | Dexie repository plus synchronous view guards, two-tab sign-out fence, owned Blob cleanup and opaque locked recovery; 1,499 tests, coverage/types/Biome/Loom/build; ten native lifecycle scenarios pass |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
@@ -436,3 +437,17 @@ and duplicate persistence from reentrant observers. All 1,499 default tests,
 49-module coverage, types, Biome, ordinary Loom checks and production build pass.
 Ten native Chromium lifecycle scenarios pass with no external requests or page
 errors. No reader/editor/auth/service-worker activation occurred.
+
+Canonical R2 reads exposed the legacy bucket-prefixed object keys. The importer
+now records an explicit verified prefix and keeps the public digest URL separate.
+All ten actual files pass the bound in-memory preflight; all 1,506 tests, scoped
+coverage, types, Biome, ordinary Loom checks and production build pass. Real
+Postgres verifies existing-row upgrade, exact key bytes, rollback constraints and
+unchanged eleven-migration/29-table rerun. Migration 0010 remains local.
+
+Live R2 probes also confirm signed SHA/length and conditional-write enforcement.
+All newly created tiny rehearsal objects were removed, with no changes to existing
+files or bucket configuration. Provenance must be signed HTTP headers: R2 ignored
+query-hoisted metadata. Canonical CORS inspection is denied to the current object
+credentials; private bucket configuration and full browser uploads remain pending.
+See the [Files contract](008-protected-ritual-files.md) for exact evidence and limits.

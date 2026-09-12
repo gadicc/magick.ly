@@ -14,6 +14,7 @@ export const legacyFileSnapshotsSelect = v.object({
   sourceStorageProvider: v.string(),
   sourceBucket: v.string(),
   sourceObjectKey: v.string(),
+  sourceObjectKeyPrefix: v.string(),
   legacySyncUpdatedAtMilliseconds: v.nullable(
     v.pipe(
       v.number(),
@@ -37,6 +38,7 @@ export const legacyFileSnapshotsInsert = v.object({
   sourceStorageProvider: v.string(),
   sourceBucket: v.string(),
   sourceObjectKey: v.string(),
+  sourceObjectKeyPrefix: v.optional(v.string()),
   legacySyncUpdatedAtMilliseconds: v.optional(
     v.nullable(
       v.pipe(
@@ -62,6 +64,7 @@ export const legacyFileSnapshotsUpdate = v.object({
   sourceStorageProvider: v.optional(v.string()),
   sourceBucket: v.optional(v.string()),
   sourceObjectKey: v.optional(v.string()),
+  sourceObjectKeyPrefix: v.optional(v.string()),
   legacySyncUpdatedAtMilliseconds: v.optional(
     v.nullable(
       v.pipe(

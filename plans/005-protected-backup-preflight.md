@@ -12,7 +12,7 @@ The backup contains 190 documents across 10 collections. A separate metadata inv
 | [Membership import](../src/migration/planLegacyMembershipImport.ts) | 1 group, 2 combined membership/admin grants, 1 temple, 1 protected invite and 7 temple memberships, including grade zero. The global access projection retains 1 administrator. |
 | [Ritual import](../src/migration/planLegacyRitualImport.ts) | 5 rituals, 59 revisions and 5 exact original compiled archives. One unresolved creator remains nullable with explicit evidence; the current revision author is not substituted. |
 | [Study import](../src/migration/planLegacyStudyImport.ts) | 49 source rows become 48 active baselines and 1 protected duplicate archive. All 49 full EJSON snapshots and hashes match the source. |
-| [File metadata import](../src/migration/planLegacyFileImport.ts) | 10 public file rows, 10 exact protected EJSON snapshots and 10 typed aliases; original fields and null ownership retained. Synthetic planning locations validate source shape. Subsequent public-route and direct R2 reads verify all 10 bodies; durable production location binding remains outstanding. |
+| [File metadata import](../src/migration/planLegacyFileImport.ts) | 10 public file rows, 10 exact protected EJSON snapshots and 10 typed aliases; original fields and null ownership retained. Canonical R2 reads and a production-config-bound in-memory plan verify all ten prefixed keys. Durable aliases/location writes remain outstanding. |
 
 No new source-shape rejection required a mapper or schema relaxation.
 
@@ -52,6 +52,27 @@ resource requests and left all backup fingerprints unchanged. Evidence:
 `/tmp/magickli-protected-preflight/asset-inventory.json`. Renderer fonts and future
 source edits still need their own dependencies accounted for; the four external
 images require an explicit supported fetch policy before complete offline Ready.
+A follow-up child-graph inventory finds zero stylesheet nodes and no image below
+the known non-rendering containers; all 17 structural images occur in the child
+graph. Evidence: `/tmp/magickli-protected-preflight/asset-inventory-v2.json`.
+
+The legacy endpoint contains its bucket as a path component, and AWS SDK v2 adds
+the bucket again when constructing requests. Canonical account-origin SDK v3
+HEAD/GET proves all ten actual object keys are the configured bucket name plus
+`/` plus the unchanged digest. All ten bare-digest keys return 404. Sizes/hashes
+still match exactly; no original objects were modified. Earlier bucket-level
+probes through the legacy endpoint were therefore addressing a key, not the
+intended bucket. Canonical GetBucketCors returns AccessDenied with the existing
+credentials; GetBucketLocation succeeds. Neither establishes bucket privacy.
+
+The planner now requires explicit verified prefix input and records it as protected
+provenance, independently of the unchanged public hash URL. The actual prefix and
+provider/bucket were supplied from the previously fingerprinted Production config
+for a read-only in-memory preflight. All ten metadata/source/alias projections and
+repeat-plan checks pass; no durable aliases or locations were written. Evidence:
+`/tmp/magickli-file-object-preflight/canonical-key-report.json`,
+`canonical-cors-report.json` and
+`/tmp/magickli-protected-preflight/files-plan-bound-report.json`.
 
 ## Reviewed study duplicate
 
