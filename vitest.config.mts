@@ -21,6 +21,7 @@ export default defineConfig({
         "src/doc/publications.ts",
         "src/doc/drafts.ts",
         "src/doc/gongoWrites.ts",
+        "src/doc/sqlReads.ts",
         "src/study/scheduling.ts",
         "src/study/progressSnapshot.ts",
         "src/app/geomancy/tetragrams.ts",

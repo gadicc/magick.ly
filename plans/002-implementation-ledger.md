@@ -39,6 +39,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Atomic ritual writes and editor recovery | Complete locally | Versioned save/create/publication commands, compare-and-swap tokens, exact source, server compilation and durable operation receipts; converted editor/creation UI, full authorized snapshots and explicit legacy recovery; 646 default tests plus 14 disposable Mongo cases, scoped coverage, types, Biome and production build pass; six browser scenarios with synthetic HTTP responses pass |
 | Ritual and revision SQL foundation | Complete locally | Four tables distinguish exact source, original compiled archives and versioned artifacts; strict typed import plan and parent/source-hash constraints; 46 new tests, 692 full-suite tests, types/Biome/coverage/build and real Postgres migration/rollback/unchanged rerun pass; no live import |
 | Shared form dependencies | Complete locally | React Hook Form 7.88.0, resolvers 5.9.1 and Radash 12.1.1; no source changes; 28 actual membership form/schema tests, all 692 tests, unchanged coverage, typecheck, Biome, frozen install and production build pass |
+| Authorized SQL ritual reads | Complete locally | Server-only repository shares policy and loads current grants/source in read-only repeatable-read transactions; 20 new tests, 765 full-suite tests, coverage/types/Biome/build and real Postgres concurrent-demotion/source-preservation acceptance pass |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
 | Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
 | SuperMemo compatibility upgrade | Complete locally | 2.0.17→2.0.23 keeps the algorithm and moves package entrypoints to ESM/CJS; 14,320 exact old/new comparisons, all 692 tests, unchanged scoped coverage, typecheck, Biome, frozen install and production build pass |
@@ -48,7 +49,7 @@ Pinecone is the authoritative vector store. The unused Mongo ingestion experimen
 
 The Node 24 baseline production build completes with existing tarot import and BSON target warnings, expected local-placeholder Mongo connection errors from eager initialization, and an invalid sitemap base URL caused by the old config loader. These are tracked for separate fixes. Service credentials were overridden with local/build-only values; Google Font downloads were allowed. CI is configured but has not run on GitHub yet.
 
-Coverage currently gates twenty-eight extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.62% statements, 99.30% lines, 100% functions and 96.97% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 745 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
+Coverage currently gates twenty-nine extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.62% statements, 99.26% lines, 100% functions and 97.01% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 765 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
 
 Loom is bootstrapped with no application features active yet. Its required formatter compatibility prompted the Biome update and configuration migration. The new SVG parser is excluded from existing designer assets. The explicitly intentional JRT hook model has a file-scoped exception; an unrelated unused hook component was removed. Forty-four newly reported array-index-key findings remain warnings while their owning features are migrated: changing component identity as a formatting fix would be unsafe. Import ordering uses the new defaults.
 
@@ -167,3 +168,28 @@ The operator approved retaining existing public file links and protecting new
 ritual attachments under ritual permissions. File ownership is not invented for
 the ten legacy records. Files activation, object verification and the new upload
 UI remain separate work.
+
+`createSqlRitualReader` now provides fixed metadata projections, current source
+and parent-bound history through the shared ritual policy. Each valid call
+verifies its current server identity and reads grants, parent policy and source
+in one read-only repeatable-read transaction. Metadata never includes source,
+invites or migration evidence; public readability does not grant editing history.
+Current source follows the explicit pointer, not timestamps. No cross-request
+cache or runtime auth switch is added.
+
+Twenty real-query PGlite cases and a separate two-connection Postgres rehearsal
+verify permissions, grade zero, admin-only group grants, account changes, exact
+source and pointer selection. The underway read remains consistent when another
+connection demotes the member and changes source; the next read denies access.
+Regrant exposes the new pointer/version and preserves old history. BOM, CRLF
+and Unicode survive the Loom Postgres driver. All 765 default tests, 29-module
+coverage, types, Biome, ordinary Loom checks and production build pass. Evidence:
+`/tmp/magickli-ritual-reads-postgres/` and `/tmp/magickli-sql-reads-*.log`.
+Compiled output selection, HTTP/RSC adapters, writes and offline bundles remain
+separate integration work.
+
+The operator approved new uploads by authorized ritual editors, with a selected
+ritual, for PNG/JPEG/GIF/WebP up to 20 MiB. Supporting that approved size on
+Vercel requires direct-to-storage transfer and validated server finalization;
+the ordinary function request cannot carry 20 MiB. Keep legacy links available
+and defer SVG, audio and general new uploads.

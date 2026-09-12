@@ -84,6 +84,16 @@ The operator has now confirmed the shared policy in `src/doc/access.ts`: creator
 
 List, detail, revision history, editor saves and offline downloads must use this same server policy. The Gongo publications and versioned ritual write command now share it; private offline reconciliation remains separate work. Preserve grade zero as valid. Default absent admin flags to false; do not promote users while normalizing profiles. Invite codes and auth/provider material must not enter ordinary user/temple projections.
 
+**SQL ritual reads.** The server-only reader in `src/doc/sqlReads.ts` uses the
+same policy with current persisted grants and exact parent/source bindings in a
+read-only repeatable-read transaction. Metadata, source history and current
+source have separate projections. Verification/database errors propagate to a
+future safe transport boundary; no body identity, cached principal or guessed
+alias is accepted. Concurrent revocation takes effect on the next read, while an
+underway read retains a consistent snapshot. SQL reader activation still needs
+the verified session adapter, deliberate compiled-output selection and offline
+integration; this repository alone does not replace Gongo.
+
 **Temporary ritual write bridge.** The editor now sends one version-1 `ritualWrite` save/create command instead of independent generic document/revision mutations. A server-only transaction checks the verified current actor, scope and revision/update tokens, compiles the exact source, appends a revision, updates its parent and inserts a UUIDv7 operation receipt atomically. Explicit public publication is restricted to global admins. Persisted Mongo document/revision IDs remain ObjectIds until the canonical alias conversion; every save creates a new revision rather than coalescing the old five-minute history. All six generic ritual mutation paths fail closed, so the converted editor and recovery code must ship with this service.
 
 Include the new `ritualWriteReceipts` collection in every subsequent dump, structural audit and import. Preserve operation UUID, actor mapping, canonical request hash and original response semantics; do not reinterpret an old pending request under a new identity or generate a replacement operation merely because its response was lost. Receipts have no expiry until a supported retry window is defined. The original 190-record/10-collection backup predates these writes; final counts must come from a fresh audit, not these historical totals.
