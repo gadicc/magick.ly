@@ -49,7 +49,7 @@ export default async function (phase: string): Promise<NextConfig> {
 
       //   reloadOnOnline: true,
 
-      disable: process.env.NODE_ENV === "development", // to disable pwa in development
+      disable: process.env.NODE_ENV !== "production",
 
       // https://serwist.pages.dev/docs/next/configuring/reload-on-online
       // Hopefully fixes issue where app reloads after phone lock/unlock on Android Chrome.
