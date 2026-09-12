@@ -135,15 +135,8 @@ export default function GongoAuthAdapter(
     async createUser(
       data: MappedOmit<AdapterUser, "id">,
     ): Promise<AdapterUser> {
-      console.log("createUser data", data);
-
       if (!gs.dba) throw new Error("no gs.dba");
       const _id = data._id ?? new ObjectId();
-      const id = _id.toHexString();
-
-      if (data.id && data.id !== id) {
-        console.log("Warning: Replacing id", data.id, "with", id);
-      }
 
       const user: AdapterUser = {
         // @ts-expect-error: fine for now
@@ -155,8 +148,6 @@ export default function GongoAuthAdapter(
 
         id: _id.toHexString(),
       };
-
-      console.log("createUser user", user);
 
       const result = await (await db).U.insertOne({
         // @ts-expect-error: fine for now
@@ -215,7 +206,6 @@ export default function GongoAuthAdapter(
             "services.id": provider_providerAccountId.providerAccountId,
           });
         if (user) {
-          console.log("found oldschool user", user);
           const service = user.services.find(
             (s) => s.service === provider_providerAccountId.provider,
           )!;
@@ -332,7 +322,6 @@ export default function GongoAuthAdapter(
     },
 
     async createSession(data) {
-      console.log("createSession", data);
       const session = to<MongoAdapterSession>(data);
       await (await db).S.insertOne(session);
       return from<AdapterSession>(session);

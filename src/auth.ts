@@ -109,8 +109,6 @@ export const { auth, handlers, signIn, signOut } = NextAuth((req) => {
             name: profile.name, // <-- full name in one string
           });
 
-          console.log("profile() user", user);
-
           // Hack since this gets added in a later step
           return user as typeof user & { _id: ObjectId };
         },
