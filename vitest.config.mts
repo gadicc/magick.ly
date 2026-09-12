@@ -27,6 +27,7 @@ export default defineConfig({
         "src/lib/ids.ts",
         "src/db/legacyIds.ts",
         "src/migration/normalizeLegacyAuth.ts",
+        "src/migration/planBetterAuthImport.ts",
         "src/schemas/templeMembership.ts",
         "src/app/chat/contracts.ts",
         "src/app/chat/conversation.ts",

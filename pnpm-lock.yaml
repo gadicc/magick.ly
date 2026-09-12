@@ -46,13 +46,13 @@ importers:
         version: 11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)
       '@gadicc/loom':
         specifier: 1.23.0
-        version: 1.23.0(@biomejs/biome@2.5.13)(@electric-sql/pglite@0.3.16)(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@neondatabase/serverless@1.1.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(postgres@3.4.9)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(server-only@0.0.1)(superjson@2.2.6)(typescript@5.9.3)(valibot@1.5.0(typescript@5.9.3))
+        version: 1.23.0(@biomejs/biome@2.5.13)(@electric-sql/pglite@0.3.16)(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@neondatabase/serverless@1.1.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(postgres@3.4.9)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(server-only@0.0.1)(superjson@2.2.6)(typescript@5.9.3)(valibot@1.5.0(typescript@5.9.3))
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.65.0(react@19.3.0))
       '@langchain/community':
         specifier: ^0.2.13
-        version: 0.2.13(@neondatabase/serverless@1.1.0)(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(lodash@4.17.21)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
+        version: 0.2.13(@neondatabase/serverless@1.1.0)(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(lodash@4.17.21)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
       '@mui/icons-material':
         specifier: ^9.4.0
         version: 9.4.0(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)
@@ -92,6 +92,9 @@ importers:
       aws-sdk:
         specifier: 2.1597.0
         version: 2.1597.0
+      better-auth:
+        specifier: 1.7.4
+        version: 1.7.4(@opentelemetry/api@1.9.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(mongodb@6.2.0)(next@16.3.5(@babel/core@7.21.0)(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.0)
       bson:
         specifier: ^6.10.1
         version: 6.10.1
@@ -112,7 +115,7 @@ importers:
         version: 6.0.1
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9)
+        version: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9)
       file-type:
         specifier: 19.0.0
         version: 19.0.0
@@ -139,7 +142,7 @@ importers:
         version: 2.2.3
       langchain:
         specifier: ^0.2.6
-        version: 0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
+        version: 0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
       lune:
         specifier: ^0.4.0
         version: 0.4.0
@@ -287,10 +290,10 @@ importers:
         version: 0.31.10
       drizzle-valibot:
         specifier: ^0.4.2
-        version: 0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3))
+        version: 0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3))
       jsdom:
         specifier: 30.0.1
-        version: 30.0.1
+        version: 30.0.1(@noble/hashes@2.4.0)
       next-sitemap:
         specifier: ^4.2.3
         version: 4.2.3(next@16.3.5(@babel/core@7.21.0)(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
@@ -317,7 +320,7 @@ importers:
         version: 8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13)
       vitest:
         specifier: ^5.0.0
-        version: 5.0.0(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1)(vite@8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13))
+        version: 5.0.0(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13))
 
 packages:
 
@@ -1037,6 +1040,88 @@ packages:
   '@bcoe/v8-coverage@1.0.2':
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
+
+  '@better-auth/core@1.7.4':
+    resolution: {integrity: sha512-g66dKOMB5PLxoujkxkZeYb6dh5wLhfAx/D+w9XtcO669Dslnyen2naBYqnD1r5ZwnxFKcr6aSrUPaH952V89Lg==}
+    peerDependencies:
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.1
+      '@cloudflare/workers-types': '>=4'
+      '@opentelemetry/api': ^1.9.0
+      better-call: 1.4.0
+      jose: ^6.1.0
+      kysely: ^0.28.5 || ^0.29.0
+      nanostores: ^1.0.1
+    peerDependenciesMeta:
+      '@cloudflare/workers-types':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+
+  '@better-auth/drizzle-adapter@1.7.4':
+    resolution: {integrity: sha512-J9JMl0DGYNYwtDj5nq/fzycU9dzPUDEtTNn89KmToUrwPDGfByDgfmiQ9jGK+LN3EnfsG1Pt/dDmRocbnfihlA==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.4
+      '@better-auth/utils': 0.4.2
+      drizzle-orm: ^0.45.2 || >=1.0.0-rc.1 <2.0.0
+    peerDependenciesMeta:
+      drizzle-orm:
+        optional: true
+
+  '@better-auth/kysely-adapter@1.7.4':
+    resolution: {integrity: sha512-WHLsTs4ZwTKorifdK6Whol6Zy+0gIzOJEXzWsvzmLtlT1uIZFpd7IPBlDZTrXvIZnxPWJHPIv8/uHqS9QFPZOA==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.4
+      '@better-auth/utils': 0.4.2
+      kysely: ^0.28.17 || ^0.29.0
+    peerDependenciesMeta:
+      kysely:
+        optional: true
+
+  '@better-auth/memory-adapter@1.7.4':
+    resolution: {integrity: sha512-xAihOPh4mFjvKLzmu2XNzj7RchDmytA/d/xjrGyps1oHVGCTGDGghlSt/rIT5fagtTn2R9+TBLh5QrZnTvYu9g==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.4
+      '@better-auth/utils': 0.4.2
+
+  '@better-auth/mongo-adapter@1.7.4':
+    resolution: {integrity: sha512-sIdIc8vONXgQxKPfzL4bbk6gO3gdFEDzC5VG8rD18xSFB6j7blBKcuzOofbswbwwbyuspnshoViGRqSoqp2PnA==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.4
+      '@better-auth/utils': 0.4.2
+      mongodb: ^6.0.0 || ^7.0.0
+    peerDependenciesMeta:
+      mongodb:
+        optional: true
+
+  '@better-auth/prisma-adapter@1.7.4':
+    resolution: {integrity: sha512-cvsMNaXLcwQiAIxQCx5Gq2VA1reW4RjkC5oLNXNJR4IhgeiqcvYF6qKF6UEC0vV2x3euKz5V/SDY/hblHWwx+w==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.4
+      '@better-auth/utils': 0.4.2
+      '@prisma/client': ^5.0.0 || ^6.0.0 || ^7.0.0
+      prisma: ^5.0.0 || ^6.0.0 || ^7.0.0
+    peerDependenciesMeta:
+      '@prisma/client':
+        optional: true
+      prisma:
+        optional: true
+
+  '@better-auth/telemetry@1.7.4':
+    resolution: {integrity: sha512-FycnvWXP1gZ8BlSN1lW9L/YYFVqxi7+n6A9i66gJKdoJqREDdmhxBKOaVCbNhNC2UNDAo9PbBm/6J3gv6WmAEA==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.4
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.1
+
+  '@better-auth/utils@0.4.2':
+    resolution: {integrity: sha512-AUxrvu+HaaODsUyzDxFgwd/8RZ1yZaYo42LXKSrU2oGgR38pS1ij8nqQKNgtTWoYGpNevNXtCfgTy6loHveW9A==}
+
+  '@better-auth/utils@0.5.0':
+    resolution: {integrity: sha512-BL8W4EfIZFwlu0r54m3v1ztjDhu6dDe/amLTm0xybmbZaNgYUqhD3SjpAsnq0q8YD6/ki4iwIgxJNLP/N3TxiA==}
+
+  '@better-fetch/fetch@1.3.1':
+    resolution: {integrity: sha512-ABkD1WhyfPZprKRQI3bhATjeiFuNWC9PXhfGWqL+sg/gKrM977oFrYkdb4msM3hgUGonr7KlOsOFT5TU2rht9g==}
 
   '@biomejs/biome@2.5.13':
     resolution: {integrity: sha512-+SEC/mFk1a+5mvUANZgbZTaiZXs1nj4iMhL/PHiqDT5TPUEPFIlliEtkKKZB4N862yylHC3UI+/Sj2I0HJEqhA==}
@@ -2553,6 +2638,14 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@noble/ciphers@2.4.0':
+    resolution: {integrity: sha512-AnjFn0Jv92laAkvMrghlFZq4qQCIN/4DxFV/eooqtC2YTjB7kBeLMS2T9KJX4Dn+ZVXLOwK0lSgqDtx9gvxtiw==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/hashes@2.4.0':
+    resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
+    engines: {node: '>= 20.19.0'}
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -2568,6 +2661,10 @@ packages:
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
     engines: {node: '>=8.0.0'}
+
+  '@opentelemetry/semantic-conventions@1.43.0':
+    resolution: {integrity: sha512-eSYWTm620tTk45EKSedaUL8MFYI8hW164hIXsgIHyxu3VobUB3fFCu5t0hQby6OoWRPsG1KkKUG2M5UadiLiVg==}
+    engines: {node: '>=14'}
 
   '@oxc-project/types@0.149.0':
     resolution: {integrity: sha512-Efcc+iF0j3Bf67YjEqIqWXbX5XddXoK/Mw4K1/JuXwRCZ8N16VR7iT23nlCc9XrveFVh/E5Rqs2StT0V8v9LdA==}
@@ -3255,6 +3352,76 @@ packages:
     resolution: {integrity: sha512-OMu3BGQ4E7P1ErFsIPpbJh0qvDudM/UuJeHgkAvfWe+0HFJCXh+t/l8L6fVLR55RI/UbKrVLnAXZSVwd9ysWYw==}
     hasBin: true
 
+  better-auth@1.7.4:
+    resolution: {integrity: sha512-rjL9g8b8UvdwK/ZSdawhqYzOm8YegurB6Fuzqtu/zFJamlFrPa+eEhP8Qj2vFWsMzHOk2mb/L4FRYh9pgaU7OA==}
+    peerDependencies:
+      '@lynx-js/react': '*'
+      '@prisma/client': ^5.0.0 || ^6.0.0 || ^7.0.0
+      '@sveltejs/kit': ^2.0.0
+      '@tanstack/react-start': ^1.0.0
+      '@tanstack/solid-start': ^1.0.0
+      better-sqlite3: ^12.0.0
+      drizzle-kit: '>=0.31.4 || >=1.0.0-beta.1'
+      drizzle-orm: ^0.45.2 || >=1.0.0-rc.1 <2.0.0
+      mongodb: ^6.0.0 || ^7.0.0
+      mysql2: ^3.0.0
+      next: ^14.0.0 || ^15.0.0 || ^16.0.0
+      pg: ^8.0.0
+      prisma: ^5.0.0 || ^6.0.0 || ^7.0.0
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+      solid-js: ^1.0.0
+      svelte: ^4.0.0 || ^5.0.0
+      vitest: ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0
+      vue: ^3.0.0
+    peerDependenciesMeta:
+      '@lynx-js/react':
+        optional: true
+      '@prisma/client':
+        optional: true
+      '@sveltejs/kit':
+        optional: true
+      '@tanstack/react-start':
+        optional: true
+      '@tanstack/solid-start':
+        optional: true
+      better-sqlite3:
+        optional: true
+      drizzle-kit:
+        optional: true
+      drizzle-orm:
+        optional: true
+      mongodb:
+        optional: true
+      mysql2:
+        optional: true
+      next:
+        optional: true
+      pg:
+        optional: true
+      prisma:
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      solid-js:
+        optional: true
+      svelte:
+        optional: true
+      vitest:
+        optional: true
+      vue:
+        optional: true
+
+  better-call@1.4.0:
+    resolution: {integrity: sha512-bBKOT4vv1kZLDgxVePdilk/Jwkn+dtRRsmi3DzHcDP+WnswyVl6dR59l2HEeP/0cB+bDoopASAesWDPIdd/zZA==}
+    peerDependencies:
+      zod: ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
   bidi-js@1.1.0:
     resolution: {integrity: sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==}
 
@@ -3552,6 +3719,9 @@ packages:
   define-properties@1.2.1:
     resolution: {integrity: sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg==}
     engines: {node: '>= 0.4'}
+
+  defu@6.1.7:
+    resolution: {integrity: sha512-7z22QmUWiQ/2d0KkdYmANbRUVABpZ9SNYyH5vx6PZ+nE5bcC0l7uFvEfHlyld/HcGBFTL536ClDt3DEcSlEJAQ==}
 
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
@@ -4200,6 +4370,9 @@ packages:
   jose@6.1.0:
     resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
 
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
+
   js-tiktoken@1.0.12:
     resolution: {integrity: sha512-L7wURW1fH9Qaext0VzaUDpFGVQgjkdE3Dgsy9/+yXyGEpBKnylTd0mU0bfbNkKDlXRb6TEsZkwuflu1B8uQbJQ==}
 
@@ -4281,6 +4454,10 @@ packages:
 
   kolorist@1.8.0:
     resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
+
+  kysely@0.29.5:
+    resolution: {integrity: sha512-ooa+eSbBNPTo3MycPEuW5jdrxQdQwdtB3LC3h43FiXQbIry5tR0C5lDG7eealK0E4D7XjrnOP5DIUg/LyjRMYQ==}
+    engines: {node: '>=22.0.0'}
 
   langchain@0.2.3:
     resolution: {integrity: sha512-T9xR7zd+Nj0oXy6WoYKmZLy0DlQiDLFPGYWdOXDxy+AvqlujoPdVQgDSpdqiOHvAjezrByAoKxoHCz5XMwTP/Q==}
@@ -4999,6 +5176,10 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  nanostores@1.5.3:
+    resolution: {integrity: sha512-rQLB6eV4f2AW/n3L0JmwCROpaisYy9EDEADvEFSd1C/qG8hB6O5TPlh9A791JRbJr4CnMQBzptDcvD9OR1+6WA==}
+    engines: {node: ^20.0.0 || >=22.0.0}
+
   neo-async@2.6.2:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
 
@@ -5478,6 +5659,9 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
+  rou3@0.9.2:
+    resolution: {integrity: sha512-3SOzvaAg8rkHrXtRjpCvCvbyO5to9oOO27Z/XqHEYXfMRVSw/qMIVdmaOk9W2lcRLtR6dlqTjo9hDeJk70QBYQ==}
+
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
@@ -5533,6 +5717,9 @@ packages:
 
   set-blocking@2.0.0:
     resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}
+
+  set-cookie-parser@3.1.2:
+    resolution: {integrity: sha512-5/r/lTwbJ3zQ+qwdUFZYeRNqda7P5HD8zQKqlSjdGt1/S0cjLAphHusj4Y58ahDtWn/g32xrIS58/ikOvwl0Lw==}
 
   set-function-length@1.2.2:
     resolution: {integrity: sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==}
@@ -6187,6 +6374,9 @@ packages:
 
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
+  zod@4.6.2:
+    resolution: {integrity: sha512-lh5RCAGFa1Cm2hjtNwLQhSs/AsqdWnTQaBER9fEwN/88pSh7KOtJavtBx/0VlkN/uFd61SwYmljLMDAsHlvzBQ==}
 
   zwitch@1.0.5:
     resolution: {integrity: sha512-V50KMwwzqJV0NpZIZFwfOD5/lyny3WlSzRiXgA0G7VUnRlqttta1L6UQIHzd6EuBY/cHGfwTIck7w1yH6Q5zUw==}
@@ -7087,6 +7277,67 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
+  '@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)':
+    dependencies:
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.1
+      '@opentelemetry/semantic-conventions': 1.43.0
+      '@standard-schema/spec': 1.1.0
+      better-call: 1.4.0(zod@4.6.2)
+      jose: 6.2.12
+      kysely: 0.29.5
+      nanostores: 1.5.3
+      zod: 4.6.2
+    optionalDependencies:
+      '@opentelemetry/api': 1.9.0
+
+  '@better-auth/drizzle-adapter@1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))':
+    dependencies:
+      '@better-auth/core': 1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/utils': 0.4.2
+    optionalDependencies:
+      drizzle-orm: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9)
+
+  '@better-auth/kysely-adapter@1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(kysely@0.29.5)':
+    dependencies:
+      '@better-auth/core': 1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/utils': 0.4.2
+    optionalDependencies:
+      kysely: 0.29.5
+
+  '@better-auth/memory-adapter@1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)':
+    dependencies:
+      '@better-auth/core': 1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/utils': 0.4.2
+
+  '@better-auth/mongo-adapter@1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(mongodb@6.2.0)':
+    dependencies:
+      '@better-auth/core': 1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/utils': 0.4.2
+    optionalDependencies:
+      mongodb: 6.2.0
+
+  '@better-auth/prisma-adapter@1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)':
+    dependencies:
+      '@better-auth/core': 1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/utils': 0.4.2
+
+  '@better-auth/telemetry@1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)':
+    dependencies:
+      '@better-auth/core': 1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.1
+
+  '@better-auth/utils@0.4.2':
+    dependencies:
+      '@noble/hashes': 2.4.0
+
+  '@better-auth/utils@0.5.0':
+    dependencies:
+      '@noble/hashes': 2.4.0
+
+  '@better-fetch/fetch@1.3.1': {}
+
   '@biomejs/biome@2.5.13':
     optionalDependencies:
       '@biomejs/cli-darwin-arm64': 2.5.13
@@ -7549,7 +7800,9 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@exodus/bytes@1.15.1': {}
+  '@exodus/bytes@1.15.1(@noble/hashes@2.4.0)':
+    optionalDependencies:
+      '@noble/hashes': 2.4.0
 
   '@floating-ui/core@1.6.3':
     dependencies:
@@ -7564,19 +7817,19 @@ snapshots:
 
   '@floating-ui/utils@0.2.3': {}
 
-  '@gadicc/loom@1.23.0(@biomejs/biome@2.5.13)(@electric-sql/pglite@0.3.16)(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@neondatabase/serverless@1.1.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(postgres@3.4.9)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(server-only@0.0.1)(superjson@2.2.6)(typescript@5.9.3)(valibot@1.5.0(typescript@5.9.3))':
+  '@gadicc/loom@1.23.0(@biomejs/biome@2.5.13)(@electric-sql/pglite@0.3.16)(@mui/material@9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@neondatabase/serverless@1.1.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(postgres@3.4.9)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(server-only@0.0.1)(superjson@2.2.6)(typescript@5.9.3)(valibot@1.5.0(typescript@5.9.3))':
     dependencies:
       '@next/env': 16.3.5
       jsonc-parser: 3.3.1
       react: 19.3.0
       tsx: 4.23.13
-      valibot-serialize: 2.0.1(@biomejs/biome@2.5.13)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(tsx@4.23.13)(typescript@5.9.3)
+      valibot-serialize: 2.0.1(@biomejs/biome@2.5.13)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(tsx@4.23.13)(typescript@5.9.3)
     optionalDependencies:
       '@electric-sql/pglite': 0.3.16
       '@mui/material': 9.4.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@neondatabase/serverless': 1.1.0
       drizzle-kit: 0.31.10
-      drizzle-orm: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9)
+      drizzle-orm: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9)
       postgres: 3.4.9
       react-dom: 19.3.0(react@19.3.0)
       server-only: 0.0.1
@@ -7735,16 +7988,16 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@langchain/community@0.2.13(@neondatabase/serverless@1.1.0)(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(lodash@4.17.21)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)':
+  '@langchain/community@0.2.13(@neondatabase/serverless@1.1.0)(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(lodash@4.17.21)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)':
     dependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
-      '@langchain/openai': 0.1.3(encoding@0.1.13)(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))
+      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/openai': 0.1.3(encoding@0.1.13)(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))
       binary-extensions: 2.2.0
       expr-eval: 2.0.2
       flat: 5.0.2
       js-yaml: 4.1.0
-      langchain: 0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
-      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      langchain: 0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
+      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       uuid: 9.0.0
       zod: 3.23.8
       zod-to-json-schema: 3.23.1(zod@3.23.8)
@@ -7752,7 +8005,7 @@ snapshots:
       '@neondatabase/serverless': 1.1.0
       '@pinecone-database/pinecone': 9.0.0
       ignore: 5.3.1
-      jsdom: 30.0.1
+      jsdom: 30.0.1(@noble/hashes@2.4.0)
       lodash: 4.17.21
       mongodb: 6.2.0
       pdf-parse: 1.1.1
@@ -7767,13 +8020,13 @@ snapshots:
       - peggy
       - pyodide
 
-  '@langchain/core@0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))':
+  '@langchain/core@0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))':
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.12
-      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       ml-distance: 4.0.1
       mustache: 4.2.0
       p-queue: 6.6.2
@@ -7785,13 +8038,13 @@ snapshots:
       - langchain
       - openai
 
-  '@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))':
+  '@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))':
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.12
-      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       ml-distance: 4.0.1
       mustache: 4.2.0
       p-queue: 6.6.2
@@ -7803,9 +8056,9 @@ snapshots:
       - langchain
       - openai
 
-  '@langchain/openai@0.0.34(encoding@0.1.13)(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))':
+  '@langchain/openai@0.0.34(encoding@0.1.13)(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))':
     dependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       js-tiktoken: 1.0.12
       openai: 4.52.0(encoding@0.1.13)
       zod: 3.23.8
@@ -7814,9 +8067,9 @@ snapshots:
       - encoding
       - langchain
 
-  '@langchain/openai@0.1.3(encoding@0.1.13)(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))':
+  '@langchain/openai@0.1.3(encoding@0.1.13)(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))':
     dependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       js-tiktoken: 1.0.12
       openai: 4.52.0(encoding@0.1.13)
       zod: 3.23.8
@@ -7825,9 +8078,9 @@ snapshots:
       - encoding
       - langchain
 
-  '@langchain/openai@0.2.0(encoding@0.1.13)(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))':
+  '@langchain/openai@0.2.0(encoding@0.1.13)(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))':
     dependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       js-tiktoken: 1.0.12
       openai: 4.52.0(encoding@0.1.13)
       zod: 3.23.8
@@ -7836,17 +8089,17 @@ snapshots:
       - encoding
       - langchain
 
-  '@langchain/textsplitters@0.0.3(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))':
+  '@langchain/textsplitters@0.0.3(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))':
     dependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       js-tiktoken: 1.0.12
     transitivePeerDependencies:
       - langchain
       - openai
 
-  '@langchain/textsplitters@0.0.3(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))':
+  '@langchain/textsplitters@0.0.3(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))':
     dependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       js-tiktoken: 1.0.12
     transitivePeerDependencies:
       - langchain
@@ -8031,6 +8284,10 @@ snapshots:
   '@next/swc-win32-x64-msvc@16.3.5':
     optional: true
 
+  '@noble/ciphers@2.4.0': {}
+
+  '@noble/hashes@2.4.0': {}
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -8045,6 +8302,8 @@ snapshots:
 
   '@opentelemetry/api@1.9.0':
     optional: true
+
+  '@opentelemetry/semantic-conventions@1.43.0': {}
 
   '@oxc-project/types@0.149.0': {}
 
@@ -8474,7 +8733,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.0(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1)(vite@8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13))
+      vitest: 5.0.0(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13))
 
   '@vitest/istanbul-lib-coverage@1.0.1': {}
 
@@ -8729,6 +8988,46 @@ snapshots:
 
   baseline-browser-mapping@2.8.16: {}
 
+  better-auth@1.7.4(@opentelemetry/api@1.9.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(mongodb@6.2.0)(next@16.3.5(@babel/core@7.21.0)(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.0):
+    dependencies:
+      '@better-auth/core': 1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/drizzle-adapter': 1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))
+      '@better-auth/kysely-adapter': 1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(kysely@0.29.5)
+      '@better-auth/memory-adapter': 1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)
+      '@better-auth/mongo-adapter': 1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(mongodb@6.2.0)
+      '@better-auth/prisma-adapter': 1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)
+      '@better-auth/telemetry': 1.7.4(@better-auth/core@1.7.4(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.1
+      '@noble/ciphers': 2.4.0
+      '@noble/hashes': 2.4.0
+      better-call: 1.4.0(zod@4.6.2)
+      defu: 6.1.7
+      jose: 6.2.12
+      kysely: 0.29.5
+      nanostores: 1.5.3
+      zod: 4.6.2
+    optionalDependencies:
+      drizzle-kit: 0.31.10
+      drizzle-orm: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9)
+      mongodb: 6.2.0
+      next: 16.3.5(@babel/core@7.21.0)(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+      vitest: 5.0.0(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13))
+    transitivePeerDependencies:
+      - '@cloudflare/workers-types'
+      - '@opentelemetry/api'
+
+  better-call@1.4.0(zod@4.6.2):
+    dependencies:
+      '@better-auth/utils': 0.5.0
+      '@better-fetch/fetch': 1.3.1
+      rou3: 0.9.2
+      set-cookie-parser: 3.1.2
+    optionalDependencies:
+      zod: 4.6.2
+
   bidi-js@1.1.0:
     dependencies:
       require-from-string: 2.0.2
@@ -8945,10 +9244,10 @@ snapshots:
 
   cycle@1.0.3: {}
 
-  data-urls@7.0.0:
+  data-urls@7.0.0(@noble/hashes@2.4.0):
     dependencies:
       whatwg-mimetype: 5.0.0
-      whatwg-url: 16.0.1
+      whatwg-url: 16.0.1(@noble/hashes@2.4.0)
     transitivePeerDependencies:
       - '@noble/hashes'
 
@@ -8998,6 +9297,8 @@ snapshots:
       define-data-property: 1.1.4
       has-property-descriptors: 1.0.2
       object-keys: 1.1.1
+
+  defu@6.1.7: {}
 
   delayed-stream@1.0.0: {}
 
@@ -9054,16 +9355,17 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.13
 
-  drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9):
+  drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9):
     optionalDependencies:
       '@electric-sql/pglite': 0.3.16
       '@neondatabase/serverless': 1.1.0
       '@opentelemetry/api': 1.9.0
+      kysely: 0.29.5
       postgres: 3.4.9
 
-  drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)):
+  drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)):
     dependencies:
-      drizzle-orm: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9)
+      drizzle-orm: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9)
       valibot: 1.5.0(typescript@5.9.3)
 
   dunder-proto@1.0.0:
@@ -9484,9 +9786,9 @@ snapshots:
     dependencies:
       react-is: 16.13.1
 
-  html-encoding-sniffer@6.0.0:
+  html-encoding-sniffer@6.0.0(@noble/hashes@2.4.0):
     dependencies:
-      '@exodus/bytes': 1.15.1
+      '@exodus/bytes': 1.15.1(@noble/hashes@2.4.0)
     transitivePeerDependencies:
       - '@noble/hashes'
 
@@ -9612,6 +9914,8 @@ snapshots:
 
   jose@6.1.0: {}
 
+  jose@6.2.12: {}
+
   js-tiktoken@1.0.12:
     dependencies:
       base64-js: 1.5.1
@@ -9624,17 +9928,17 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  jsdom@30.0.1:
+  jsdom@30.0.1(@noble/hashes@2.4.0):
     dependencies:
       '@asamuzakjp/css-color': 6.0.7
       '@asamuzakjp/dom-selector': 8.3.2
       '@bramus/specificity': 2.4.2
       '@csstools/css-syntax-patches-for-csstree': 1.1.13(css-tree@3.2.1)
-      '@exodus/bytes': 1.15.1
+      '@exodus/bytes': 1.15.1(@noble/hashes@2.4.0)
       css-tree: 3.2.1
-      data-urls: 7.0.0
+      data-urls: 7.0.0(@noble/hashes@2.4.0)
       decimal.js: 10.6.0
-      html-encoding-sniffer: 6.0.0
+      html-encoding-sniffer: 6.0.0(@noble/hashes@2.4.0)
       is-potential-custom-element-name: 1.0.1
       lru-cache: 11.5.2
       parse5: 8.0.1
@@ -9645,7 +9949,7 @@ snapshots:
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
-      whatwg-url: 17.1.1
+      whatwg-url: 17.1.1(@noble/hashes@2.4.0)
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - '@noble/hashes'
@@ -9694,17 +9998,19 @@ snapshots:
 
   kolorist@1.8.0: {}
 
-  langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3):
+  kysely@0.29.5: {}
+
+  langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3):
     dependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
-      '@langchain/openai': 0.0.34(encoding@0.1.13)(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))
-      '@langchain/textsplitters': 0.0.3(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/core': 0.2.9(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/openai': 0.0.34(encoding@0.1.13)(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))
+      '@langchain/textsplitters': 0.0.3(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       binary-extensions: 2.2.0
       js-tiktoken: 1.0.12
       js-yaml: 4.1.0
       jsonpointer: 5.0.1
       langchainhub: 0.0.11
-      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       ml-distance: 4.0.1
       openapi-types: 12.1.3
       p-retry: 4.6.2
@@ -9715,7 +10021,7 @@ snapshots:
     optionalDependencies:
       '@pinecone-database/pinecone': 9.0.0
       ignore: 5.3.1
-      jsdom: 30.0.1
+      jsdom: 30.0.1(@noble/hashes@2.4.0)
       mongodb: 6.2.0
       pdf-parse: 1.1.1
       ws: 8.18.3
@@ -9723,17 +10029,17 @@ snapshots:
       - encoding
       - openai
 
-  langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3):
+  langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3):
     dependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
-      '@langchain/openai': 0.2.0(encoding@0.1.13)(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))
-      '@langchain/textsplitters': 0.0.3(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      '@langchain/openai': 0.2.0(encoding@0.1.13)(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))
+      '@langchain/textsplitters': 0.0.3(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       binary-extensions: 2.2.0
       js-tiktoken: 1.0.12
       js-yaml: 4.1.0
       jsonpointer: 5.0.1
       langchainhub: 0.0.11
-      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      langsmith: 0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
       ml-distance: 4.0.1
       openapi-types: 12.1.3
       p-retry: 4.6.2
@@ -9744,7 +10050,7 @@ snapshots:
     optionalDependencies:
       '@pinecone-database/pinecone': 9.0.0
       ignore: 5.3.1
-      jsdom: 30.0.1
+      jsdom: 30.0.1(@noble/hashes@2.4.0)
       mongodb: 6.2.0
       pdf-parse: 1.1.1
       ws: 8.18.3
@@ -9754,7 +10060,7 @@ snapshots:
 
   langchainhub@0.0.11: {}
 
-  langsmith@0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)):
+  langsmith@0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)):
     dependencies:
       '@types/uuid': 9.0.2
       commander: 10.0.1
@@ -9762,11 +10068,11 @@ snapshots:
       p-retry: 4.6.2
       uuid: 9.0.0
     optionalDependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
-      langchain: 0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
+      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      langchain: 0.2.3(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
       openai: 4.52.0(encoding@0.1.13)
 
-  langsmith@0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)):
+  langsmith@0.1.32(@langchain/core@0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)))(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13)):
     dependencies:
       '@types/uuid': 9.0.2
       commander: 10.0.1
@@ -9774,8 +10080,8 @@ snapshots:
       p-retry: 4.6.2
       uuid: 9.0.0
     optionalDependencies:
-      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
-      langchain: 0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1)(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
+      '@langchain/core': 0.2.9(langchain@0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3))(openai@4.52.0(encoding@0.1.13))
+      langchain: 0.2.6(@pinecone-database/pinecone@9.0.0)(encoding@0.1.13)(ignore@5.3.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(mongodb@6.2.0)(openai@4.52.0(encoding@0.1.13))(pdf-parse@1.1.1)(ws@8.18.3)
       openai: 4.52.0(encoding@0.1.13)
 
   lightningcss-android-arm64@1.33.0:
@@ -10335,6 +10641,8 @@ snapshots:
 
   nanoid@3.3.19: {}
 
+  nanostores@1.5.3: {}
+
   neo-async@2.6.2: {}
 
   next-auth@5.0.0-beta.32(next@16.3.5(@babel/core@7.21.0)(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0):
@@ -10842,6 +11150,8 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 1.2.8
       '@rolldown/binding-win32-x64-msvc': 1.2.8
 
+  rou3@0.9.2: {}
+
   run-parallel@1.2.0:
     dependencies:
       queue-microtask: 1.2.3
@@ -10894,6 +11204,8 @@ snapshots:
       - browserslist
 
   set-blocking@2.0.0: {}
+
+  set-cookie-parser@3.1.2: {}
 
   set-function-length@1.2.2:
     dependencies:
@@ -11267,15 +11579,15 @@ snapshots:
 
   uuid@9.0.0: {}
 
-  valibot-serialize@2.0.1(@biomejs/biome@2.5.13)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(tsx@4.23.13)(typescript@5.9.3):
+  valibot-serialize@2.0.1(@biomejs/biome@2.5.13)(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(drizzle-valibot@0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3)))(tsx@4.23.13)(typescript@5.9.3):
     dependencies:
       '@deno/shim-deno': 0.18.2
       projectfmt: 1.1.0(@biomejs/biome@2.5.13)
       tsx: 4.23.13
       valibot: 1.5.0(typescript@5.9.3)
     optionalDependencies:
-      drizzle-orm: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9)
-      drizzle-valibot: 0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3))
+      drizzle-orm: 0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9)
+      drizzle-valibot: 0.4.2(drizzle-orm@0.45.2(@electric-sql/pglite@0.3.16)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(valibot@1.5.0(typescript@5.9.3))
     transitivePeerDependencies:
       - '@biomejs/biome'
       - prettier
@@ -11309,7 +11621,7 @@ snapshots:
       terser: 5.44.0
       tsx: 4.23.13
 
-  vitest@5.0.0(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1)(vite@8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13)):
+  vitest@5.0.0(@opentelemetry/api@1.9.0)(@types/node@24.7.0)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13)):
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/mocker': 5.0.0(vite@8.3.0(@types/node@24.7.0)(esbuild@0.28.2)(terser@5.44.0)(tsx@4.23.13))
@@ -11329,7 +11641,7 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       '@types/node': 24.7.0
       '@vitest/coverage-v8': 5.0.0(vitest@5.0.0)
-      jsdom: 30.0.1
+      jsdom: 30.0.1(@noble/hashes@2.4.0)
     transitivePeerDependencies:
       - msw
 
@@ -11395,17 +11707,17 @@ snapshots:
       tr46: 3.0.0
       webidl-conversions: 7.0.0
 
-  whatwg-url@16.0.1:
+  whatwg-url@16.0.1(@noble/hashes@2.4.0):
     dependencies:
-      '@exodus/bytes': 1.15.1
+      '@exodus/bytes': 1.15.1(@noble/hashes@2.4.0)
       tr46: 6.0.0
       webidl-conversions: 8.0.1
     transitivePeerDependencies:
       - '@noble/hashes'
 
-  whatwg-url@17.1.1:
+  whatwg-url@17.1.1(@noble/hashes@2.4.0):
     dependencies:
-      '@exodus/bytes': 1.15.1
+      '@exodus/bytes': 1.15.1(@noble/hashes@2.4.0)
       tr46: 6.0.0
       webidl-conversions: 8.0.1
     transitivePeerDependencies:
@@ -11506,6 +11818,8 @@ snapshots:
   zod@4.1.12: {}
 
   zod@4.4.3: {}
+
+  zod@4.6.2: {}
 
   zwitch@1.0.5: {}
 

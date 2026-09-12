@@ -14,7 +14,6 @@
       "!archive/**",
       "!dump/**",
       "!drizzle/meta/**",
-      "!src/db/valibot/generated/**",
       "!public/fonts/**",
       "!**/*.svg",
       "!src/components/enochian/font/**"
@@ -82,6 +81,11 @@
           }
         }
       }
+    },
+    {
+      "includes": ["src/db/valibot/generated/**"],
+      "linter": { "enabled": false },
+      "assist": { "enabled": false }
     }
   ]
 }

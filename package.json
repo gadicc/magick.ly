@@ -53,6 +53,7 @@
     "ai": "7.0.99",
     "arraybuffer-loader": "^1.0.8",
     "aws-sdk": "2.1597.0",
+    "better-auth": "1.7.4",
     "bson": "^6.10.1",
     "cycle": "^1.0.3",
     "date-fns": "4.4.0",
