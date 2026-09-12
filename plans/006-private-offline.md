@@ -210,6 +210,34 @@ source hashes. Root integration replaced an unsupported bigint literal with
 `/tmp/magickli-static-raster-catalog/` and `/tmp/magickli-static-catalog-*.log`.
 The builder remains inactive pending asset resolution and complete bundle wiring.
 
+The subsequent read-only non-static inventory narrows that work: the archived
+inline raster is a fully decoded 1,311-byte, 54×29 single-frame GIF; the other
+inline image is an 899-byte SVG with six paths and no discovered dependencies.
+The latter sniffs as XML and needs a separate bounded SVG profile. Four external
+HTTPS images still have unverified bytes/MIME/availability. Do not turn their
+hostnames into a generic fetch allowlist; resolve exact references selected from
+authorized content, preserving immutable acquisition evidence.
+
+The six public ritual SVGs use internal fragment references and four embedded
+PNGs. Their structural inspection found no external resource URLs, but embedded
+raster decoding and actual offline visual acceptance remain required. Preserve
+existing gradients, patterns, text paths and system-font fallback; stripping all
+references would break them. The seven legacy SVG files require their own byte
+inspection through the verified storage mapping before corpus readiness.
+
+TreeOfLife's default SVG response contains absolute Noto font URLs. Caching those
+URLs alone does not establish font availability when SVG is displayed as an image.
+A versioned generated-image adapter must constrain query semantics and verify a
+self-contained output, retaining any captured original separately from a font-
+embedded derivative. The existing `/api/treeOfLife` compatibility route and broader
+component-export consolidation need coordinated handling. No renderer change or
+new SVG upload support is implied by this inventory. Safe evidence is frozen in
+`/tmp/magickli-nonstatic-asset-review.md` (SHA-256
+`388fd5da4c90c243dc46f25806ef3c3274286a5308d09489b4337f42ae32f7dc`)
+and its report/manifest companions. All 21 backup fingerprints stayed unchanged;
+no asset/provider requests or retained private sources/full URLs were involved.
+Generic public SVG documentation was consulted separately.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.
