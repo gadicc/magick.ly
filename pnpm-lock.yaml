@@ -74,12 +74,6 @@ importers:
       '@serwist/next':
         specifier: ^9.2.1
         version: 9.2.1(next@15.5.9(@babel/core@7.21.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)(webpack@5.102.0)
-      '@trpc/client':
-        specifier: ^11.0.0-rc.532
-        version: 11.0.0-rc.532(@trpc/server@11.0.0-rc.532)
-      '@trpc/server':
-        specifier: ^11.0.0-rc.532
-        version: 11.0.0-rc.532
       '@uiw/react-codemirror':
         specifier: ^4.23.0
         version: 4.23.0(@babel/runtime@7.28.4)(@codemirror/autocomplete@6.17.0(@codemirror/language@6.11.3)(@codemirror/state@6.5.2)(@codemirror/view@6.38.4)(@lezer/common@1.2.3))(@codemirror/language@6.11.3)(@codemirror/lint@6.9.0)(@codemirror/search@6.5.6)(@codemirror/state@6.5.2)(@codemirror/theme-one-dark@6.1.2)(@codemirror/view@6.38.4)(codemirror@6.0.1(@lezer/common@1.2.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -2424,14 +2418,6 @@ packages:
   '@tootallnate/once@2.0.0':
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
     engines: {node: '>= 10'}
-
-  '@trpc/client@11.0.0-rc.532':
-    resolution: {integrity: sha512-uQRaZbT/dYbp+kP0F8oLJTRHR7esy/Va4++GfnIBaTckLUjwLMe0QWeME+7hp6/ENmpotYGQtRB30DgbnML+8w==}
-    peerDependencies:
-      '@trpc/server': 11.0.0-rc.532+476db0d8c
-
-  '@trpc/server@11.0.0-rc.532':
-    resolution: {integrity: sha512-DhlNzpSS5VlliHXL8hH12cydUtRWbCE2Uk1Q+wTmKi1PlUwM4EPXwagBDt2KpVhiZ4AXHtdfoPhwo6h7So6O+g==}
 
   '@trysound/sax@0.2.0':
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
@@ -5763,6 +5749,7 @@ packages:
   whatwg-encoding@2.0.0:
     resolution: {integrity: sha512-p41ogyeMUrw3jWclHWTQg1k05DSVXPLcVxRTYsXUk+ZooOCZLcoYgPZ/HL/D/N+uQPOtcp1me1WhBEaX02mhWg==}
     engines: {node: '>=12'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@3.0.0:
     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
@@ -7773,12 +7760,6 @@ snapshots:
 
   '@tootallnate/once@2.0.0':
     optional: true
-
-  '@trpc/client@11.0.0-rc.532(@trpc/server@11.0.0-rc.532)':
-    dependencies:
-      '@trpc/server': 11.0.0-rc.532
-
-  '@trpc/server@11.0.0-rc.532': {}
 
   '@trysound/sax@0.2.0': {}
 
