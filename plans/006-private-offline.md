@@ -1,6 +1,6 @@
 # Private ritual offline storage and 14-day authorization
 
-Status: the pure [lease policy](../src/offline/lease.ts) and account-scoped [Dexie repository](../src/offline/repository.ts) are implemented. Dexie 4.4.6 is pinned, with fake-indexeddb 6.2.5 for tests. Native IndexedDB acceptance covers this repository; the app's auth, reader/editor, service worker and migration integration remain inactive.
+Status: the pure [lease policy](../src/offline/lease.ts), account-scoped [Dexie repository](../src/offline/repository.ts), [SQL permission checker](../src/offline/sqlPermissionCheck.ts) and strict [wire parser](../src/offline/permissionContract.ts) are implemented. Dexie 4.4.6 is pinned, with fake-indexeddb 6.2.5 for tests. Native IndexedDB acceptance covers the initial repository; the app's HTTP/auth, reader/editor, service worker and migration integration remain inactive.
 
 ## Agreed contract
 
@@ -56,7 +56,17 @@ Existing localStorage recovery can remain the durable source until this migratio
 
 ## Permission and download protocol
 
-Add a versioned, uncached server endpoint separate from ordinary list/detail pages. A bounded batch accepts fresh UUIDv7 `requestId`, `expectedActorId` and requested ritual IDs/current bundle tokens. The handler must verify the current request session and reject actor mismatch, then read persisted grants, ritual policy, current render provenance and requested source access consistently through the SQL repository. Do not copy cached Gongo memberships or treat client `canEdit` as authority.
+The transport-neutral checker accepts one ritual per strict version-1 request with canonical UUIDv7 `requestId`, `expectedActorId` and `ritualId`. Its future uncached HTTP endpoint stays separate from ordinary list/detail pages. The checker verifies the current session and expected actor, then reloads persisted identity/grants, ritual policy and selected output in one read-only repeatable-read SQL transaction. Do not copy cached Gongo memberships or treat client `canEdit` as authority.
+
+Confirmed policy denial or a missing parent for an existing authenticated user
+returns explicit `denied`. Missing/changed/deleted identity returns
+`authentication-required`; malformed policy and operational errors are temporary.
+A permitted parent with missing/stale/unsupported output still receives its
+read/source grant but reports rendered output unavailable. That grant contains no
+source, rendered JSON, title, membership or asset inventory. Available output has
+an opaque descriptor digest, content digest and output profile; only editors
+receive current revision/version tokens. The descriptor is never a bundle ID or
+proof of complete assets.
 
 Return an explicit per-ritual `granted`, `denied`, authentication-required or temporary-failure result. A grant contains owner/ritual/request binding, a fresh lease ID, `checkedAtMs`, `respondedAtMs`, `expiresAtMs <= checkedAtMs + 14 days`, and separate source/edit capability. Render data must come from the approved rendered SQL projection, not an unvalidated original compiled archive. Per-role JRT hiding is presentation: receiving a compiled ritual means receiving its authorized whole body.
 
@@ -143,8 +153,22 @@ occurred, and the owned browser/server were stopped. Evidence:
 `/tmp/magickli-dexie-repository/browser/`. Root and browser source hashes match;
 the lease copy differs only in a documentation word (`proposal` versus `policy`).
 
+The permission boundary adds 135 service/parser cases, with 100% measured
+coverage of the checker, parser and shared output selector. Eight additional
+Dexie cases verify that check-only grants renew source capability independently,
+without installing or renewing any bundle bytes. Accepted source installation
+requires the latest request's explicit accepted lease ID to match the current
+grant. A newly begun, unaccepted check cannot borrow an earlier lease. Read-only
+downgrade removes source snapshots and locks recovery even if output is unavailable.
+The full integrated suite passes 1,246 default tests, 42-module coverage, types,
+Biome, ordinary Loom checks and production build. Evidence:
+`/tmp/magickli-permission-check/`, `/tmp/magickli-check-only-repository/` and
+`/tmp/magickli-permission-*.log`.
+
 These tests do not establish runtime auth transport, BFCache UI, renderer/media
 cleanup, a private service-worker shell or legacy migration acceptance. Those
-integration checks remain required before downloads activate. A check-only
-permission renewal without a complete bundle is the next protocol integration;
-it must never mark missing content ready or extend an unrelated bundle's lease.
+integration checks remain required before downloads activate. The HTTP adapter
+must establish uncached same-origin, nonredirected transport before accepting the
+strict envelope; generic HTTP errors or malformed bodies never become revocation.
+Source responses must bind the requested parent/revision and editor CAS state.
+Complete server asset manifests remain a separate requirement for downloads.

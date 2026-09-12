@@ -13,6 +13,8 @@ export interface DeviceState {
   cleanupOwnerId: string | null;
 }
 export interface StoredCheck extends PendingPermissionCheck {
+  /** Set only after an accepted grant; independent of complete rendered output. */
+  acceptedLeaseId?: string;
   /** Set only after accepting the current validated permission reply. */
   bundleId?: string;
 }

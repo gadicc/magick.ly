@@ -5,29 +5,20 @@ import type {
   PgQueryResultHKT,
   PgTransactionConfig,
 } from "drizzle-orm/pg-core";
-import {
-  legacyRitualCompiledArchives,
-  ritualCompiledArtifacts,
-  ritualRevisions,
-  rituals,
-} from "../db/schema/rituals";
+import { ritualRevisions, rituals } from "../db/schema/rituals";
 import { isUuidV7 } from "../lib/ids";
 import {
   getRitualAccess,
   type RitualAccess,
   type RitualPrincipal,
 } from "./access";
-
-import {
-  RITUAL_OUTPUT_FORMAT,
-  RITUAL_OUTPUT_FORMAT_VERSION,
-} from "./compileContract";
 import {
   type SqlRitualParentRow as ParentRow,
   sqlRitualParentFields as parentFields,
   sqlRitualPolicy as policy,
   loadSqlRitualPrincipal as principal,
 } from "./sqlPolicy";
+import { selectSqlRenderedRitual } from "./sqlRendered";
 
 type ReadDatabase = Pick<PgDatabase<PgQueryResultHKT>, "select">;
 /** Use the transaction-capable server database, not the Neon HTTP query adapter. */
@@ -220,45 +211,8 @@ export function createSqlRitualReader(
       return read(async (tx, actor) => {
         const found = await parent(tx, id, actor, "read");
         if (!found) return null;
-        if (found.row.currentCompiledArtifactId !== null) {
-          const [artifact] = await tx
-            .select({
-              contentJson: ritualCompiledArtifacts.contentJson,
-              contentSha256: ritualCompiledArtifacts.contentSha256,
-            })
-            .from(ritualCompiledArtifacts)
-            .where(
-              and(
-                eq(
-                  ritualCompiledArtifacts.id,
-                  found.row.currentCompiledArtifactId,
-                ),
-                eq(ritualCompiledArtifacts.revisionId, found.currentRevisionId),
-                eq(ritualCompiledArtifacts.outputFormat, RITUAL_OUTPUT_FORMAT),
-                eq(
-                  ritualCompiledArtifacts.outputFormatVersion,
-                  RITUAL_OUTPUT_FORMAT_VERSION,
-                ),
-              ),
-            );
-          return artifact ? { ritual: found.metadata, ...artifact } : null;
-        }
-        const [archive] = await tx
-          .select({
-            contentJson: legacyRitualCompiledArchives.contentJson,
-            contentSha256: legacyRitualCompiledArchives.contentSha256,
-          })
-          .from(legacyRitualCompiledArchives)
-          .where(
-            and(
-              eq(legacyRitualCompiledArchives.ritualId, id),
-              eq(
-                legacyRitualCompiledArchives.claimedRevisionId,
-                found.currentRevisionId,
-              ),
-            ),
-          );
-        return archive ? { ritual: found.metadata, ...archive } : null;
+        const selected = await selectSqlRenderedRitual(tx, found.row);
+        return selected ? { ritual: found.metadata, ...selected } : null;
       });
     },
     /** Source history metadata stays private even when the parent is publicly readable. */

@@ -1081,3 +1081,132 @@ it("fences a changed payload and checksum while claim hashing is in flight", asy
     spy.mockRestore();
   }
 });
+
+describe("check-only permissions without complete rendered output", () => {
+  const source = () => ({
+    ownerId: A,
+    ritualId: R,
+    revisionId: REV,
+    parentVersion: 4,
+    source: "\uFEFFExact e\u0301 é 🌍\r\n",
+  });
+  it("renews and installs editor source without authorizing any bundle installation", async () => {
+    const f = fixture(),
+      account = await f.repo.activateAccount(A),
+      pending = await f.repo.beginCheck(account, R),
+      reply = allowed(pending);
+    expect(await f.repo.acceptPermission(pending, reply)).toBe("accepted");
+    expect(await f.db.checks.get([A, R])).toMatchObject({
+      requestId: pending.requestId,
+      acceptedLeaseId: reply.kind === "granted" && reply.grant.leaseId,
+    });
+    expect(await f.db.checks.get([A, R])).not.toHaveProperty("bundleId");
+    expect(await f.repo.installSource(pending, source())).toBe(true);
+    expect(await f.repo.readSource(account, R, REV)).toEqual(source());
+    const d = draft();
+    await f.repo.preserveDraft(d, null);
+    expect(await f.repo.exportDraft(account, R, d.id)).toMatchObject(d);
+    const bytes = await downloaded(account);
+    expect(
+      await f.repo.installBundle(pending, bytes.bundle, bytes.assets),
+    ).toBe(false);
+    expect(await f.repo.readBundle(account, R)).toBeNull();
+    expect(await f.db.assets.count()).toBe(0);
+  });
+  it("never extends previous bundle bytes when only source permission is renewed", async () => {
+    const f = fixture(),
+      r = await ready(f);
+    const old = await f.db.bundles.get([A, R]);
+    f.now = START + WINDOW - 100;
+    const pending = await f.repo.beginCheck(r.account, R);
+    await f.repo.acceptPermission(pending, allowed(pending));
+    expect((await f.db.bundles.get([A, R]))?.authorization).toEqual(
+      old?.authorization,
+    );
+    expect(await f.repo.installSource(pending, source())).toBe(true);
+    expect(await f.repo.readBundle(r.account, R)).not.toBeNull();
+    f.now = START + WINDOW;
+    expect(await f.repo.readBundle(r.account, R)).toBeNull();
+    expect(await f.repo.readSource(r.account, R, REV)).toEqual(source());
+    expect(await f.repo.installBundle(pending, r.bundle, r.assets)).toBe(false);
+    expect(await f.db.bundles.count()).toBe(0);
+    expect(await f.db.assets.count()).toBe(0);
+  });
+  it("applies an unavailable-output read-only downgrade immediately, preserving locked unique recovery", async () => {
+    const f = fixture(),
+      r = await ready(f, true, true),
+      d = draft(),
+      cmd = command();
+    await f.repo.preserveDraft(d, null);
+    await f.repo.enqueueSave(r.account, cmd);
+    await f.repo.installSource(r.pending, source());
+    const pending = await f.repo.beginCheck(r.account, R);
+    await f.repo.acceptPermission(pending, allowed(pending, false));
+    expect(await f.db.sources.count()).toBe(0);
+    expect(await f.db.assets.count()).toBe(1);
+    expect(await f.repo.readSource(r.account, R, REV)).toBeNull();
+    expect(await f.repo.readAsset(r.account, R, "editor")).toBeNull();
+    expect(await f.repo.readDraft(r.account, R, d.id)).toBeNull();
+    expect(await f.repo.exportDraft(r.account, R, d.id)).toBeNull();
+    expect(await f.repo.claimSave(r.account, R, cmd.operationId)).toBeNull();
+    expect(await f.db.drafts.get([A, d.id])).toMatchObject(d);
+    expect(await f.db.outbox.get([A, cmd.operationId])).toMatchObject({
+      operationId: cmd.operationId,
+      status: "queued",
+    });
+    expect(await f.repo.installSource(pending, source())).toBe(false);
+    expect(await f.repo.readBundle(r.account, R)).not.toBeNull();
+  });
+  it("a newly begun, unaccepted check cannot borrow an earlier source grant or install late source", async () => {
+    const f = fixture(),
+      r = await ready(f),
+      pending = await f.repo.beginCheck(r.account, R);
+    expect(await f.repo.installSource(pending, source())).toBe(false);
+    expect(await f.repo.installSource(r.pending, source())).toBe(false);
+    for (const kind of [
+      "authentication-required",
+      "temporarily-unavailable",
+    ] as const) {
+      await f.repo.acceptPermission(pending, { ...pending, kind });
+      expect(await f.repo.installSource(pending, source())).toBe(false);
+    }
+    expect(await f.db.sources.count()).toBe(0);
+    await f.repo.acceptPermission(pending, allowed(pending));
+    expect(await f.repo.installSource(pending, source())).toBe(true);
+  });
+  it.each(["missing", "mismatched"])(
+    "refuses %s accepted-lease evidence even with a valid older grant",
+    async (mode) => {
+      const f = fixture(),
+        r = await ready(f);
+      const check = await f.db.checks.get([A, R]);
+      expect(check).toBeDefined();
+      if (mode === "missing") {
+        const { acceptedLeaseId: _ignored, ...oldCheck } = check!;
+        await f.db.checks.put(oldCheck);
+      } else
+        await f.db.checks.update([A, R], { acceptedLeaseId: createUuidV7() });
+      expect(await f.repo.installSource(r.pending, source())).toBe(false);
+      expect(await f.db.sources.count()).toBe(0);
+    },
+  );
+  it("rejects a supplied invalid bundle identity without applying permission or lease markers", async () => {
+    const f = fixture(),
+      account = await f.repo.activateAccount(A),
+      pending = await f.repo.beginCheck(account, R);
+    await expect(
+      f.repo.acceptPermission(pending, allowed(pending), "not-a-bundle-id"),
+    ).rejects.toMatchObject({ code: "INVALID" });
+    expect(await f.db.authorizations.count()).toBe(0);
+    expect(await f.db.checks.get([A, R])).toEqual(pending);
+  });
+  it("check-only source access still expires and cannot install after its deadline", async () => {
+    const f = fixture(),
+      account = await f.repo.activateAccount(A),
+      pending = await f.repo.beginCheck(account, R);
+    await f.repo.acceptPermission(pending, allowed(pending, true, 10));
+    f.now += 10;
+    expect(await f.repo.installSource(pending, source())).toBe(false);
+    expect(await f.db.sources.count()).toBe(0);
+  });
+});

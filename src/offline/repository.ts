@@ -300,6 +300,8 @@ export class OfflineRitualRepository {
   /**
    * Accept only a schema-validated reply from the current uncached server permission check.
    * Apply revocation/edit downgrade immediately, before fetching any replacement assets.
+   * An omitted bundleId renews permission/source only. It cannot renew old bundle
+   * bytes or authorize installation; supply an ID only for a complete server manifest.
    */
   acceptPermission(
     pending: PendingPermissionCheck,
@@ -322,13 +324,21 @@ export class OfflineRitualRepository {
         this.now(),
       );
       if (result.outcome !== "accepted") return result.outcome;
-      if (reply.kind === "granted" && result.authorization.grant)
+      if (
+        reply.kind === "granted" &&
+        result.authorization.grant &&
+        bundleId !== undefined
+      )
         requireValue(id(bundleId), "INVALID");
       await this.db.authorizations.put(result.authorization);
       if (result.purgeDownloads) await this.purgeResource(...key);
       else if (result.purgeSourceSnapshots) await this.purgeSource(...key);
       if (reply.kind === "granted" && result.authorization.grant) {
-        await this.db.checks.put({ ...pending, bundleId });
+        await this.db.checks.put({
+          ...pending,
+          acceptedLeaseId: result.authorization.grant.leaseId,
+          ...(bundleId === undefined ? {} : { bundleId }),
+        });
         if (result.authorization.grant.sourceEdit) {
           await this.db.outbox
             .where("[ownerId+ritualId]")
@@ -337,7 +347,11 @@ export class OfflineRitualRepository {
             .modify({ status: "queued" });
         }
         const previous = await this.db.bundles.get(key);
-        if (previous && previous.bundleId === bundleId)
+        if (
+          bundleId !== undefined &&
+          previous &&
+          previous.bundleId === bundleId
+        )
           await this.db.bundles.put({
             ...previous,
             authorization: result.authorization,
@@ -461,10 +475,14 @@ export class OfflineRitualRepository {
         state?.account?.ownerId !== pending.ownerId ||
         state.account.epoch !== pending.accountEpoch ||
         check?.requestId !== pending.requestId ||
-        !check.bundleId
+        !id(check.acceptedLeaseId)
       )
         return false;
-      if (!(await this.gate(state.account, pending.ritualId)).sourceEdit)
+      const gate = await this.gate(state.account, pending.ritualId);
+      if (
+        !gate.sourceEdit ||
+        check.acceptedLeaseId !== gate.authorization?.grant?.leaseId
+      )
         return false;
       await this.db.sources.put(source);
       return (await this.gate(state.account, pending.ritualId)).sourceEdit;

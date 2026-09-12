@@ -375,3 +375,21 @@ CORS. Evidence: `/tmp/magickli-file-object-preflight/public-route-report.json`.
 Provider binding and private-upload acceptance remain required. Separately,
 `fb07660` removed session-token and full profile/user debug logs from the legacy
 authentication path; types/Biome pass without changing sign-in behavior.
+
+The server permission checker now reloads current identity, policy and selected
+output in one SQL snapshot, returning explicit bound denial, authentication or
+temporary outcomes. An allowed parent whose output is unavailable still receives
+its bounded source/read capability. Only editors receive source CAS tokens;
+ordinary readers get opaque render identity. The shared selector preserves the
+existing exact artifact/archive rules. Strict parsing rejects malformed, cached,
+wrong-origin or generic HTTP responses as temporary rather than revocation.
+
+Dexie now accepts check-only grants with an explicit accepted lease marker.
+Source installation binds the latest accepted request and current lease; an
+unaccepted check cannot borrow old permission. No complete bundle ID means no
+bundle installation or renewal. All 1,246 default tests, 42-module coverage,
+types, Biome, ordinary Loom checks and production build pass. Evidence:
+`/tmp/magickli-permission-check/`, `/tmp/magickli-check-only-repository/` and
+`/tmp/magickli-permission-*.log`. No HTTP route, auth switch or download activation
+occurred; transport validation, source response binding and complete asset
+manifests remain integration work.
