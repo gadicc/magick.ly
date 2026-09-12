@@ -36,7 +36,7 @@ Allocate each canonical UUIDv7 once and persist the mapping transactionally befo
 | Observation | Required disposition | Remaining decision |
 | --- | --- | --- |
 | One ritual creator reference is absent from both current and historical local user records; its current revision author exists | Preserve the ritual with a nullable historical creator and a typed unresolved-reference ledger entry. Preserve all revision authors. Never assign the current editor as the creator merely because that user exists | The operator may identify the intended creator later. This need not block local schema/import work or require an invented user |
-| One user/set pair has two study rows with the same 11 card keys; one contains review history and the other has zero correct/incorrect/time counters both globally and per card | Keep the reviewed baseline, alias both source IDs to it, archive the empty row and record the merge reason. Do not sum cumulative snapshots or choose by latest timestamp | No additional review history needs interpretation in this observed pair; a future duplicate with two reviewed histories requires a separate decision |
+| One user/set pair has two study rows with the same 11 card keys; one contains review history and the other has zero correct/incorrect/time counters both globally and per card | Keep the reviewed baseline, alias both source IDs to it, archive the empty row and record the merge reason. Do not sum cumulative snapshots or choose by latest timestamp | The duplicate declaration must pin the independently reviewed full source fingerprint: zero counters alone cannot establish unchanged schedules. A future duplicate with two reviewed histories requires a separate decision |
 | Eleven study rows have top-level correct/time totals different from card sums; incorrect totals agree | Import the stored totals and card state independently, with discrepancy counts in the report. Do not recompute or reset historical progress | Correcting historical totals is a separate product/data decision |
 | The temple has no creator field; five users lack a creation timestamp | Keep historical creator/time provenance nullable. If an auth adapter requires a timestamp, distinguish its documented bookkeeping fallback from an asserted historical creation date | Implemented for auth: use the explicit, persisted import-run timestamp only for missing required adapter dates; keep historical dates null |
 | Compiled rituals contain 152 `forMe` fields and no `ref` fields | Preserve original payloads in the protected migration archive. Treat `forMe` as derived reader state for new saves; record any removal as an explicit transformation when comparing compiled content | Semantic compiler comparison must establish whether legacy source and stored compiled output differ beyond derived state |
@@ -98,7 +98,29 @@ Before deploying the Mongo bridge, verify production supports transactions and i
 
 The domain mapper requires every canonical user's grant projection. Unknown source fields, deletion/pending markers, invalid arrays/dates/grades, duplicate identities, ambiguous aliases and orphan references fail with only category/input position in errors. Slug collision preflight matches PostgreSQL `lower(btrim(slug))`, including its ASCII-space-only trimming; non-ASCII case behavior still needs production-input validation under the target collation. Foreign keys restrict incidental deletion. Returned source-field/reference evidence must be persisted by the final protected import ledger; returning a plan alone is not durable import bookkeeping. The generated migration, UUIDv7 defaults, constraints, rollback and unchanged rerun passed on disposable Postgres with synthetic rows. This schema does not activate temple commands, define deletion/last-admin semantics, clear existing browser invitation caches or activate the now-approved temple-creation bootstrap. Any signed-in user may create a temple and its first administrator membership atomically; the UI must explain who should create one and why, and distinguish joining an existing temple. New temples retain separate invite setup rather than inventing an invitation code.
 
-**Files and offline clients are part of import acceptance.** Ten file records have unique hashes; six distinct legacy hash URLs found in compiled documents all resolve to metadata. Absolute URLs also occur. Keep `/api/file2?sha256=...` aliases working and inventory actual image/font/resource dependencies before claiming a ritual is offline-ready. A metadata-only migration does not prove an image is retrievable.
+**Study SQL boundary.** `study_progress` keeps stored user/set totals, due dates
+and a new SQL version independently of individual `study_card_states`. Exact
+content keys stay strings; schedule dates hydrate to Date, SM2 floats retain
+precision, and repetition state distinguishes absent, empty and numeric weight
+(including zero). The snapshot adapter does not fill defaults or correct totals.
+Every original source row is retained in protected `legacy_study_snapshots` as
+versioned canonical EJSON with a checked SHA-256 and typed legacy identity.
+Original BSON backups are still required; EJSON is not the original wire bytes.
+
+`planLegacyStudyImport` is pure and requires reviewed canonical aliases. The
+single duplicate disposition requires an explicit typed pair and a fixed SHA-256
+of the independently reviewed archive source, in addition to matching owner/set/
+card keys and zero counters. Never calculate this approval from arbitrary input
+at import time: all scheduling, date and metadata changes must invalidate it.
+All aliases, dispositions and discrepancy evidence still need durable checkpoints
+in the final importer. No historical review events are fabricated, and stored
+aggregate discrepancies remain. The synthetic 49-row/667-card/459-repetition
+fixture reconciles to 48 active baselines, 656 active cards and 11 archived cards;
+the actual source repetition split must be measured during the protected dry run.
+Browser migration, anonymous adoption, offline receipts and runtime activation
+remain separate work.
+
+**Files and offline clients are part of import acceptance.** Ten file records have unique hashes; six distinct legacy hash URLs found in compiled documents all resolve to metadata. Absolute URLs also occur. Keep `/api/file2?sha256=...` aliases working and inventory actual image/font/resource dependencies before claiming a ritual is offline-ready. A metadata-only migration does not prove an image is retrievable. The operator approved preserving legacy public links while making new attachments follow ritual permissions. Do not invent owners for the ten legacy records or infer attachment authority merely from a URL embedded in source.
 
 Server import cannot recover unsynchronized browser data. Ship the Gongo export/recovery path before removing persisted collection registrations or turning off the legacy backend. Retain pending inserts/updates/deletes, bases, ObjectId metadata and account ownership in the browser migration. Use a separate Dexie database, resumable checkpoints and verification before cleaning old stores. Anonymous progress must not become another account's data through login switching. New offline operations need UUIDv7 operation IDs and durable idempotent receipts; an old cumulative snapshot must not be replayed as a new review event.
 

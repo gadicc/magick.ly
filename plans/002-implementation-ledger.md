@@ -39,6 +39,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Atomic ritual writes and editor recovery | Complete locally | Versioned save/create/publication commands, compare-and-swap tokens, exact source, server compilation and durable operation receipts; converted editor/creation UI, full authorized snapshots and explicit legacy recovery; 646 default tests plus 14 disposable Mongo cases, scoped coverage, types, Biome and production build pass; six browser scenarios with synthetic HTTP responses pass |
 | Ritual and revision SQL foundation | Complete locally | Four tables distinguish exact source, original compiled archives and versioned artifacts; strict typed import plan and parent/source-hash constraints; 46 new tests, 692 full-suite tests, types/Biome/coverage/build and real Postgres migration/rollback/unchanged rerun pass; no live import |
 | Shared form dependencies | Complete locally | React Hook Form 7.88.0, resolvers 5.9.1 and Radash 12.1.1; no source changes; 28 actual membership form/schema tests, all 692 tests, unchanged coverage, typecheck, Biome, frozen install and production build pass |
+| Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
 | Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
 | SuperMemo compatibility upgrade | Complete locally | 2.0.17→2.0.23 keeps the algorithm and moves package entrypoints to ESM/CJS; 14,320 exact old/new comparisons, all 692 tests, unchanged scoped coverage, typecheck, Biome, frozen install and production build pass |
 | Unused dependency removal | Complete locally | Removed Passport, Google Passport strategy, dotenv, npm zlib and the obsolete Jade CodeMirror package after source/config/peer audit; 441 tests, coverage, typecheck, lint, frozen install and production build pass |
@@ -47,7 +48,7 @@ Pinecone is the authoritative vector store. The unused Mongo ingestion experimen
 
 The Node 24 baseline production build completes with existing tarot import and BSON target warnings, expected local-placeholder Mongo connection errors from eager initialization, and an invalid sitemap base URL caused by the old config loader. These are tracked for separate fixes. Service credentials were overridden with local/build-only values; Google Font downloads were allowed. CI is configured but has not run on GitHub yet.
 
-Coverage currently gates twenty-six extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.46% statements, 99.18% lines, 100% functions and 96.41% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 698 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
+Coverage currently gates twenty-eight extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.62% statements, 99.30% lines, 100% functions and 96.97% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 745 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
 
 Loom is bootstrapped with no application features active yet. Its required formatter compatibility prompted the Biome update and configuration migration. The new SVG parser is excluded from existing designer assets. The explicitly intentional JRT hook model has a file-scoped exception; an unrelated unused hook component was removed. Forty-four newly reported array-index-key findings remain warnings while their owning features are migrated: changing component identity as a formatting fix would be unsafe. Import ordering uses the new defaults.
 
@@ -140,3 +141,29 @@ and become its first administrator atomically. The creation screen must explain
 that this is for someone setting up/managing a temple, and direct existing
 members toward joining their temple instead. Preserve the existing separate
 invite setup. SQL commands and explanatory UI remain to be integrated.
+
+The study SQL foundation preserves stored totals independently of card sums,
+typed dates, exact content keys, finite SM2 floats and all three repetition
+presence states. Every legacy row receives a protected canonical EJSON snapshot
+and checked hash. The reviewed duplicate is archived only when its full source
+fingerprint matches; zero counters alone cannot prove an untouched schedule.
+No scheduling defaults, aggregate corrections or historical events are invented.
+Forty-seven new tests include a fully synthetic 49-row/667-card/459-repetition
+shape and the unchanged scheduler. All 745 default tests, expanded 28-module
+coverage, types, Biome, Loom checks and production build pass.
+
+A disposable Postgres rehearsal using installed Loom 1.24.0 verified six
+migrations and 23 tables, exact Date/ObjectId EJSON hashes, BOM/CRLF/Unicode
+content keys, UUIDv7/defaults, relational constraints, repetition presence,
+fingerprint refusal, rollback and unchanged rerun. The synthetic output retains
+48 baselines and 656 active cards plus all 11 duplicate cards in its archive;
+eleven stored aggregate discrepancies remain. The owned database was removed.
+Evidence: `/tmp/magickli-study-postgres-rehearsal/` and
+`/tmp/magickli-study-{coverage,types,check,build,loom}.log`. No private source was
+imported, no Neon domain migration ran, and runtime study/offline behavior still
+uses the legacy engine.
+
+The operator approved retaining existing public file links and protecting new
+ritual attachments under ritual permissions. File ownership is not invented for
+the ten legacy records. Files activation, object verification and the new upload
+UI remain separate work.
