@@ -38,6 +38,7 @@ export default defineConfig({
         "src/offline/sqlPermissionCheck.ts",
         "src/offline/lifecycle.ts",
         "src/offline/recovery.ts",
+        "src/offline/ritualAssetInventory.ts",
         "src/files/ritualUploadProtocol.ts",
         "src/files/finalizeRitualUpload.ts",
         "src/files/validateRitualImage.ts",

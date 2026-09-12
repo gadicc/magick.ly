@@ -121,6 +121,39 @@ Use private blobs directly from the gated Dexie repository with short-lived obje
 
 Gather only known renderer asset references, preserving every functional query and SVG fragment. The bundled source concretely includes inline data images, local SVG/PNG files, external images and `/api/treeOfLife?...` generated output. Do not assume every `src`/`text` in JRT is editor source, or mutate the protected compiled archive while building an asset map. Unknown external URLs may prevent complete offline readiness; they need an explicit supported fetch/hosting policy. A file extension or URL hash is not a visibility decision.
 
+The pure `ritualAssetInventory` module now enumerates exact source paths without
+running React or changing the input. It follows the actual suppressed-child,
+task and collected-footnote rules, and keeps query spelling/order and display
+fragments exact. One source path may produce multiple DOM images when a task has
+both `say` and `do`; the resolver must apply that one source replacement to both.
+Stylesheets, unsupported resource styles/attributes and ambiguous footnote hosts
+produce explicit incomplete results. External/generated/inline classification
+identifies remaining resolver work and never means bytes are available.
+
+The JSON boundary permits at most 4 MiB, 20,000 child nodes, depth 128, 512 image
+occurrences, 1 MiB per reference, 16 KiB per style and 512 diagnostics; overrides
+only tighten those limits. Callers supply trusted exact HTTPS app origins and a
+build-static URL catalog. Bind the inventory to the authorized selected-render
+descriptor. Complete enumeration is a prerequisite, not a complete asset manifest
+or a permission grant. SHA/MIME/size, SVG/font dependencies, protected links and
+actual offline decoding still require their separate adapters and checks.
+
+All 1,638 default tests, 51-module coverage, types, Biome and ordinary Loom checks
+pass. Sixty-five portable cases cover identity, reachability, malformed input and
+bounds. Three additional actual-JRT acceptance cases cover all twelve public
+built-in image references and synthetic footnotes, including repeated rendering of
+one source path. Evidence: `/tmp/magickli-ritual-asset-inventory/` and
+`/tmp/magickli-assets-*.log`. This module is not yet wired into the reader.
+
+The same module enumerates all 17 images in the five protected archived trees
+without changing any backup bytes. Four trees enumerate completely. Two PNG paths
+in the remaining tree are absent from the current static catalog and return 404
+in production. Git commit `05d4c96` renamed both files from `magickli` to `magickly`
+with identical blobs; their stored references were left behind. Exact public path
+compatibility is a separate small fix; no blanket `/pics` allowance or source
+rewrite is used to make the inventory pass. Four external images and generated
+TreeOfLife/font dependencies still require complete resolver support.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.

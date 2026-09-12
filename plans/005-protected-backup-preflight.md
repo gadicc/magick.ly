@@ -100,4 +100,16 @@ The [SQL ritual reader](../src/doc/sqlReads.ts) may return an original archive o
 
 ## Remaining cutover gates
 
+The pure rendered asset inventory finds all 17 image occurrences across the five
+exact current archives: six legacy file URLs, four external images, two inline
+images, one generated TreeOfLife and four local PNG references. Two local paths
+are missing from the current catalog and both return 404 in production. Their
+exact files were renamed by `05d4c96` with identical blobs; old stored URLs were
+not updated. Four inventories are complete, while the remaining one explicitly
+reports those two unresolved paths. A complete inventory still does not prove
+downloaded bytes or offline readiness. No source or URL values were retained in
+the aggregate reports; all 21 backup fingerprints remain unchanged. Evidence:
+`/tmp/magickli-protected-preflight/asset-inventory-module.json`,
+`missing-static-assets.json` and `missing-static-history.json`.
+
 This preflight validates the pure planning boundaries, not a live import. Transactional import and durable UUID aliases, a final backup under the approved write pause, legacy write-receipt handling, file migration, the one-time reauthentication switch and private offline acceptance remain separate gates. Follow the [migration contract](003-data-migration-contract.md) and [implementation ledger](002-implementation-ledger.md) for their status.
