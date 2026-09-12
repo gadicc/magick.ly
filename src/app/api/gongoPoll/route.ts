@@ -215,9 +215,13 @@ gs.publish("userTemplesAndMemberships", async (db, opts, { auth }) => {
         const membership = memberships.find((m) =>
           m.templeId.equals(temple._id),
         );
-        if (membership?.admin) return temple;
+        if (membership?.admin === true) return temple;
         else {
-          const { _joinPass, ...rest } = temple;
+          const {
+            joinPass: _joinPass,
+            _joinPass: _legacyJoinPass,
+            ...rest
+          } = temple;
           return rest;
         }
       }),
