@@ -57,6 +57,13 @@
       "when": 1789222206318,
       "tag": "0007_files_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789223023237,
+      "tag": "0008_ritual_write_commands",
+      "breakpoints": true
     }
   ]
 }

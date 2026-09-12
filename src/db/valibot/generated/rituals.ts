@@ -169,6 +169,7 @@ export const ritualsSelect = v.object({
     ),
   ),
   currentRevisionId: v.nullable(v.pipe(v.string(), v.uuid())),
+  currentCompiledArtifactId: v.nullable(v.pipe(v.string(), v.uuid())),
   version: v.pipe(
     v.number(),
     v.minValue(-9007199254740991),
@@ -205,6 +206,9 @@ export const ritualsInsert = v.object({
     ),
   ),
   currentRevisionId: v.optional(v.nullable(v.pipe(v.string(), v.uuid()))),
+  currentCompiledArtifactId: v.optional(
+    v.nullable(v.pipe(v.string(), v.uuid())),
+  ),
   version: v.optional(
     v.pipe(
       v.number(),
@@ -247,6 +251,9 @@ export const ritualsUpdate = v.object({
     ),
   ),
   currentRevisionId: v.optional(v.nullable(v.pipe(v.string(), v.uuid()))),
+  currentCompiledArtifactId: v.optional(
+    v.nullable(v.pipe(v.string(), v.uuid())),
+  ),
   version: v.optional(
     v.pipe(
       v.number(),

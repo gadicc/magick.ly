@@ -57,6 +57,8 @@ export const rituals = pgTable(
     minGrade: bigint("min_grade", { mode: "number" }),
     // Dependency-ordered import/create starts here; readers must withhold shells.
     currentRevisionId: uuid("current_revision_id"),
+    // Null preserves imported legacy archive authority; new saves select explicitly.
+    currentCompiledArtifactId: uuid("current_compiled_artifact_id"),
     // A new SQL concurrency token; legacy timestamps remain separate evidence.
     version: bigint("version", { mode: "number" }).notNull().default(0),
     ...history(),
@@ -79,6 +81,18 @@ export const rituals = pgTable(
       columns: [table.id, table.currentRevisionId],
       foreignColumns: [ritualRevisions.ritualId, ritualRevisions.id],
     }),
+    foreignKey({
+      name: "rituals_current_artifact_own_revision",
+      columns: [table.currentRevisionId, table.currentCompiledArtifactId],
+      foreignColumns: [
+        ritualCompiledArtifacts.revisionId,
+        ritualCompiledArtifacts.id,
+      ],
+    }),
+    check(
+      "rituals_selected_artifact_requires_revision",
+      sql`${table.currentCompiledArtifactId} is null or ${table.currentRevisionId} is not null`,
+    ),
     index("rituals_group_idx").on(table.groupId),
     index("rituals_temple_idx").on(table.templeId),
     index("rituals_creator_idx").on(table.creatorId),
@@ -185,6 +199,10 @@ export const ritualCompiledArtifacts = pgTable(
   },
   (table) => [
     v7("ritual_compiled_artifacts_id_v7", table.id),
+    unique("ritual_compiled_artifacts_revision_id_unique").on(
+      table.revisionId,
+      table.id,
+    ),
     foreignKey({
       name: "ritual_compiled_artifact_exact_source",
       columns: [table.revisionId, table.sourceSha256],

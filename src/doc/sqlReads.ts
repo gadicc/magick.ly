@@ -5,21 +5,29 @@ import type {
   PgQueryResultHKT,
   PgTransactionConfig,
 } from "drizzle-orm/pg-core";
-import { user } from "../db/schema/auth";
-import { templeMemberships, userGroupGrants } from "../db/schema/memberships";
 import {
   legacyRitualCompiledArchives,
+  ritualCompiledArtifacts,
   ritualRevisions,
   rituals,
 } from "../db/schema/rituals";
-import { userAccess } from "../db/schema/userProfile";
 import { isUuidV7 } from "../lib/ids";
 import {
   getRitualAccess,
   type RitualAccess,
-  type RitualPolicy,
   type RitualPrincipal,
 } from "./access";
+
+import {
+  RITUAL_OUTPUT_FORMAT,
+  RITUAL_OUTPUT_FORMAT_VERSION,
+} from "./compileContract";
+import {
+  type SqlRitualParentRow as ParentRow,
+  sqlRitualParentFields as parentFields,
+  sqlRitualPolicy as policy,
+  loadSqlRitualPrincipal as principal,
+} from "./sqlPolicy";
 
 type ReadDatabase = Pick<PgDatabase<PgQueryResultHKT>, "select">;
 /** Use the transaction-capable server database, not the Neon HTTP query adapter. */
@@ -85,53 +93,8 @@ export interface SqlRitualSourceRead extends SqlRitualEditorParent {
   revision: SqlRitualRevisionSource;
 }
 
-const parentFields = {
-  id: rituals.id,
-  title: rituals.title,
-  creatorId: rituals.creatorId,
-  scope: rituals.scope,
-  groupId: rituals.groupId,
-  templeId: rituals.templeId,
-  minGrade: rituals.minGrade,
-  currentRevisionId: rituals.currentRevisionId,
-  version: rituals.version,
-  createdAt: rituals.createdAt,
-  updatedAt: rituals.updatedAt,
-};
-type ParentRow = Pick<typeof rituals.$inferSelect, keyof typeof parentFields>;
-
 function canonicalId(value: unknown): string | null {
   return isUuidV7(value) ? value.toLowerCase() : null;
-}
-
-/** Reconstructs the shared policy without treating malformed mixed scope columns as public. */
-function policy(row: ParentRow): RitualPolicy | null {
-  const base = { id: row.id, creatorId: row.creatorId };
-  if (
-    row.scope === "public" &&
-    row.groupId === null &&
-    row.templeId === null &&
-    row.minGrade === null
-  )
-    return { ...base, scope: { kind: "public" } };
-  if (
-    row.scope === "group" &&
-    row.groupId !== null &&
-    row.templeId === null &&
-    row.minGrade === null
-  )
-    return { ...base, scope: { kind: "group", groupId: row.groupId } };
-  if (
-    row.scope === "temple" &&
-    row.groupId === null &&
-    row.templeId !== null &&
-    row.minGrade !== null
-  )
-    return {
-      ...base,
-      scope: { kind: "temple", templeId: row.templeId, minGrade: row.minGrade },
-    };
-  return null;
 }
 
 function metadata(row: ParentRow, access: RitualAccess): SqlRitualMetadata {
@@ -141,47 +104,6 @@ function metadata(row: ParentRow, access: RitualAccess): SqlRitualMetadata {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     canEdit: access.edit,
-  };
-}
-
-async function principal(
-  tx: ReadDatabase,
-  verifiedActorId: string | null,
-): Promise<RitualPrincipal | null> {
-  const userId = canonicalId(verifiedActorId);
-  if (!userId) return null;
-  const [identity] = await tx
-    .select({ userId: user.id, admin: userAccess.admin })
-    .from(user)
-    .leftJoin(userAccess, eq(userAccess.userId, user.id))
-    .where(eq(user.id, userId));
-  if (!identity) return null;
-  const groups = await tx
-    .select({
-      groupId: userGroupGrants.groupId,
-      member: userGroupGrants.member,
-      admin: userGroupGrants.admin,
-    })
-    .from(userGroupGrants)
-    .where(eq(userGroupGrants.userId, userId));
-  const temples = await tx
-    .select({
-      templeId: templeMemberships.templeId,
-      grade: templeMemberships.grade,
-      admin: templeMemberships.admin,
-    })
-    .from(templeMemberships)
-    .where(eq(templeMemberships.userId, userId));
-  return {
-    userId: identity.userId,
-    globalAdmin: identity.admin === true,
-    groupIds: groups
-      .filter((grant) => grant.member)
-      .map((grant) => grant.groupId),
-    groupAdminIds: groups
-      .filter((grant) => grant.admin)
-      .map((grant) => grant.groupId),
-    templeMemberships: temples,
   };
 }
 
@@ -213,7 +135,8 @@ async function parent(
  * takes effect on the next call. Errors propagate to the future transport boundary.
  * Missing, invalid and unauthorized IDs share null/empty results. No legacy aliases,
  * provider tokens or import provenance are exposed. Rendering uses only the exact
- * legacy archive bound to the current revision; new artifact selection is separate.
+ * selected artifact bound to the current revision, or its original legacy archive
+ * when no artifact is selected. Missing selected output never falls back.
  */
 export function createSqlRitualReader(
   db: SqlRitualReadDatabase,
@@ -286,10 +209,10 @@ export function createSqlRitualReader(
       );
     },
     /**
-     * Exact archived JSON for an ordinary authorized reader. Missing/stale archives
-     * return null, even for editors; no historical artifact, recompile or cleanup
-     * can substitute. A future SQL save must add versioned artifact selection with
-     * its write contract before advancing a parent beyond this legacy archive.
+     * Exact selected JSON for an ordinary reader. A selected artifact must match
+     * the current revision and supported output format; failures return null. Only
+     * imported parents without a selected artifact may use their matching legacy
+     * archive. No unselected artifact, source recompile or cleanup substitutes.
      */
     async getRendered(ritualId: string): Promise<SqlRenderedRitual | null> {
       const id = canonicalId(ritualId);
@@ -297,6 +220,29 @@ export function createSqlRitualReader(
       return read(async (tx, actor) => {
         const found = await parent(tx, id, actor, "read");
         if (!found) return null;
+        if (found.row.currentCompiledArtifactId !== null) {
+          const [artifact] = await tx
+            .select({
+              contentJson: ritualCompiledArtifacts.contentJson,
+              contentSha256: ritualCompiledArtifacts.contentSha256,
+            })
+            .from(ritualCompiledArtifacts)
+            .where(
+              and(
+                eq(
+                  ritualCompiledArtifacts.id,
+                  found.row.currentCompiledArtifactId,
+                ),
+                eq(ritualCompiledArtifacts.revisionId, found.currentRevisionId),
+                eq(ritualCompiledArtifacts.outputFormat, RITUAL_OUTPUT_FORMAT),
+                eq(
+                  ritualCompiledArtifacts.outputFormatVersion,
+                  RITUAL_OUTPUT_FORMAT_VERSION,
+                ),
+              ),
+            );
+          return artifact ? { ritual: found.metadata, ...artifact } : null;
+        }
         const [archive] = await tx
           .select({
             contentJson: legacyRitualCompiledArchives.contentJson,

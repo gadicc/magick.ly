@@ -316,3 +316,26 @@ sign-out and reader/editor guards remain to be integrated together. No current
 Gongo cache gains a lease through this module. Never-updating old clients cannot
 be retrofitted with expiry. Application locks preserve unique source bytes and
 are not a promise of tamperproof recall or physical deletion of every copy.
+
+The [SQL v2 ritual write service](007-sql-ritual-write-contract.md) now commits
+exact source, a versioned compiled artifact, parent revision/version pointers
+and an immutable operation receipt together. Current grants remain locked through
+accepted writes; retries recheck current permission and preserve operation
+identity. Ordinary saves cannot change scope or attribution. Public publication
+is a separate global-admin command. Readers select the exact supported artifact,
+with legacy archive fallback only for imported parents without a selection.
+Output compatibility is independent of the compiler's code/package identity.
+
+All 1,045 default tests, 37-module coverage, types, Biome, ordinary Loom checks
+and production build pass. Real PostgreSQL verifies concurrent replay/CAS,
+revocation for all three grant types, deletion blocking, five-second lock timeout,
+rollback, lost acknowledgement, exact source/artifact preservation and unchanged
+migration rerun across nine migrations and 27 tables. The generated composite
+unique constraint precedes its referencing foreign key. The disposable database
+was removed; source hashes stayed unchanged. Evidence:
+`/tmp/magickli-write-postgres-rehearsal/` and `/tmp/magickli-sql-writes-*.log`.
+
+No SQL write route or runtime identity switch was activated. Legacy v1 commands,
+Mongo receipts and browser recovery must be reconciled before the new protocol
+boundary ships. Migration 0008 and the preceding domain migrations remain local;
+no new Neon migration or private import ran.
