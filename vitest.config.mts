@@ -32,6 +32,7 @@ export default defineConfig({
         "src/migration/normalizeLegacyAuth.ts",
         "src/migration/planBetterAuthImport.ts",
         "src/migration/planLegacyMembershipImport.ts",
+        "src/migration/planLegacyRitualImport.ts",
         "src/schemas/templeMembership.ts",
         "src/app/chat/contracts.ts",
         "src/app/chat/conversation.ts",

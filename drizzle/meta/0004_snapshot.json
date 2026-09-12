@@ -1,0 +1,1953 @@
+{
+  "id": "3bbe33e9-8f74-4599-8167-0a414f93d646",
+  "prevId": "fdfae3d6-1bf6-4c73-b735-4f741642b386",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.auth_account": {
+      "name": "auth_account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_account_provider_subject_unique": {
+          "name": "auth_account_provider_subject_unique",
+          "columns": [
+            {
+              "expression": "provider_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "auth_account_user_idx": {
+          "name": "auth_account_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "auth_account_user_id_auth_user_id_fk": {
+          "name": "auth_account_user_id_auth_user_id_fk",
+          "tableFrom": "auth_account",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "auth_account_id_v7": {
+          "name": "auth_account_id_v7",
+          "value": "substring(\"auth_account\".\"id\"::text from 15 for 1) = '7' and substring(\"auth_account\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.auth_session": {
+      "name": "auth_session",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_session_user_idx": {
+          "name": "auth_session_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "auth_session_user_id_auth_user_id_fk": {
+          "name": "auth_session_user_id_auth_user_id_fk",
+          "tableFrom": "auth_session",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "auth_session_token_unique": {
+          "name": "auth_session_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "auth_session_id_v7": {
+          "name": "auth_session_id_v7",
+          "value": "substring(\"auth_session\".\"id\"::text from 15 for 1) = '7' and substring(\"auth_session\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.auth_user": {
+      "name": "auth_user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_user_email_case_unique": {
+          "name": "auth_user_email_case_unique",
+          "columns": [
+            {
+              "expression": "lower(\"email\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "auth_user_email_unique": {
+          "name": "auth_user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "auth_user_id_v7": {
+          "name": "auth_user_id_v7",
+          "value": "substring(\"auth_user\".\"id\"::text from 15 for 1) = '7' and substring(\"auth_user\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.auth_verification": {
+      "name": "auth_verification",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_verification_identifier_idx": {
+          "name": "auth_verification_identifier_idx",
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "auth_verification_id_v7": {
+          "name": "auth_verification_id_v7",
+          "value": "substring(\"auth_verification\".\"id\"::text from 15 for 1) = '7' and substring(\"auth_verification\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.legacy_id_aliases": {
+      "name": "legacy_id_aliases",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "source_system": {
+          "name": "source_system",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "legacy_id_type": {
+          "name": "legacy_id_type",
+          "type": "legacy_id_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "legacy_id_value": {
+          "name": "legacy_id_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical_id": {
+          "name": "canonical_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "legacy_id_aliases_source_key_unique": {
+          "name": "legacy_id_aliases_source_key_unique",
+          "columns": [
+            {
+              "expression": "source_system",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "legacy_id_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "legacy_id_value",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "legacy_id_aliases_canonical_idx": {
+          "name": "legacy_id_aliases_canonical_idx",
+          "columns": [
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "canonical_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "legacy_id_aliases_source_nonempty": {
+          "name": "legacy_id_aliases_source_nonempty",
+          "value": "length(btrim(\"legacy_id_aliases\".\"source_system\")) > 0"
+        },
+        "legacy_id_aliases_entity_nonempty": {
+          "name": "legacy_id_aliases_entity_nonempty",
+          "value": "length(btrim(\"legacy_id_aliases\".\"entity_type\")) > 0"
+        },
+        "legacy_id_aliases_objectid_format": {
+          "name": "legacy_id_aliases_objectid_format",
+          "value": "\"legacy_id_aliases\".\"legacy_id_type\" <> 'objectid' or \"legacy_id_aliases\".\"legacy_id_value\" ~ '^[0-9a-f]{24}$'"
+        },
+        "legacy_id_aliases_canonical_uuid_v7": {
+          "name": "legacy_id_aliases_canonical_uuid_v7",
+          "value": "substring(\"legacy_id_aliases\".\"canonical_id\"::text from 15 for 1) = '7' and substring(\"legacy_id_aliases\".\"canonical_id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.legacy_user_group_grants": {
+      "name": "legacy_user_group_grants",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "group_ids_present": {
+          "name": "group_ids_present",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_admin_ids_present": {
+          "name": "group_admin_ids_present",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_references": {
+          "name": "group_references",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_admin_references": {
+          "name": "group_admin_references",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_user_group_grants_user_id_auth_user_id_fk": {
+          "name": "legacy_user_group_grants_user_id_auth_user_id_fk",
+          "tableFrom": "legacy_user_group_grants",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.temple_invites": {
+      "name": "temple_invites",
+      "schema": "",
+      "columns": {
+        "temple_id": {
+          "name": "temple_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "join_pass": {
+          "name": "join_pass",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "temple_invites_temple_id_temples_id_fk": {
+          "name": "temple_invites_temple_id_temples_id_fk",
+          "tableFrom": "temple_invites",
+          "tableTo": "temples",
+          "columnsFrom": [
+            "temple_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.temple_memberships": {
+      "name": "temple_memberships",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "temple_id": {
+          "name": "temple_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade": {
+          "name": "grade",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admin": {
+          "name": "admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "motto": {
+          "name": "motto",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "added_at": {
+          "name": "added_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "member_since": {
+          "name": "member_since",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legacy_sync_updated_at_milliseconds": {
+          "name": "legacy_sync_updated_at_milliseconds",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "temple_memberships_user_temple_unique": {
+          "name": "temple_memberships_user_temple_unique",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "temple_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "temple_memberships_temple_idx": {
+          "name": "temple_memberships_temple_idx",
+          "columns": [
+            {
+              "expression": "temple_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "temple_memberships_user_id_auth_user_id_fk": {
+          "name": "temple_memberships_user_id_auth_user_id_fk",
+          "tableFrom": "temple_memberships",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "temple_memberships_temple_id_temples_id_fk": {
+          "name": "temple_memberships_temple_id_temples_id_fk",
+          "tableFrom": "temple_memberships",
+          "tableTo": "temples",
+          "columnsFrom": [
+            "temple_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "temple_memberships_id_v7": {
+          "name": "temple_memberships_id_v7",
+          "value": "substring(\"temple_memberships\".\"id\"::text from 15 for 1) = '7' and substring(\"temple_memberships\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        },
+        "temple_memberships_grade_nonnegative": {
+          "name": "temple_memberships_grade_nonnegative",
+          "value": "\"temple_memberships\".\"grade\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.temples": {
+      "name": "temples",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_id": {
+          "name": "created_by_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legacy_sync_updated_at_milliseconds": {
+          "name": "legacy_sync_updated_at_milliseconds",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "temples_slug_normalized_unique": {
+          "name": "temples_slug_normalized_unique",
+          "columns": [
+            {
+              "expression": "lower(btrim(\"slug\"))",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "temples_created_by_idx": {
+          "name": "temples_created_by_idx",
+          "columns": [
+            {
+              "expression": "created_by_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "temples_created_by_id_auth_user_id_fk": {
+          "name": "temples_created_by_id_auth_user_id_fk",
+          "tableFrom": "temples",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "created_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "temples_id_v7": {
+          "name": "temples_id_v7",
+          "value": "substring(\"temples\".\"id\"::text from 15 for 1) = '7' and substring(\"temples\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        },
+        "temples_slug_nonempty": {
+          "name": "temples_slug_nonempty",
+          "value": "length(btrim(\"temples\".\"slug\")) > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.user_group_grants": {
+      "name": "user_group_grants",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "member": {
+          "name": "member",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "admin": {
+          "name": "admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "user_group_grants_group_idx": {
+          "name": "user_group_grants_group_idx",
+          "columns": [
+            {
+              "expression": "group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_group_grants_user_id_auth_user_id_fk": {
+          "name": "user_group_grants_user_id_auth_user_id_fk",
+          "tableFrom": "user_group_grants",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "user_group_grants_group_id_user_groups_id_fk": {
+          "name": "user_group_grants_group_id_user_groups_id_fk",
+          "tableFrom": "user_group_grants",
+          "tableTo": "user_groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_group_grants_user_id_group_id_pk": {
+          "name": "user_group_grants_user_id_group_id_pk",
+          "columns": [
+            "user_id",
+            "group_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "user_group_grants_has_grant": {
+          "name": "user_group_grants_has_grant",
+          "value": "\"user_group_grants\".\"member\" or \"user_group_grants\".\"admin\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.user_groups": {
+      "name": "user_groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legacy_sync_updated_at_milliseconds": {
+          "name": "legacy_sync_updated_at_milliseconds",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "user_groups_id_v7": {
+          "name": "user_groups_id_v7",
+          "value": "substring(\"user_groups\".\"id\"::text from 15 for 1) = '7' and substring(\"user_groups\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.legacy_ritual_compiled_archives": {
+      "name": "legacy_ritual_compiled_archives",
+      "schema": "",
+      "columns": {
+        "ritual_id": {
+          "name": "ritual_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "claimed_revision_id": {
+          "name": "claimed_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_json": {
+          "name": "content_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_sha256": {
+          "name": "content_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "serialization_version": {
+          "name": "serialization_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_ritual_compiled_archives_ritual_id_rituals_id_fk": {
+          "name": "legacy_ritual_compiled_archives_ritual_id_rituals_id_fk",
+          "tableFrom": "legacy_ritual_compiled_archives",
+          "tableTo": "rituals",
+          "columnsFrom": [
+            "ritual_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "legacy_ritual_archive_own_revision": {
+          "name": "legacy_ritual_archive_own_revision",
+          "tableFrom": "legacy_ritual_compiled_archives",
+          "tableTo": "ritual_revisions",
+          "columnsFrom": [
+            "ritual_id",
+            "claimed_revision_id"
+          ],
+          "columnsTo": [
+            "ritual_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "legacy_ritual_archive_hash_matches": {
+          "name": "legacy_ritual_archive_hash_matches",
+          "value": "\"legacy_ritual_compiled_archives\".\"content_sha256\" = encode(sha256(convert_to(\"legacy_ritual_compiled_archives\".\"content_json\", 'UTF8')), 'hex')"
+        },
+        "legacy_ritual_archive_json_object": {
+          "name": "legacy_ritual_archive_json_object",
+          "value": "json_typeof(\"legacy_ritual_compiled_archives\".\"content_json\"::json) = 'object'"
+        },
+        "legacy_ritual_archive_serialization": {
+          "name": "legacy_ritual_archive_serialization",
+          "value": "\"legacy_ritual_compiled_archives\".\"serialization_version\" = 'json-stringify-utf8-v1'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.ritual_compiled_artifacts": {
+      "name": "ritual_compiled_artifacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "revision_id": {
+          "name": "revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_sha256": {
+          "name": "source_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "compiler_version": {
+          "name": "compiler_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "output_format": {
+          "name": "output_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "output_format_version": {
+          "name": "output_format_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transformations": {
+          "name": "transformations",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_json": {
+          "name": "content_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_sha256": {
+          "name": "content_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "compiled_at": {
+          "name": "compiled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "ritual_compiled_artifact_revision_idx": {
+          "name": "ritual_compiled_artifact_revision_idx",
+          "columns": [
+            {
+              "expression": "revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "ritual_compiled_artifact_exact_source": {
+          "name": "ritual_compiled_artifact_exact_source",
+          "tableFrom": "ritual_compiled_artifacts",
+          "tableTo": "ritual_revisions",
+          "columnsFrom": [
+            "revision_id",
+            "source_sha256"
+          ],
+          "columnsTo": [
+            "id",
+            "source_sha256"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ritual_compiled_artifacts_id_v7": {
+          "name": "ritual_compiled_artifacts_id_v7",
+          "value": "substring(\"ritual_compiled_artifacts\".\"id\"::text from 15 for 1) = '7' and substring(\"ritual_compiled_artifacts\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        },
+        "ritual_compiled_artifact_hash_matches": {
+          "name": "ritual_compiled_artifact_hash_matches",
+          "value": "\"ritual_compiled_artifacts\".\"content_sha256\" = encode(sha256(convert_to(\"ritual_compiled_artifacts\".\"content_json\", 'UTF8')), 'hex')"
+        },
+        "ritual_compiled_artifact_json_object": {
+          "name": "ritual_compiled_artifact_json_object",
+          "value": "json_typeof(\"ritual_compiled_artifacts\".\"content_json\"::json) = 'object'"
+        },
+        "ritual_compiled_artifact_compiler_nonempty": {
+          "name": "ritual_compiled_artifact_compiler_nonempty",
+          "value": "length(btrim(\"ritual_compiled_artifacts\".\"compiler_version\")) > 0"
+        },
+        "ritual_compiled_artifact_format_nonempty": {
+          "name": "ritual_compiled_artifact_format_nonempty",
+          "value": "length(btrim(\"ritual_compiled_artifacts\".\"output_format\")) > 0"
+        },
+        "ritual_compiled_artifact_format_version_nonempty": {
+          "name": "ritual_compiled_artifact_format_version_nonempty",
+          "value": "length(btrim(\"ritual_compiled_artifacts\".\"output_format_version\")) > 0"
+        },
+        "ritual_compiled_artifact_transformations_named": {
+          "name": "ritual_compiled_artifact_transformations_named",
+          "value": "array_position(\"ritual_compiled_artifacts\".\"transformations\", NULL) is null and array_position(\"ritual_compiled_artifacts\".\"transformations\", '') is null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.ritual_revisions": {
+      "name": "ritual_revisions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "ritual_id": {
+          "name": "ritual_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_sha256": {
+          "name": "source_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_format": {
+          "name": "source_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_format_version": {
+          "name": "source_format_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "legacy_sync_updated_at_milliseconds": {
+          "name": "legacy_sync_updated_at_milliseconds",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "ritual_revisions_author_idx": {
+          "name": "ritual_revisions_author_idx",
+          "columns": [
+            {
+              "expression": "author_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "ritual_revisions_ritual_id_rituals_id_fk": {
+          "name": "ritual_revisions_ritual_id_rituals_id_fk",
+          "tableFrom": "ritual_revisions",
+          "tableTo": "rituals",
+          "columnsFrom": [
+            "ritual_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ritual_revisions_author_id_auth_user_id_fk": {
+          "name": "ritual_revisions_author_id_auth_user_id_fk",
+          "tableFrom": "ritual_revisions",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ritual_revisions_parent_id_unique": {
+          "name": "ritual_revisions_parent_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ritual_id",
+            "id"
+          ]
+        },
+        "ritual_revisions_source_hash_unique": {
+          "name": "ritual_revisions_source_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "source_sha256"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ritual_revisions_id_v7": {
+          "name": "ritual_revisions_id_v7",
+          "value": "substring(\"ritual_revisions\".\"id\"::text from 15 for 1) = '7' and substring(\"ritual_revisions\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        },
+        "ritual_revisions_source_hash_matches": {
+          "name": "ritual_revisions_source_hash_matches",
+          "value": "\"ritual_revisions\".\"source_sha256\" = encode(sha256(convert_to(\"ritual_revisions\".\"source\", 'UTF8')), 'hex')"
+        },
+        "ritual_revisions_format_nonempty": {
+          "name": "ritual_revisions_format_nonempty",
+          "value": "length(btrim(\"ritual_revisions\".\"source_format\")) > 0"
+        },
+        "ritual_revisions_format_version_nonempty": {
+          "name": "ritual_revisions_format_version_nonempty",
+          "value": "length(btrim(\"ritual_revisions\".\"source_format_version\")) > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.rituals": {
+      "name": "rituals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creator_id": {
+          "name": "creator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "ritual_scope_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temple_id": {
+          "name": "temple_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_grade": {
+          "name": "min_grade",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_revision_id": {
+          "name": "current_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legacy_sync_updated_at_milliseconds": {
+          "name": "legacy_sync_updated_at_milliseconds",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "rituals_group_idx": {
+          "name": "rituals_group_idx",
+          "columns": [
+            {
+              "expression": "group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "rituals_temple_idx": {
+          "name": "rituals_temple_idx",
+          "columns": [
+            {
+              "expression": "temple_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "rituals_creator_idx": {
+          "name": "rituals_creator_idx",
+          "columns": [
+            {
+              "expression": "creator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "rituals_creator_id_auth_user_id_fk": {
+          "name": "rituals_creator_id_auth_user_id_fk",
+          "tableFrom": "rituals",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "creator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rituals_group_id_user_groups_id_fk": {
+          "name": "rituals_group_id_user_groups_id_fk",
+          "tableFrom": "rituals",
+          "tableTo": "user_groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rituals_temple_id_temples_id_fk": {
+          "name": "rituals_temple_id_temples_id_fk",
+          "tableFrom": "rituals",
+          "tableTo": "temples",
+          "columnsFrom": [
+            "temple_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rituals_current_revision_own_parent": {
+          "name": "rituals_current_revision_own_parent",
+          "tableFrom": "rituals",
+          "tableTo": "ritual_revisions",
+          "columnsFrom": [
+            "id",
+            "current_revision_id"
+          ],
+          "columnsTo": [
+            "ritual_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "rituals_id_v7": {
+          "name": "rituals_id_v7",
+          "value": "substring(\"rituals\".\"id\"::text from 15 for 1) = '7' and substring(\"rituals\".\"id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        },
+        "rituals_exclusive_scope": {
+          "name": "rituals_exclusive_scope",
+          "value": "\n    (\"rituals\".\"scope\" = 'public' and \"rituals\".\"group_id\" is null and \"rituals\".\"temple_id\" is null and \"rituals\".\"min_grade\" is null)\n    or (\"rituals\".\"scope\" = 'group' and \"rituals\".\"group_id\" is not null and \"rituals\".\"temple_id\" is null and \"rituals\".\"min_grade\" is null)\n    or (\"rituals\".\"scope\" = 'temple' and \"rituals\".\"group_id\" is null and \"rituals\".\"temple_id\" is not null and \"rituals\".\"min_grade\" is not null and \"rituals\".\"min_grade\" between 0 and 9007199254740991)"
+        },
+        "rituals_version_safe": {
+          "name": "rituals_version_safe",
+          "value": "\"rituals\".\"version\" between 0 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.legacy_auth_accounts": {
+      "name": "legacy_auth_accounts",
+      "schema": "",
+      "columns": {
+        "account_id": {
+          "name": "account_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "legacy_type": {
+          "name": "legacy_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "modern_sources": {
+          "name": "modern_sources",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "embedded_sources": {
+          "name": "embedded_sources",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_auth_accounts_account_id_auth_account_id_fk": {
+          "name": "legacy_auth_accounts_account_id_auth_account_id_fk",
+          "tableFrom": "legacy_auth_accounts",
+          "tableTo": "auth_account",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.legacy_auth_users": {
+      "name": "legacy_auth_users",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sync_updated_at_milliseconds": {
+          "name": "sync_updated_at_milliseconds",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_auth_users_user_id_auth_user_id_fk": {
+          "name": "legacy_auth_users_user_id_auth_user_id_fk",
+          "tableFrom": "legacy_auth_users",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.legacy_user_emails": {
+      "name": "legacy_user_emails",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "normalized_value": {
+          "name": "normalized_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verified": {
+          "name": "verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence": {
+          "name": "evidence",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "legacy_user_emails_user_value_unique": {
+          "name": "legacy_user_emails_user_value_unique",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "value",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "legacy_user_emails_user_id_auth_user_id_fk": {
+          "name": "legacy_user_emails_user_id_auth_user_id_fk",
+          "tableFrom": "legacy_user_emails",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_access": {
+      "name": "user_access",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "admin": {
+          "name": "admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_access_user_id_auth_user_id_fk": {
+          "name": "user_access_user_id_auth_user_id_fk",
+          "tableFrom": "user_access",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_profile": {
+      "name": "user_profile",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_profile_user_id_auth_user_id_fk": {
+          "name": "user_profile_user_id_auth_user_id_fk",
+          "tableFrom": "user_profile",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.legacy_id_type": {
+      "name": "legacy_id_type",
+      "schema": "public",
+      "values": [
+        "objectid",
+        "string"
+      ]
+    },
+    "public.ritual_scope_kind": {
+      "name": "ritual_scope_kind",
+      "schema": "public",
+      "values": [
+        "public",
+        "group",
+        "temple"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
