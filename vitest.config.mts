@@ -22,6 +22,8 @@ export default defineConfig({
         "src/doc/drafts.ts",
         "src/doc/gongoWrites.ts",
         "src/doc/sqlReads.ts",
+        "src/doc/publicShells.ts",
+        "src/doc/publicRituals.ts",
         "src/study/scheduling.ts",
         "src/study/progressSnapshot.ts",
         "src/temples/create.ts",

@@ -39,6 +39,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Atomic ritual writes and editor recovery | Complete locally | Versioned save/create/publication commands, compare-and-swap tokens, exact source, server compilation and durable operation receipts; converted editor/creation UI, full authorized snapshots and explicit legacy recovery; 646 default tests plus 14 disposable Mongo cases, scoped coverage, types, Biome and production build pass; six browser scenarios with synthetic HTTP responses pass |
 | Ritual and revision SQL foundation | Complete locally | Four tables distinguish exact source, original compiled archives and versioned artifacts; strict typed import plan and parent/source-hash constraints; 46 new tests, 692 full-suite tests, types/Biome/coverage/build and real Postgres migration/rollback/unchanged rerun pass; no live import |
 | Shared form dependencies | Complete locally | React Hook Form 7.88.0, resolvers 5.9.1 and Radash 12.1.1; no source changes; 28 actual membership form/schema tests, all 692 tests, unchanged coverage, typecheck, Biome, frozen install and production build pass |
+| Public ritual offline query shells | Complete locally | Three literal static ritual shells, anonymous build-bound worker cache and exact deployment asset matching; 43 new tests, 845 full-suite tests, coverage/types/Biome/build and nine two-build Chromium scenarios pass |
 | Atomic SQL temple creation | Complete locally; UI activation pending | Any verified existing user creates temple, first grade-zero admin and durable retry receipt atomically; no automatic invite; 37 new tests, 802 full-suite tests, coverage/types/Biome/build and real Postgres races/lock-timeout/replay checks pass |
 | Authorized SQL ritual reads | Complete locally | Server-only repository shares policy and loads current grants/source in read-only repeatable-read transactions; 20 new tests, 765 full-suite tests, coverage/types/Biome/build and real Postgres concurrent-demotion/source-preservation acceptance pass |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
@@ -50,7 +51,7 @@ Pinecone is the authoritative vector store. The unused Mongo ingestion experimen
 
 The Node 24 baseline production build completes with existing tarot import and BSON target warnings, expected local-placeholder Mongo connection errors from eager initialization, and an invalid sitemap base URL caused by the old config loader. These are tracked for separate fixes. Service credentials were overridden with local/build-only values; Google Font downloads were allowed. CI is configured but has not run on GitHub yet.
 
-Coverage currently gates thirty extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.61% statements, 99.23% lines, 100% functions and 97.07% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 802 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
+Coverage currently gates thirty-two extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.63% statements, 99.27% lines, 100% functions and 96.96% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 845 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
 
 Loom is bootstrapped with no application features active yet. Its required formatter compatibility prompted the Biome update and configuration migration. The new SVG parser is excluded from existing designer assets. The explicitly intentional JRT hook model has a file-scoped exception; an unrelated unused hook component was removed. Forty-four newly reported array-index-key findings remain warnings while their owning features are migrated: changing component identity as a formatting fix would be unsafe. Import ordering uses the new defaults.
 
@@ -214,3 +215,31 @@ The service is transport-neutral; runtime auth and the creation form still need
 conversion. Reviewed copy distinguishes joining an existing temple from creating
 one to manage, states the first-admin responsibility, and uses an explicit CTA
 instead of the old Add button. No inactive SQL service is presented as live UI.
+
+Public bundled rituals now have three literal static page wrappers and a shared
+Suspense shell. Database IDs remain request-bound. The worker warms only
+canonical anonymous HTML for those three pages and serves known display-query
+variants from that build-bound cache. It verifies Next build/deployment identity,
+loaded assets and explicit public caching headers; it never consumes credentialed
+navigation preload. Exact matching deployment parameters on declared static
+assets support offline hydration without broadly ignoring query strings.
+
+Serwist's auxiliary navigation cache is disabled because browser evidence showed
+it retaining private/authenticated HTML despite no-store. Activation clears that
+old `pages` cache and this helper's obsolete caches, preserving other stores.
+The published Loom consent lifecycle is unchanged. A wrong-build shell prevents
+the new worker from installing and leaves the prior version usable offline.
+
+All 845 default tests, 32-module coverage, types, Biome, ordinary Loom checks and
+the integrated production build pass. The built manifest contains exactly the
+three intended public static routes while the dynamic ID route remains excluded.
+Nine Chromium scenarios across two synthetic production builds verify cold
+offline queries, real controls, no authenticated/preload sentinel in the dedicated
+cache, removal of the old HTML cache, no speculative navigation worker, failed
+update recovery, consent and exact-deployment asset hydration. HTTP checks retain
+private-route no-store behavior and editor/alias routes. Evidence:
+`/tmp/magickli-public-ritual-shells/` and `/tmp/magickli-public-shells-*.log`.
+This covers public bundled rituals after successful online installation. Private
+ritual bundles, existing general authenticated caches, cache eviction and Safari
+device acceptance remain distinct gates; the approved private 14-day policy does
+not apply to these publicly bundled texts.

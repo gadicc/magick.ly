@@ -1,6 +1,7 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist } from "serwist";
+import { createPublicRitualShells } from "../doc/publicShells";
 
 // This declares the value of `injectionPoint` to TypeScript.
 // `injectionPoint` is the string that will be replaced by the
@@ -14,12 +15,27 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+const precacheEntries = self.__SW_MANIFEST ?? [];
+const publicRituals = createPublicRitualShells(
+  precacheEntries,
+  self.location.origin,
+  process.env.NEXT_DEPLOYMENT_ID,
+);
+
 const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
+  precacheEntries,
+  precacheOptions: publicRituals.precacheOptions,
   skipWaiting: false,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [...publicRituals.runtimeCaching, ...defaultCache],
 });
 
 serwist.addEventListeners();
+
+self.addEventListener("install", (event) =>
+  event.waitUntil(publicRituals.warm()),
+);
+self.addEventListener("activate", (event) =>
+  event.waitUntil(publicRituals.clearObsolete()),
+);

@@ -40,7 +40,9 @@ export default async function (phase: string): Promise<NextConfig> {
   if (phase === PHASE_DEVELOPMENT_SERVER || phase === PHASE_PRODUCTION_BUILD) {
     const withSerwist = (await import("@serwist/next")).default({
       // https://serwist.pages.dev/docs/next/configuring/cache-on-navigation
-      cacheOnNavigation: true,
+      // The auxiliary worker persists credentialed HTML despite private/no-store.
+      // Public ritual shells are warmed explicitly by our service worker.
+      cacheOnNavigation: false,
 
       // Note: This is only an example. If you use Pages Router,
       // use something else that works, such as "service-worker/index.ts".

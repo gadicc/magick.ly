@@ -1,46 +1,13 @@
-"use client";
+import { connection } from "next/server";
+import DocPageShell from "../DocPageShell";
 
-// import neophyte from "../../src/doc/neophyte.yaml";
-// @ts-expect-error: ok
-import _neophyte from "!!raw-loader!@/doc/0=0.jade";
-// import _neophyteM from "!!raw-loader!../../src/doc/0=0m.jade";
-// @ts-expect-error: ok
-import _zelator from "!!raw-loader!@/doc/1=10.jade";
-// import _healing from "!!raw-loader!../../src/doc/healing.jade";
-// import _chesedTalisman from "!!raw-loader!../../src/doc/chesed-talisman.jade";
-// @ts-expect-error: ok
-import _theoricus from "!!raw-loader!@/doc/2=9.jade";
-import { useGongoOne, useGongoSub } from "gongo-client-react";
-import React from "react";
-import { prepare } from "@/doc/prepare";
-import DocRender from "./DocRender";
-
-const docs = {
-  neophyte: prepare(_neophyte),
-  zelator: prepare(_zelator),
-  theoricus: prepare(_theoricus),
-  // neophyteM: prepare(_neophyteM),
-  // healing: prepare(_healing),
-  // "chesed-talisman": prepare(_chesedTalisman),
-};
-
-function DocLoader(props: { params: Promise<{ _id: string }> }) {
-  const params = React.use(props.params);
-
-  const { _id } = params;
-
-  const builtinDoc = docs[_id];
-  useGongoSub(!builtinDoc && "doc", { _id });
-  const dbDoc = useGongoOne(
-    (db) => !builtinDoc && db.collection("docs").find({ _id }),
-  );
-
-  const doc = builtinDoc || (dbDoc && dbDoc.doc);
-
-  if (!doc) return <div>Loading or not found...</div>;
-
-  return <DocRender doc={doc} />;
+export default async function DocPage({
+  params,
+}: {
+  params: Promise<{ _id: string }>;
+}) {
+  // Database-backed IDs must never become build-time or on-demand static HTML.
+  await connection();
+  const { _id } = await params;
+  return <DocPageShell id={_id} />;
 }
-
-//export default dynamic(Promise.resolve(Doc), { ssr: false });
-export default DocLoader;
