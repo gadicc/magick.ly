@@ -187,3 +187,38 @@ Canonical bucket-level CORS inspection returns 403 AccessDenied with the existin
 object credentials. Earlier CORS/policy probes through the bucket-prefixed legacy
 endpoint were not valid bucket-level evidence. Private Production/Preview bucket
 configuration, CORS and full browser/runtime acceptance remain separate gates.
+
+## R2 storage adapter
+
+The app now has a closed, server-only R2 adapter using SDK v3 and Loom's
+conditional storage helper. Configuration requires the canonical account origin,
+bucket, explicit credentials and separate staging/canonical prefixes. It performs
+no ambient credential or endpoint discovery. SQL persists exact locations before
+the adapter signs a capability; the adapter revalidates those locations on every
+operation. The canonical key includes the preallocated file ID and verified digest
+so an uncertain write can be reconciled to its own operation.
+
+Direct PUT signs exact size, type, checksum, absence condition and ownership
+metadata. Checksum and metadata remain HTTP headers because of the observed R2
+query-hoisting behavior. Capability duration is clipped to the SQL capability,
+intent, credential expiry and ten-minute limit. Browser callers must send the Blob
+and supplied headers; the browser supplies Content-Length itself. A same-operation
+412 can proceed to finalization, but cannot overwrite staging bytes.
+
+Reads are bounded, cancellable SDK streams; late responses and active streams
+close on timeout, abort or adapter disposal. Canonical writes snapshot verified
+bytes before asynchronous I/O and use Loom's conditional PUT. A collision succeeds
+only after bounded GET verifies exact operation/file provenance, type, size and
+actual SHA. Unknown outcomes retain the operation and possible orphan for a
+verified retry; this adapter performs no copy, deletion or overwrite. The SQL
+publication boundary still rechecks identity, grants and the live worker claim.
+
+All 1,568 default tests, 50-module coverage, types, Biome, ordinary Loom checks and
+production build pass. The adapter adds 62 cases using the actual SDK signer and
+Loom wrapper with a synthetic HTTP transport. Scoped coverage is 98.26% statements,
+96.98% branches, 100% functions and 99.44% lines. The lock adds only the SDK graph
+and its existing optional peer bindings; no prior package version is removed.
+Evidence: `/tmp/magickli-r2-adapter-*.log` and
+`/tmp/magickli-files-r2-adapter/`. This is local implementation evidence, separate
+from the bounded live capability probe above. Files remains planned until private
+provider setup, authenticated routes and full browser acceptance are complete.

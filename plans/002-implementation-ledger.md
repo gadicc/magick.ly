@@ -47,6 +47,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Protected image finalization | Complete locally; adapters pending | Strict v1 requests, actual bytes/hash/all-frame decoding, Loom private save and current-policy atomic publication contract; 98 new tests, 1,344 default tests, coverage/types/Biome/Loom/build; native decode deadline smoke passes |
 | SQL ritual upload publication | Complete locally; provider/UI pending | Immutable intents, current grants, fenced claims and atomic file/link/receipt; 97 new cases, 1,441 default tests, coverage/types/Biome/Loom/build; 16 real Postgres race/constraint gates and unchanged ten-migration/29-table rerun |
 | Verified legacy file locations | Complete locally; import pending | All ten canonical R2 reads prove bucket-prefixed keys; explicit import prefix/provenance preserves public URLs; 1,506 tests, full checks/build, production-bound in-memory preflight and real Postgres upgrade/rerun pass |
+| Protected R2 storage adapter | Complete locally; activation pending | Explicit SQL-bound locations, signed size/SHA/provenance, cancellable reads and same-operation orphan reconciliation through Loom; 62 new cases, 1,568 tests, coverage/types/Biome/Loom/build pass |
 | Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
 | Offline storage and view lifecycle | Complete locally; runtime integration pending | Dexie repository plus synchronous view guards, two-tab sign-out fence, owned Blob cleanup and opaque locked recovery; 1,499 tests, coverage/types/Biome/Loom/build; ten native lifecycle scenarios pass |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
@@ -451,3 +452,13 @@ files or bucket configuration. Provenance must be signed HTTP headers: R2 ignore
 query-hoisted metadata. Canonical CORS inspection is denied to the current object
 credentials; private bucket configuration and full browser uploads remain pending.
 See the [Files contract](008-protected-ritual-files.md) for exact evidence and limits.
+
+The R2 adapter now implements those verified provider constraints with explicit
+configuration and immutable SQL descriptors. It bounds signed capabilities and
+streams, preserves uncertain canonical writes for exact-operation reconciliation,
+and uses Loom conditional storage without overwriting or deleting objects.
+All 1,568 default tests, scoped coverage, types, Biome, ordinary Loom checks and
+production build pass. No existing package version changed when adding SDK v3;
+legacy AWS v2 remains until the old file route is replaced. Private bucket setup,
+authenticated upload/download integration and complete browser acceptance remain
+required before activating Files.
