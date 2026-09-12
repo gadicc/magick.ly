@@ -33,6 +33,8 @@ jobs:
         with:
           cache: true
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec loom init
+      - run: pnpm exec loom check
       - run: pnpm check
       - run: pnpm typecheck
       - run: pnpm test:coverage

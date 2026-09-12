@@ -21,6 +21,8 @@ export default defineConfig({
         "src/app/chat/train/access.ts",
         "src/app/chat/train/ingestPdf.ts",
         "src/app/chat/train/upload/route.ts",
+        "src/lib/ids.ts",
+        "src/db/legacyIds.ts",
       ],
       thresholds: {
         perFile: true,

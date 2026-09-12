@@ -1,0 +1,158 @@
+{
+  "id": "fea92b47-fcb0-45f3-8217-4cf6d8ee6e9a",
+  "prevId": "898f6c63-4d70-44f5-aa59-b559bddf5151",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.legacy_id_aliases": {
+      "name": "legacy_id_aliases",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuid_generate_v7()"
+        },
+        "source_system": {
+          "name": "source_system",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "legacy_id_type": {
+          "name": "legacy_id_type",
+          "type": "legacy_id_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "legacy_id_value": {
+          "name": "legacy_id_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical_id": {
+          "name": "canonical_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "legacy_id_aliases_source_key_unique": {
+          "name": "legacy_id_aliases_source_key_unique",
+          "columns": [
+            {
+              "expression": "source_system",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "legacy_id_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "legacy_id_value",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "legacy_id_aliases_canonical_idx": {
+          "name": "legacy_id_aliases_canonical_idx",
+          "columns": [
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "canonical_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "legacy_id_aliases_source_nonempty": {
+          "name": "legacy_id_aliases_source_nonempty",
+          "value": "length(btrim(\"legacy_id_aliases\".\"source_system\")) > 0"
+        },
+        "legacy_id_aliases_entity_nonempty": {
+          "name": "legacy_id_aliases_entity_nonempty",
+          "value": "length(btrim(\"legacy_id_aliases\".\"entity_type\")) > 0"
+        },
+        "legacy_id_aliases_objectid_format": {
+          "name": "legacy_id_aliases_objectid_format",
+          "value": "\"legacy_id_aliases\".\"legacy_id_type\" <> 'objectid' or \"legacy_id_aliases\".\"legacy_id_value\" ~ '^[0-9a-f]{24}$'"
+        },
+        "legacy_id_aliases_canonical_uuid_v7": {
+          "name": "legacy_id_aliases_canonical_uuid_v7",
+          "value": "substring(\"legacy_id_aliases\".\"canonical_id\"::text from 15 for 1) = '7' and substring(\"legacy_id_aliases\".\"canonical_id\"::text from 20 for 1) in ('8', '9', 'a', 'b')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.legacy_id_type": {
+      "name": "legacy_id_type",
+      "schema": "public",
+      "values": [
+        "objectid",
+        "string"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

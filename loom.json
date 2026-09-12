@@ -19,5 +19,29 @@
       }
     }
   },
-  "features": {}
+  "features": {
+    "db": {
+      "status": "active",
+      "activatedOn": "2026-09-12",
+      "config": {
+        "dirs": {
+          "drizzleOutDir": "drizzle",
+          "fixtureDir": "tests/fixtures/db",
+          "schemaDir": "src/db/schema",
+          "valibotGeneratedDir": "src/db/valibot/generated",
+          "valibotRefinementsDir": "src/db/valibot/refinements"
+        },
+        "modules": {
+          "drizzleConfig": "drizzle.config.ts",
+          "fixtureDumpScript": "scripts/dump-test-tables.ts",
+          "neonFullModule": "src/db/neonFull.ts",
+          "neonModule": "src/db/neon.ts",
+          "pgliteHarnessModule": "tests/memory-pglite.ts",
+          "refinementsCommonModule": "src/db/valibot/refinements/_common.ts",
+          "scriptsTsconfig": "scripts/tsconfig.scripts.json",
+          "valibotBarrelModule": "src/db/valibot/index.ts"
+        }
+      }
+    }
+  }
 }

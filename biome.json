@@ -13,6 +13,8 @@
       "!.vscode/**",
       "!archive/**",
       "!dump/**",
+      "!drizzle/meta/**",
+      "!src/db/valibot/generated/**",
       "!public/fonts/**",
       "!**/*.svg",
       "!src/components/enochian/font/**"
