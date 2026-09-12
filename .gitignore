@@ -30,6 +30,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# local database backups (may contain credentials and personal data)
+/dump/
+
 # withPwa
 /public/sw.js
 /public/sw.js.map
