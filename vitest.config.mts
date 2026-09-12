@@ -28,6 +28,7 @@ export default defineConfig({
         "src/db/legacyIds.ts",
         "src/migration/normalizeLegacyAuth.ts",
         "src/migration/planBetterAuthImport.ts",
+        "src/migration/planLegacyMembershipImport.ts",
         "src/schemas/templeMembership.ts",
         "src/app/chat/contracts.ts",
         "src/app/chat/conversation.ts",
