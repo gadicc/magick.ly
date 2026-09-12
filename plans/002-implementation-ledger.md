@@ -52,6 +52,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Editor scripting and compile lifetime | Complete locally | Owned console handle cleanup, inert retired callbacks, stale-result fencing and source-map release; 1,651 tests, full checks/build and twelve Chromium stages pass, preserving scripts/save/recovery |
 | Rendered ritual asset inventory | Complete locally; resolution pending | Exact source paths/query/fragment identity and actual child/task/footnote rules; 65 new tests, 1,638 tests, coverage/types/Biome/Loom pass; protected preflight exposes two stale PNG paths |
 | Legacy static image links | Complete locally | Two exact permanent redirects restore current canonical PNGs; target decode tests, types/Biome/Loom/build and built HTTP size/SHA/MIME/query checks pass; all five archived trees now enumerate completely without source changes |
+| Verified static raster catalog | Complete locally; resolver pending | Bounded immutable byte snapshots, exact alias/canonical binding and validator identity; 46 new cases, 1,699 tests, expanded coverage/types/Biome/Loom/build pass; nine real raster files and two aliases validate, six SVGs remain unresolved |
 | Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
 | Offline storage and view lifecycle | Complete locally; runtime integration pending | Dexie repository plus synchronous view guards, two-tab sign-out fence, owned Blob cleanup and opaque locked recovery; 1,499 tests, coverage/types/Biome/Loom/build; ten native lifecycle scenarios pass |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
@@ -488,3 +489,12 @@ changes, actual scripting, saving and cold-reload recovery. Known hook-order
 recovery remains unchanged; private offline runtime integration is still pending.
 See the [offline record](006-private-offline.md) for the separate unit/browser
 evidence and the corrected same-document browser harness.
+
+The static raster catalog now verifies configured public images once and retains
+their exact compressed bytes under a deterministic catalog identity. Lookup copies
+cannot mutate the snapshot, disk changes require a new catalog, and unresolved
+files never enter usable membership. All 1,699 tests, expanded scoped coverage,
+types, Biome, ordinary Loom checks and production build pass. Actual public-file
+acceptance preserves all 15 source hashes. The [offline record](006-private-offline.md)
+tracks resource bounds, the TypeScript target correction and remaining SVG,
+inline/generated/external resolution and complete-bundle integration.

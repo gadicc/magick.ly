@@ -182,6 +182,34 @@ TreeOfLife/font dependencies still require complete resolver support. Evidence:
 `/tmp/magickli-legacy-static-images/http-results.json` and
 `/tmp/magickli-protected-preflight/asset-inventory-aliases.json`.
 
+The server-only [static raster catalog](../src/files/staticRitualImageCatalog.ts)
+now captures an explicit list of exact `/pics` paths, validates their complete
+raster bytes, and binds original/alias paths to separate canonical identities.
+Its public metadata contains SHA, MIME, size, dimensions and frame counts; a
+catalog hash also covers ordered entries, aliases and the pinned validator/native
+decoder identity. It does not identify a deployment, permission grant or complete
+ritual bundle. SVGs and unavailable/unsafe/invalid files remain unresolved.
+
+Capture is sequential, bounded to 128 configured paths, 20 MiB per file and
+64 MiB total compressed reads, including candidates that fail validation. Limits
+can only be tightened. The build root must be trusted and quiescent; directory
+symlinks, file replacements and changes observed during capture are rejected.
+Queries/fragments/encoded paths are not file selectors. A subsequent resolver
+must preserve the original occurrence identity separately. The catalog retains
+validated snapshots; each byte lookup returns a fresh copy without rereading disk.
+Disposal clears those snapshots, and a whole-build abort/limit failure publishes
+no partial result. Browser consumers import only the separate metadata types.
+
+All 1,699 default tests, 52-module coverage, types, Biome, ordinary Loom checks and
+production build pass. The 46 new tests cover actual raster/animation decoding,
+alias targets, identity, mutation isolation, filesystem changes and bounded cleanup.
+Read-only acceptance across all 15 current public images finds nine rasters
+(929,740 bytes), two available aliases and six unresolved SVGs, with unchanged
+source hashes. Root integration replaced an unsupported bigint literal with
+`BigInt(1)` for the existing TypeScript target and reran all checks. Evidence:
+`/tmp/magickli-static-raster-catalog/` and `/tmp/magickli-static-catalog-*.log`.
+The builder remains inactive pending asset resolution and complete bundle wiring.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.
@@ -307,5 +335,6 @@ storage failure, with no external requests or page errors. Evidence:
 This is lifecycle/repository acceptance, not live private-offline activation.
 React adapters, beforeunload handling, complete asset delivery, authenticated
 transport, legacy recovery migration, private shell/cache policy and end-to-end
-reader/editor acceptance remain required. The existing JRT node cache also needs
-a bounded retention fix before renderer-held private data can be released.
+reader/editor acceptance remain required. JRT's weak cache and the editor's owned
+handle cleanup are now verified separately above; the future private renderer
+must still clear its own live trees and references on closure.
