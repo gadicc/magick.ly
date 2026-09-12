@@ -23,8 +23,6 @@ jobs:
       AUTH_SECRET: ci-build-only-not-a-production-secret
       # Build verification must never connect to production services.
       MONGO_URL: mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=100
-      MONGODB_URI: mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=100
-      MONGODB_URL: mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=100
       OPENAI_API_KEY: ci-build-only-placeholder
     steps:
       - uses: actions/checkout@v7

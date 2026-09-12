@@ -1,20 +1,22 @@
-"use client";
+import Link from "next/link";
+import { trainingAccess } from "./access";
+import TrainingUpload from "./TrainingUpload";
 
-import { FilePond } from "react-filepond";
-import "filepond/dist/filepond.min.css";
-
-export default function Home() {
+export default async function TrainingPage() {
+  const access = await trainingAccess();
   return (
     <main>
-      <div className="items-center justify-between p-24">
-        <FilePond
-          allowMultiple={false}
-          credits={false}
-          server={{
-            url: "/chat/train/upload",
-          }}
-        />
-      </div>
+      <h1>Chat training</h1>
+      {access === 200 ? (
+        <TrainingUpload />
+      ) : (
+        <p>
+          Administrator sign-in is required.{" "}
+          <Link href="/api/auth/signin?callbackUrl=%2Fchat%2Ftrain">
+            Sign in
+          </Link>
+        </p>
+      )}
     </main>
   );
 }

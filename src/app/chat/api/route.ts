@@ -11,7 +11,6 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { PineconeStore } from "@langchain/pinecone";
-// import { vectorStore as createVectorStore } from "../openai"; // MongoDB
 import { Pinecone } from "@pinecone-database/pinecone";
 import { StreamingTextResponse, Message as VercelChatMessage } from "ai";
 import { NextResponse } from "next/server";

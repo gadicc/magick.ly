@@ -31,7 +31,6 @@
     "@emotion/styled": "11.11.5",
     "@hookform/resolvers": "^5.2.2",
     "@langchain/community": "^0.2.13",
-    "@langchain/mongodb": "^0.0.4",
     "@langchain/openai": "0.2.0",
     "@langchain/pinecone": "0.0.7",
     "@mui/icons-material": "^7.3.4",

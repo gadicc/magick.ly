@@ -18,6 +18,9 @@ export default defineConfig({
         "src/doc/shortcuts.ts",
         "src/study/scheduling.ts",
         "src/app/geomancy/tetragrams.ts",
+        "src/app/chat/train/access.ts",
+        "src/app/chat/train/ingestPdf.ts",
+        "src/app/chat/train/upload/route.ts",
       ],
       thresholds: {
         perFile: true,
