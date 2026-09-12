@@ -20,7 +20,11 @@ describe("tarot package integration", () => {
   it.each([
     { rank: 0, filename: "RWS_Tarot_00_Fool.jpg" },
     { rank: "1", filename: "RWS_Tarot_01_Magician.jpg" },
+    { rank: "2", filename: "RWS_Tarot_02_High_Priestess.jpg" },
+    { rank: 5, filename: "RWS_Tarot_05_Hierophant.jpg" },
     { rank: 8, filename: "RWS_Tarot_08_Strength.jpg" },
+    { rank: "10", filename: "RWS_Tarot_10_Wheel_of_Fortune.jpg" },
+    { rank: 12, filename: "RWS_Tarot_12_Hanged_Man.jpg" },
     { rank: "20", filename: "RWS_Tarot_20_Judgement.jpg" },
     { rank: 21, filename: "RWS_Tarot_21_World.jpg" },
   ])(
@@ -33,4 +37,16 @@ describe("tarot package integration", () => {
       expect(asset.size).toBeGreaterThan(0);
     },
   );
+
+  it("resolves all 22 major-arcana ranks to distinct nonempty local images", () => {
+    const imagePaths = Array.from({ length: 22 }, (_, rank) => {
+      const imagePath = RWSPath(rank);
+      expect(RWSPath(String(rank))).toBe(imagePath);
+      const asset = statSync(new URL(`../public${imagePath}`, import.meta.url));
+      expect(asset.isFile()).toBe(true);
+      expect(asset.size).toBeGreaterThan(0);
+      return imagePath;
+    });
+    expect(new Set(imagePaths).size).toBe(22);
+  });
 });
