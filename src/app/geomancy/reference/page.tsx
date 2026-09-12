@@ -128,7 +128,7 @@ export default function Geomancy() {
         </div>
         <br />
 
-        <Grid container spacing={2} p={0}>
+        <Grid container spacing={2} sx={{ p: 0 }}>
           {tetragrams.map((tetragram) => (
             <Grid
               key={tetragram.id}

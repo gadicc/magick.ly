@@ -150,13 +150,15 @@ export default function Dictionary() {
             },
           }}
           */
-          inputProps={{
-            // unicode-bidi prop MUST be in style, can't be via CSS class.
-            style: EnochianFont.style,
-          }}
           type="search"
           size="small"
           variant="standard"
+          slotProps={{
+            htmlInput: {
+              // unicode-bidi prop MUST be in style, can't be via CSS class.
+              style: EnochianFont.style,
+            },
+          }}
         />
       </div>
       <div style={s.resultsDiv}>

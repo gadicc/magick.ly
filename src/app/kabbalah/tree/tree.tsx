@@ -90,7 +90,7 @@ export default function TreeOfLife() {
   return (
     <>
       <Container maxWidth="sm">
-        <Box my={4}>
+        <Box sx={{ my: 4 }}>
           <div style={{ textAlign: "center" }}>
             Top text:{" "}
             <select

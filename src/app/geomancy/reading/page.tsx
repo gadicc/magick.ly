@@ -170,7 +170,7 @@ function TetragramStack({
     <Box sx={{ textAlign: "center" }}>
       <b>{title}</b>
       <br />
-      <Stack direction="row-reverse" justifyContent="space-evenly">
+      <Stack direction="row-reverse" sx={{ justifyContent: "space-evenly" }}>
         {tetraRows.map((rows, i) => (
           <Box key={i} sx={{ width: "45px", position: "relative" }}>
             {romanize(i + start)}
@@ -396,7 +396,7 @@ function GeomancyReading() {
         <FormGroup>
           <FormControlLabel
             label="Show planetary effect hints"
-            componentsProps={{
+            slotProps={{
               typography: {
                 sx: {
                   fontSize: "80%",
@@ -549,7 +549,7 @@ function GeomancyReading() {
         <Stack
           direction="row-reverse"
           spacing={2}
-          justifyContent="space-around"
+          sx={{ justifyContent: "space-around" }}
         >
           {mothers.map((tetragram, ti) => (
             <Box key={ti}>
@@ -594,7 +594,7 @@ function GeomancyReading() {
         <br />
         <hr />
         <br />
-        <Stack direction="row-reverse" justifyContent="space-around">
+        <Stack direction="row-reverse" sx={{ justifyContent: "space-around" }}>
           <TetragramStack
             title="Mothers"
             tetraRows={mothers}

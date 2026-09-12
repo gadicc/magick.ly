@@ -196,8 +196,7 @@ function StudySet({ set, cards, studyData, mode, setMode }) {
       <Box sx={{ p: 2 }}>
         <Stack
           direction="row"
-          justifyContent="flex-end"
-          sx={{ textAlign: "right", width: "100%" }}
+          sx={{ justifyContent: "flex-end", textAlign: "right", width: "100%" }}
         >
           <Box sx={{ my: 1, mr: 2 }}>
             <select

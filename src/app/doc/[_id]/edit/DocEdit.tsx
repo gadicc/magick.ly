@@ -2,7 +2,7 @@
 import { StreamLanguage } from "@codemirror/language";
 import { pug } from "@codemirror/legacy-modes/mode/pug";
 import { Diagnostic, setDiagnostics } from "@codemirror/lint";
-import { Close, ErrorOutline, Save } from "@mui/icons-material";
+import { Close, ErrorOutlined, Save } from "@mui/icons-material";
 import { Badge, IconButton, Tooltip } from "@mui/material";
 import { EditorView, Prec, useCodeMirror } from "@uiw/react-codemirror";
 import Split from "@uiw/react-split";
@@ -51,7 +51,7 @@ function ShowError({
         boxShadow: "0px 5px 5px rgba(0, 0, 0, 0.25)",
       }}
     >
-      <ErrorOutline sx={{ verticalAlign: "middle" }} />
+      <ErrorOutlined sx={{ verticalAlign: "middle" }} />
       <span style={{ verticalAlign: "middle", padding: "0 5px 0 10px" }}>
         {error?.message}
       </span>

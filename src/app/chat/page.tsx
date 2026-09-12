@@ -406,36 +406,38 @@ export default function Chat() {
             placeholder="Send a message"
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconButton
-                    onClick={() => {
-                      void stop();
-                      // A new hook instance cannot receive late chunks from
-                      // the conversation that was just cancelled.
-                      setChatId(createUuidV7());
-                      setInput("");
-                    }}
-                    edge="start"
-                    title="New Chat"
-                  >
-                    <DeleteForever />
-                  </IconButton>
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    title="Send Message"
-                    onClick={(e) => buttonRef.current?.click()}
-                    edge="end"
-                    disabled={isLoading || !input.trim()}
-                  >
-                    {isLoading ? <CircularProgress size="20px" /> : <Send />}
-                  </IconButton>
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IconButton
+                      onClick={() => {
+                        void stop();
+                        // A new hook instance cannot receive late chunks from
+                        // the conversation that was just cancelled.
+                        setChatId(createUuidV7());
+                        setInput("");
+                      }}
+                      edge="start"
+                      title="New Chat"
+                    >
+                      <DeleteForever />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      title="Send Message"
+                      onClick={(e) => buttonRef.current?.click()}
+                      edge="end"
+                      disabled={isLoading || !input.trim()}
+                    >
+                      {isLoading ? <CircularProgress size="20px" /> : <Send />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
             }}
           />
           <button ref={buttonRef} style={{ display: "none" }} type="submit">

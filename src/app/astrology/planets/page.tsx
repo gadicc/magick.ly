@@ -32,7 +32,7 @@ const tiles = [
 export default function Planets() {
   return (
     <Container maxWidth="sm">
-      <Box my={4}>
+      <Box sx={{ my: 4 }}>
         <Tiles tiles={tiles} />
 
         <TableContainer component={Paper}>

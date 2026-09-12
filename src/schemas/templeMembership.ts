@@ -33,7 +33,7 @@ import {
   union,
 } from "valibot";
 
-// Accept number or number-like string, then enforce int >= 1
+// Accept number or number-like string, then enforce int >= 0
 const gradeSchema = pipe(
   union([
     number(),
@@ -55,12 +55,15 @@ export const templeMembershipServerSchema = object({
   admin: optional(boolean()),
   addedAt: date(),
   memberSince: optional(
-    union([
-      date(),
-      // Dayjs objects aren't constructed via a public class; use a custom guard.
-      custom<Dayjs>((v): v is Dayjs => dayjs.isDayjs(v)),
-      null_(),
-    ]),
+    union(
+      [
+        date(),
+        // Dayjs objects aren't constructed via a public class; use a custom guard.
+        custom<Dayjs>((v): v is Dayjs => dayjs.isDayjs(v) && v.isValid()),
+        null_(),
+      ],
+      "Enter a valid date.",
+    ),
   ),
 });
 
@@ -76,11 +79,14 @@ export const templeMembershipClientSchema = object({
   admin: optional(boolean()),
   addedAt: date(),
   memberSince: optional(
-    union([
-      date(),
-      custom<Dayjs>((v): v is Dayjs => dayjs.isDayjs(v)),
-      null_(),
-    ]),
+    union(
+      [
+        date(),
+        custom<Dayjs>((v): v is Dayjs => dayjs.isDayjs(v) && v.isValid()),
+        null_(),
+      ],
+      "Enter a valid date.",
+    ),
   ),
 });
 

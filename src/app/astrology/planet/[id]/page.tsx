@@ -20,7 +20,7 @@ export default async function Planet(props: {
 
   return (
     <Container maxWidth="sm">
-      <Box my={4}>
+      <Box sx={{ my: 4 }}>
         <p>
           <i>{planet.name.en.en}</i>
         </p>

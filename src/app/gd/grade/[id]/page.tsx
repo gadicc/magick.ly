@@ -38,7 +38,7 @@ export default async function Planet(props: {
         }
       `}</style>
       <Container maxWidth="sm">
-        <Box my={4}>
+        <Box sx={{ my: 4 }}>
           <div className="nav">
             <div className="prevNext">
               {grade.prev && (

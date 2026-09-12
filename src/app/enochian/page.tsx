@@ -37,7 +37,7 @@ const tiles = [
     to: "/enochian/tablets",
     alt: "Enochian Tablets",
     Component: () => (
-      <Box height="100%" textAlign="center" marginTop={1}>
+      <Box sx={{ height: "100%", textAlign: "center", marginTop: 1 }}>
         <Tablet id="earth" height="100%" />
       </Box>
     ),

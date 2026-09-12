@@ -104,7 +104,7 @@ export default function Sephirot(props: { params: Promise<{ id: string }> }) {
       </style>
 
       <Container maxWidth="sm">
-        <Box my={4}>
+        <Box sx={{ my: 4 }}>
           {/*
           <table width="100%">
             <style jsx>{`

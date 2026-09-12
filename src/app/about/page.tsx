@@ -3,7 +3,7 @@ import { Box, Container } from "@mui/material";
 export default function Sequence() {
   return (
     <Container maxWidth="sm">
-      <Box my={4}>
+      <Box sx={{ my: 4 }}>
         <p>
           <i>Magick.ly - the open source Magick app</i>
         </p>

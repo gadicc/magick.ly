@@ -15,7 +15,7 @@ import Link from "@/lib/link";
 export default function signs() {
   return (
     <Container maxWidth="sm">
-      <Box my={4}>
+      <Box sx={{ my: 4 }}>
         <TableContainer component={Paper}>
           <Table aria-label="simple table">
             <TableHead>

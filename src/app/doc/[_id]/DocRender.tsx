@@ -246,34 +246,36 @@ function ZoomMenu({
       }}
       anchorOrigin={{ vertical: "center", horizontal: "left" }}
       transformOrigin={{ horizontal: "right", vertical: "center" }}
-      PaperProps={{
-        elevation: 0,
-        sx: {
-          overflow: "visible",
-          filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
-          mr: 1.5,
-          "& .MuiAvatar-root": {
-            width: 32,
-            height: 32,
-            ml: -0.5,
-            mr: 1,
-          },
-          "&:before": {
-            content: '""',
-            display: "block",
-            position: "absolute",
-            bottom: 10,
-            right: -5,
-            width: 10,
-            height: 10,
-            bgcolor: "background.paper",
-            transform: "translateY(-50%) rotate(45deg)",
-            zIndex: 0,
+      slotProps={{
+        paper: {
+          elevation: 0,
+          sx: {
+            overflow: "visible",
+            filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
+            mr: 1.5,
+            "& .MuiAvatar-root": {
+              width: 32,
+              height: 32,
+              ml: -0.5,
+              mr: 1,
+            },
+            "&:before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              bottom: 10,
+              right: -5,
+              width: 10,
+              height: 10,
+              bgcolor: "background.paper",
+              transform: "translateY(-50%) rotate(45deg)",
+              zIndex: 0,
+            },
           },
         },
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={0}>
+      <Stack direction="row" spacing={0} sx={{ alignItems: "center" }}>
         <IconButton
           aria-label="decrease font size"
           onClick={() => setFontSize(fontSize - 5)}
@@ -304,29 +306,31 @@ function TocMenu({ anchorEl, setAnchorEl, titles, onCloseExtra }) {
       }}
       anchorOrigin={{ vertical: "center", horizontal: "left" }}
       transformOrigin={{ horizontal: "right", vertical: "center" }}
-      PaperProps={{
-        elevation: 0,
-        sx: {
-          overflow: "visible",
-          filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
-          mb: 1.5,
-          "& .MuiAvatar-root": {
-            width: 32,
-            height: 32,
-            ml: -0.5,
-            mr: 1,
-          },
-          "&:before": {
-            content: '""',
-            display: "block",
-            position: "absolute",
-            top: "50%",
-            right: -5,
-            width: 10,
-            height: 10,
-            bgcolor: "background.paper",
-            transform: "translateY(-50%) rotate(45deg)",
-            zIndex: 0,
+      slotProps={{
+        paper: {
+          elevation: 0,
+          sx: {
+            overflow: "visible",
+            filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
+            mb: 1.5,
+            "& .MuiAvatar-root": {
+              width: 32,
+              height: 32,
+              ml: -0.5,
+              mr: 1,
+            },
+            "&:before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              top: "50%",
+              right: -5,
+              width: 10,
+              height: 10,
+              bgcolor: "background.paper",
+              transform: "translateY(-50%) rotate(45deg)",
+              zIndex: 0,
+            },
           },
         },
       }}
@@ -589,7 +593,7 @@ export default function DocRender({
         {jumped.current ? (
           <SpeedDialAction
             icon=<ArrowUpwardIcon />
-            tooltipTitle="Jump Back"
+            slotProps={{ tooltip: { title: "Jump Back" } }}
             onClick={() => {
               if (jumped.current) window.scrollTo(0, jumped.current);
               jumped.current = false;
@@ -598,7 +602,7 @@ export default function DocRender({
         ) : (
           <SpeedDialAction
             icon=<ArrowDownwardIcon />
-            tooltipTitle="Jump to Next"
+            slotProps={{ tooltip: { title: "Jump to Next" } }}
             onClick={() => {
               jumped.current = window.pageYOffset;
               doc.children?.[nextPos]?.ref?.current?.scrollIntoView(false);
@@ -607,7 +611,7 @@ export default function DocRender({
         )}
         <SpeedDialAction
           icon=<ListIcon />
-          tooltipTitle="Table of Contents"
+          slotProps={{ tooltip: { title: "Table of Contents" } }}
           onClick={(event) => {
             tocAnchorEl
               ? setTocAnchorEl(null)
@@ -616,7 +620,7 @@ export default function DocRender({
         />
         <SpeedDialAction
           icon=<ZoomInIcon />
-          tooltipTitle="Zoom In/Out"
+          slotProps={{ tooltip: { title: "Zoom In/Out" } }}
           onClick={(event) => setZoomAnchorEl(event.currentTarget)}
         />
         ))

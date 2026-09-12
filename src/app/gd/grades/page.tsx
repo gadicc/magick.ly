@@ -16,7 +16,7 @@ import Link from "@/lib/link";
 export default function Grades() {
   return (
     <Container maxWidth="sm">
-      <Box my={4}>
+      <Box sx={{ my: 4 }}>
         <GradeTree />
 
         <TableContainer component={Paper}>
