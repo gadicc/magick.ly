@@ -39,8 +39,11 @@ export function randomCard(
   set: StudyCard[],
   prevCard: StudyCard | null = null,
 ): StudyCard {
-  const newCard = set[Math.floor(Math.random() * set.length)];
-  return newCard === prevCard ? randomCard(set, prevCard) : newCard;
+  // Filtering preserves repetition weights without retrying indefinitely when
+  // the pool consists only of the previous card (possibly repeated by weight).
+  const alternatives = set.filter((card) => card !== prevCard);
+  const candidates = alternatives.length > 0 ? alternatives : set;
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 export function newStudySetStats(
@@ -77,7 +80,8 @@ export function reviewCard(
   _studyData: StudySetStats,
   { wrongCount, startTime, mode }: StudyAttempt,
 ) {
-  const card = { ..._studyData.cards[cardId] };
+  // Content can acquire new cards after this study record was first created.
+  const card = { ...(_studyData.cards[cardId] || newCardStats()) };
 
   const studyDataUpdate: StudyReview = {
     correct: _studyData.correct,
@@ -137,8 +141,8 @@ export function fetchDueCards(
   const now = new Date();
   const cards: StudyCard[] = [];
   for (const setCard of allCards) {
-    const studySetCard = studyData.cards[setCard.id] || newCardStats();
-    if (studySetCard.dueDate <= now) cards.push(setCard);
+    const studySetCard = studyData.cards[setCard.id];
+    if (!studySetCard || studySetCard.dueDate <= now) cards.push(setCard);
   }
   return cards;
 }

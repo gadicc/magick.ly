@@ -175,8 +175,8 @@ function StudySet({ set, cards, studyData, mode, setMode }) {
     if (answer === card.answer) {
       setWrong("noMatch"); // to show answer in green
       setWrongCount(0);
-      // If we're on the final card, don't try set a new card at the end.
-      if (cards.length > 1)
+      // SuperMemo finishes on its final card; repetition can practice one card.
+      if (mode === "repetition" || cards.length > 1)
         setTimeout(() => {
           setWrong(null);
           setCard(randomCard(cards, card));

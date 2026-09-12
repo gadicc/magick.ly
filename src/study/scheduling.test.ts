@@ -142,6 +142,24 @@ describe("answer grading and totals", () => {
       expect(review.card).not.toBe(studyData.cards.aleph);
     },
   );
+  it.each(["supermemo", "repetition"])(
+    "initializes a newly introduced card on its first %s review",
+    (mode) => {
+      const studyData = stats();
+      delete studyData.cards.aleph;
+      const before = structuredClone(studyData);
+      const review = answer(studyData, { mode, wrongCount: 1, elapsed: 1500 });
+      expect(review.card).toMatchObject({
+        correct: 0,
+        incorrect: 1,
+        time: 1500,
+      });
+      expect(review).toMatchObject({ correct: 0, incorrect: 1, time: 1500 });
+      expect(review.card.supermemo.interval).toBe(mode === "supermemo" ? 1 : 0);
+      expect(review.card.repetition.weight).toBe(mode === "repetition" ? 4 : 1);
+      expect(studyData).toEqual(before);
+    },
+  );
 });
 
 describe("spaced repetition scheduling", () => {
@@ -243,5 +261,38 @@ describe("card availability and repetition practice", () => {
     const cards = [card("aleph"), card("beth")];
     vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.9);
     expect(randomCard(cards, cards[0])).toBe(cards[1]);
+  });
+  it("includes a new card even when the clock advances during the lookup", () => {
+    const studyData = stats();
+    Object.defineProperty(studyData.cards, "new-card", {
+      get() {
+        vi.setSystemTime(new Date(now.getTime() + 1));
+        return undefined;
+      },
+    });
+    const newCard = card("new-card");
+    expect(fetchDueCards([newCard], studyData)).toEqual([newCard]);
+  });
+
+  it("can select the only card again in repetition mode", () => {
+    const onlyCard = card("aleph");
+    expect(randomCard([onlyCard], onlyCard)).toBe(onlyCard);
+  });
+
+  it("can select a weighted pool consisting only of the previous card", () => {
+    const onlyCard = card("aleph");
+    expect(randomCard([onlyCard, onlyCard, onlyCard], onlyCard)).toBe(onlyCard);
+  });
+
+  it("chooses from alternatives in one draw without losing their weights", () => {
+    const previous = card("aleph");
+    const harder = card("beth");
+    const easier = card("gimel");
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const weighted = [previous, previous, harder, harder, harder, easier];
+    expect(randomCard(weighted, previous)).toBe(harder);
+    expect(random).toHaveBeenCalledTimes(1);
+    random.mockReturnValue(0.9);
+    expect(randomCard(weighted, previous)).toBe(easier);
   });
 });
