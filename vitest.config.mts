@@ -25,6 +25,7 @@ export default defineConfig({
         "src/app/chat/train/ingestPdf.ts",
         "src/app/chat/train/upload/route.ts",
         "src/lib/ids.ts",
+        "src/api-lib/gongoHttpAuth.ts",
         "src/db/legacyIds.ts",
         "src/migration/normalizeLegacyAuth.ts",
         "src/migration/planBetterAuthImport.ts",

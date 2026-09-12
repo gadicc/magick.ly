@@ -6,6 +6,7 @@ import {
 } from "gongo-server-db-mongo/lib/collection";
 import type { Document } from "mongodb";
 import gs, { ObjectId /* User */ } from "@/api-lib/db";
+import { withVerifiedGongoAuth } from "@/api-lib/gongoHttpAuth";
 import { auth } from "@/auth";
 import {
   publishRitualDoc,
@@ -356,6 +357,8 @@ if (gs.dba) {
   templeMemberships.allow("remove", userIsTempleAdmin);
 }
 
+const verifiedGongoPost = withVerifiedGongoAuth(gs.vercelEdgePost());
+
 // https://github.com/nextauthjs/next-auth/issues/12224
 // biome-ignore lint/suspicious/noExplicitAny: it's ok
-export const POST = (await auth(gs.vercelEdgePost())) as any;
+export const POST = (await auth(verifiedGongoPost)) as any;
