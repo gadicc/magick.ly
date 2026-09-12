@@ -243,3 +243,26 @@ This covers public bundled rituals after successful online installation. Private
 ritual bundles, existing general authenticated caches, cache eviction and Safari
 device acceptance remain distinct gates; the approved private 14-day policy does
 not apply to these publicly bundled texts.
+
+The protected backup preflight now accepts the unchanged source through every
+current auth, membership, ritual and study planner with the two reviewed
+exceptions. All 48 active study snapshots reproduce the stored scheduler state;
+the duplicate remains in its full protected archive. All 59 ritual sources
+compile. Five current trees are equivalent under the named comparison-only
+rules for derived `forMe` and empty text children; originals remain untouched.
+The aggregate report is [protected backup preflight](005-protected-backup-preflight.md).
+
+The SQL ritual reader can now return exact archived rendered content to ordinary
+authorized readers, independently of editor-only source history. It selects only
+the archive bound to that parent's current revision within the same permission
+snapshot. Missing or stale output returns null, without recompilation or another
+artifact fallback. New SQL writes must add explicit artifact selection before
+advancing those pointers.
+
+All 855 default tests, 32-module coverage, types, Biome, ordinary Loom checks and
+the production build pass. The expanded SQL tests cover exact JSON/hash,
+revocation, account changes, own-parent binding and missing/stale output. An
+installed-JRT renderer test preserves the observed legacy empty-text-child shape
+and proves identical markup without mutating it. Evidence:
+`/tmp/magickli-rendered-sql-*.log` and `/tmp/magickli-protected-preflight/`.
+No private SQL import or runtime repository switch was performed.

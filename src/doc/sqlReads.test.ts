@@ -12,6 +12,8 @@ import {
   userGroups,
 } from "../db/schema/memberships";
 import {
+  legacyRitualCompiledArchives,
+  ritualCompiledArtifacts,
   ritualRevisions,
   ritualScopeKind,
   rituals,
@@ -33,6 +35,8 @@ const schema = {
   rituals,
   ritualRevisions,
   ritualScopeKind,
+  legacyRitualCompiledArchives,
+  ritualCompiledArtifacts,
 };
 const harness = await createMemoryPgliteHarness({ schema });
 const queries: string[] = [];
@@ -69,6 +73,25 @@ const text = (id: string) =>
   `p exact ${id}\r\n\t|  e\u0301 é \u{1F30D}\r\n\r\n`;
 const hash = (source: string) =>
   createHash("sha256").update(source, "utf8").digest("hex");
+const compiledJson = JSON.stringify(
+  {
+    children: [
+      {
+        type: "task",
+        forMe: true,
+        children: [
+          {
+            type: "text",
+            value: "Synthetic \uFEFFe\u0301 é 🌍\r\n",
+            children: [],
+          },
+        ],
+      },
+    ],
+  },
+  null,
+  2,
+);
 const reader = (userId: string | null) =>
   createSqlRitualReader(db, async () => userId);
 const names = (values: { id: string }[]) =>
@@ -78,6 +101,8 @@ const names = (values: { id: string }[]) =>
     .sort();
 
 beforeEach(async () => {
+  await db.delete(ritualCompiledArtifacts);
+  await db.delete(legacyRitualCompiledArchives);
   await db.update(rituals).set({ currentRevisionId: null });
   await db.delete(ritualRevisions);
   await db.delete(rituals);
@@ -179,6 +204,14 @@ beforeEach(async () => {
           updatedAt: when,
         })),
       );
+      await tx.insert(legacyRitualCompiledArchives).values({
+        ritualId: id,
+        claimedRevisionId: ids.current,
+        contentJson: compiledJson,
+        contentSha256: hash(compiledJson),
+        serializationVersion: "json-stringify-utf8-v1",
+        importedAt: when,
+      });
       await tx
         .update(rituals)
         .set({ currentRevisionId: ids.current })
@@ -222,6 +255,12 @@ describe("SQL ritual authorization/read repository", () => {
       for (const [ritualName, id] of Object.entries(ritualIds)) {
         const metadata = await repository.getMetadata(id);
         expect(metadata !== null).toBe(readable.includes(ritualName));
+        const rendered = await repository.getRendered(id);
+        expect(rendered !== null).toBe(readable.includes(ritualName));
+        if (rendered) {
+          expect(rendered.ritual).toEqual(metadata);
+          expect(rendered.contentJson).toBe(compiledJson);
+        }
         const history = await repository.listSourceHistory(id);
         expect(history !== null).toBe(editable.includes(ritualName));
         const source = await repository.getCurrentSource(id);
@@ -498,6 +537,272 @@ describe("SQL ritual authorization/read repository", () => {
     );
     await expect(broken.getMetadata(ritualIds.public)).rejects.toBe(
       databaseFailure,
+    );
+  });
+});
+
+describe("SQL ritual rendered reads", () => {
+  it("returns exact archived JSON/hash and permitted metadata without private provenance", async () => {
+    const result = await reader(actor.gradeTwo).getRendered(ritualIds.two);
+    expect(Object.keys(result!).sort()).toEqual([
+      "contentJson",
+      "contentSha256",
+      "ritual",
+    ]);
+    expect(Object.keys(result!.ritual).sort()).toEqual([
+      "canEdit",
+      "createdAt",
+      "id",
+      "title",
+      "updatedAt",
+    ]);
+    expect(result!.ritual).toMatchObject({
+      id: ritualIds.two,
+      canEdit: false,
+      createdAt: null,
+      updatedAt: when,
+    });
+    expect(result!.contentJson).toBe(compiledJson);
+    expect(result!.contentSha256).toBe(hash(compiledJson));
+    expect(JSON.parse(result!.contentJson).children[0]).toMatchObject({
+      forMe: true,
+      children: [{ children: [] }],
+    });
+    // The exact original remains untouched across repeated reads too.
+    expect(await reader(actor.gradeTwo).getRendered(ritualIds.two)).toEqual(
+      result,
+    );
+    expect(
+      (await db.select().from(legacyRitualCompiledArchives)).every(
+        (archive) => archive.contentJson === compiledJson,
+      ),
+    ).toBe(true);
+  });
+
+  it("queries the archive only after authorizing its parent in a read-only repeatable-read snapshot", async () => {
+    expect(await reader(actor.gradeZero).getRendered(ritualIds.two)).toBeNull();
+    expect(
+      queries.some((query) =>
+        query.includes("legacy_ritual_compiled_archives"),
+      ),
+    ).toBe(false);
+    queries.length = 0;
+    expect(
+      await reader(actor.gradeTwo).getRendered(ritualIds.two),
+    ).not.toBeNull();
+    const selects = queries.filter((query) => /^select /i.test(query));
+    const parentIndex = selects.findIndex((query) =>
+      query.includes('from "rituals"'),
+    );
+    const archiveIndex = selects.findIndex((query) =>
+      query.includes('from "legacy_ritual_compiled_archives"'),
+    );
+    expect(parentIndex).toBeGreaterThanOrEqual(0);
+    expect(archiveIndex).toBeGreaterThan(parentIndex);
+    const archiveQuery = selects[archiveIndex];
+    expect(archiveQuery).toMatch(
+      /^select "content_json", "content_sha256" from/,
+    );
+    expect(archiveQuery).toContain(
+      '"legacy_ritual_compiled_archives"."ritual_id" =',
+    );
+    expect(archiveQuery).toContain(
+      '"legacy_ritual_compiled_archives"."claimed_revision_id" =',
+    );
+    expect(
+      selects.some((query) =>
+        /source|ritual_revisions|ritual_compiled_artifacts|temple_invites|imported_at|serialization_version/.test(
+          query,
+        ),
+      ),
+    ).toBe(false);
+    expect(
+      queries.some((query) =>
+        /set transaction isolation level repeatable read read only/i.test(
+          query,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("fails closed without an archive even if a versioned artifact exists", async () => {
+    const id = ritualIds.public;
+    const current = revisions.get(id)!.current;
+    await db
+      .delete(legacyRitualCompiledArchives)
+      .where(eq(legacyRitualCompiledArchives.ritualId, id));
+    await db.insert(ritualCompiledArtifacts).values({
+      revisionId: current,
+      sourceSha256: hash(text(current)),
+      compilerVersion: "synthetic-v1",
+      outputFormat: "jrt",
+      outputFormatVersion: "1",
+      transformations: [],
+      contentJson: "{}",
+      contentSha256: hash("{}"),
+      compiledAt: when,
+    });
+    queries.length = 0;
+    expect(await reader(null).getRendered(id)).toBeNull();
+    expect(await reader(actor.global).getRendered(id)).toBeNull();
+    expect(
+      queries.some((query) =>
+        /ritual_revisions|ritual_compiled_artifacts/.test(query),
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses an archive after the current pointer changes without matching it", async () => {
+    const id = ritualIds.group;
+    const repository = reader(actor.member);
+    expect(await repository.getRendered(id)).not.toBeNull();
+    await db
+      .update(rituals)
+      .set({ currentRevisionId: revisions.get(id)!.previous })
+      .where(eq(rituals.id, id));
+    expect(await repository.getRendered(id)).toBeNull();
+    expect(await reader(actor.global).getRendered(id)).toBeNull();
+    const [archive] = await db
+      .select()
+      .from(legacyRitualCompiledArchives)
+      .where(eq(legacyRitualCompiledArchives.ritualId, id));
+    expect(archive.claimedRevisionId).toBe(revisions.get(id)!.current);
+    expect(archive.contentJson).toBe(compiledJson);
+  });
+
+  it("never borrows a different parent's archive, with database-enforced own-revision binding", async () => {
+    const target = ritualIds.public;
+    await db
+      .delete(legacyRitualCompiledArchives)
+      .where(eq(legacyRitualCompiledArchives.ritualId, target));
+    expect(await reader(actor.global).getRendered(target)).toBeNull();
+    expect(
+      await reader(actor.global).getRendered(ritualIds.two),
+    ).not.toBeNull();
+    await expect(
+      db.insert(legacyRitualCompiledArchives).values({
+        ritualId: target,
+        claimedRevisionId: revisions.get(ritualIds.two)!.current,
+        contentJson: compiledJson,
+        contentSha256: hash(compiledJson),
+        serializationVersion: "json-stringify-utf8-v1",
+        importedAt: when,
+      }),
+    ).rejects.toThrow();
+    expect(await reader(actor.global).getRendered(target)).toBeNull();
+  });
+
+  it("reloads revoked global/group/temple access before exposing any archived content", async () => {
+    const cases = [
+      {
+        id: ritualIds.two,
+        actorId: actor.global,
+        revoke: () =>
+          db
+            .update(userAccess)
+            .set({ admin: false })
+            .where(eq(userAccess.userId, actor.global)),
+      },
+      {
+        id: ritualIds.group,
+        actorId: actor.member,
+        revoke: () =>
+          db
+            .delete(userGroupGrants)
+            .where(eq(userGroupGrants.userId, actor.member)),
+      },
+      {
+        id: ritualIds.two,
+        actorId: actor.gradeTwo,
+        revoke: () =>
+          db
+            .update(templeMemberships)
+            .set({ grade: 0 })
+            .where(eq(templeMemberships.userId, actor.gradeTwo)),
+      },
+      {
+        id: ritualIds.two,
+        actorId: actor.templeAdmin,
+        revoke: () =>
+          db
+            .delete(templeMemberships)
+            .where(eq(templeMemberships.userId, actor.templeAdmin)),
+      },
+    ];
+    for (const item of cases) {
+      const repository = reader(item.actorId);
+      expect(await repository.getRendered(item.id)).not.toBeNull();
+      await item.revoke();
+      queries.length = 0;
+      expect(await repository.getRendered(item.id)).toBeNull();
+      expect(
+        queries.some((query) =>
+          query.includes("legacy_ritual_compiled_archives"),
+        ),
+      ).toBe(false);
+    }
+    expect(
+      await reader(actor.gradeTwo).getRendered(ritualIds.zero),
+    ).not.toBeNull();
+  });
+
+  it("reloads current parent policy and verified session for each rendered read", async () => {
+    let currentActor: string | null = actor.gradeTwo;
+    const verified = vi.fn(async () => currentActor);
+    const repository = createSqlRitualReader(db, verified);
+    expect(await repository.getRendered(ritualIds.two)).not.toBeNull();
+    await db
+      .update(rituals)
+      .set({ minGrade: 3 })
+      .where(eq(rituals.id, ritualIds.two));
+    expect(await repository.getRendered(ritualIds.two)).toBeNull();
+    currentActor = actor.creator;
+    expect(await repository.getRendered(ritualIds.two)).not.toBeNull();
+    currentActor = null;
+    expect(await repository.getRendered(ritualIds.two)).toBeNull();
+    expect(await repository.getRendered(ritualIds.public)).not.toBeNull();
+    expect(verified).toHaveBeenCalledTimes(5);
+  });
+
+  it("normalizes canonical IDs and rejects invalid, missing and incomplete parents", async () => {
+    const verified = vi.fn(async () => actor.global.toUpperCase());
+    const repository = createSqlRitualReader(db, verified);
+    expect(await repository.getRendered("invalid")).toBeNull();
+    expect(await repository.getRendered("012345678901234567890123")).toBeNull();
+    expect(verified).not.toHaveBeenCalled();
+    expect(queries).toEqual([]);
+    expect(
+      await repository.getRendered(ritualIds.two.toUpperCase()),
+    ).not.toBeNull();
+    queries.length = 0;
+    expect(await repository.getRendered(createUuidV7())).toBeNull();
+    expect(await repository.getRendered(ritualIds.shell)).toBeNull();
+    expect(
+      queries.some((query) =>
+        query.includes("legacy_ritual_compiled_archives"),
+      ),
+    ).toBe(false);
+  });
+
+  it("propagates verification/database failures without anonymous or source fallback", async () => {
+    const failure = new Error("synthetic failure");
+    const unverified = createSqlRitualReader(db, async () => {
+      throw failure;
+    });
+    await expect(unverified.getRendered(ritualIds.public)).rejects.toBe(
+      failure,
+    );
+    expect(queries).toEqual([]);
+    const unavailable = createSqlRitualReader(
+      {
+        transaction: async () => {
+          throw failure;
+        },
+      },
+      async () => null,
+    );
+    await expect(unavailable.getRendered(ritualIds.public)).rejects.toBe(
+      failure,
     );
   });
 });

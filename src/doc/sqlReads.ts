@@ -7,7 +7,11 @@ import type {
 } from "drizzle-orm/pg-core";
 import { user } from "../db/schema/auth";
 import { templeMemberships, userGroupGrants } from "../db/schema/memberships";
-import { ritualRevisions, rituals } from "../db/schema/rituals";
+import {
+  legacyRitualCompiledArchives,
+  ritualRevisions,
+  rituals,
+} from "../db/schema/rituals";
 import { userAccess } from "../db/schema/userProfile";
 import { isUuidV7 } from "../lib/ids";
 import {
@@ -33,6 +37,13 @@ export interface SqlRitualMetadata {
   createdAt: Date | null;
   updatedAt: Date | null;
   canEdit: boolean;
+}
+
+/** Exact current archived renderer input, excluding source/history and import provenance. */
+export interface SqlRenderedRitual {
+  ritual: SqlRitualMetadata;
+  contentJson: string;
+  contentSha256: string;
 }
 
 const revisionMetadataFields = {
@@ -201,7 +212,8 @@ async function parent(
  * grants and policy in one read-only repeatable-read snapshot; a concurrent change
  * takes effect on the next call. Errors propagate to the future transport boundary.
  * Missing, invalid and unauthorized IDs share null/empty results. No legacy aliases,
- * provider tokens, compiled archives/artifacts or renderer/cache choices are exposed.
+ * provider tokens or import provenance are exposed. Rendering uses only the exact
+ * legacy archive bound to the current revision; new artifact selection is separate.
  */
 export function createSqlRitualReader(
   db: SqlRitualReadDatabase,
@@ -272,6 +284,36 @@ export function createSqlRitualReader(
         async (tx, actor) =>
           (await parent(tx, id, actor, "read"))?.metadata ?? null,
       );
+    },
+    /**
+     * Exact archived JSON for an ordinary authorized reader. Missing/stale archives
+     * return null, even for editors; no historical artifact, recompile or cleanup
+     * can substitute. A future SQL save must add versioned artifact selection with
+     * its write contract before advancing a parent beyond this legacy archive.
+     */
+    async getRendered(ritualId: string): Promise<SqlRenderedRitual | null> {
+      const id = canonicalId(ritualId);
+      if (!id) return null;
+      return read(async (tx, actor) => {
+        const found = await parent(tx, id, actor, "read");
+        if (!found) return null;
+        const [archive] = await tx
+          .select({
+            contentJson: legacyRitualCompiledArchives.contentJson,
+            contentSha256: legacyRitualCompiledArchives.contentSha256,
+          })
+          .from(legacyRitualCompiledArchives)
+          .where(
+            and(
+              eq(legacyRitualCompiledArchives.ritualId, id),
+              eq(
+                legacyRitualCompiledArchives.claimedRevisionId,
+                found.currentRevisionId,
+              ),
+            ),
+          );
+        return archive ? { ritual: found.metadata, ...archive } : null;
+      });
     },
     /** Source history metadata stays private even when the parent is publicly readable. */
     async listSourceHistory(
