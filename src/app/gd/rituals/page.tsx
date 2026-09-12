@@ -2,38 +2,27 @@
 import { Edit } from "@mui/icons-material";
 import {
   Box,
-  Button,
   Container,
-  FormControl,
   IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
-  Typography,
 } from "@mui/material";
-import {
-  db,
-  useGongoLive,
-  useGongoOne,
-  useGongoSub,
-  useGongoUserId,
-} from "gongo-client-react";
+import { useGongoLive, useGongoSub, useGongoUserId } from "gongo-client-react";
 import React from "react";
 
+import { ritualListSubscriptionArgs } from "@/doc/drafts";
 import Link from "@/lib/link";
 import {
   Doc,
   Temple,
   TempleMembershipClient as TempleMembership,
 } from "@/schemas";
+import DocAdmin from "./DocAdmin";
 
 const builtInDocs = [
   {
@@ -49,152 +38,6 @@ const builtInDocs = [
     title: "2=9 Grade of the Theoricus (Regardie, S.M.)",
   },
 ];
-
-function DocAdmin() {
-  const userId = useGongoUserId() as string;
-  const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId }),
-  );
-
-  useGongoSub("userTemplesAndMemberships", {
-    minInterval: 2000,
-    maxInterval: 5000,
-  });
-  const _memberships = useGongoLive((db) =>
-    db.collection("templeMemberships").find({ admin: true }),
-  );
-  const temples = useGongoLive((db) => db.collection("temples").find());
-  const memberships = React.useMemo(
-    () =>
-      _memberships.map((membership) => ({
-        ...membership,
-        temple: temples.find((t) => t._id === membership.templeId),
-      })),
-    [_memberships, temples],
-  );
-
-  /*
-  const groups = useGongoLive((db) => db.collection("userGroups").find());
-  useGongoSub("userGroups");
-  */
-
-  const [title, setTitle] = React.useState("");
-  // const [groupId, setGroupId] = React.useState("");
-  const [templeId, setTempleId] = React.useState("");
-  const [minGrade, setMinGrade] = React.useState("0");
-
-  if (!(user && user.groupAdminIds && user.groupAdminIds.length)) return null;
-
-  function addNew(event: React.SyntheticEvent) {
-    event.preventDefault();
-
-    const doc = {
-      title,
-      doc: { type: "root", children: [] },
-      userId,
-      // groupId,
-      templeId,
-      minGrade: Number(minGrade),
-      createdAt: new Date(),
-      __ObjectIDs: ["templeId", "userId"],
-    } as {
-      title: string;
-      doc: { type: "root"; children: [] }; // TODO
-      userId: string;
-      // groupId?: string;
-      templeId?: string;
-      minGrade?: number;
-      createdAt: Date;
-    };
-    // if (!groupId || groupId === "" || groupId === "public") delete doc.groupId;
-    if (!templeId || templeId === "" || templeId === "public")
-      delete doc.templeId;
-
-    console.log(doc);
-    db.collection("docs").insert(doc);
-    setTitle("");
-    setTempleId("");
-    setMinGrade("0");
-  }
-
-  return (
-    <Box>
-      <br />
-      <Typography variant="h6" sx={{ my: 1 }}>
-        Create Doc
-      </Typography>
-      <form onSubmit={addNew}>
-        <TextField
-          label="Title"
-          size="small"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />{" "}
-        {/*
-        <FormControl sx={{ minWidth: 180 }} size="small">
-          <InputLabel id="select-label-groupId">Group</InputLabel>
-          <Select
-            value={groupId}
-            labelId="select-label-groupId"
-            label="Group"
-            onChange={(e) => setGroupId(e.target.value)}
-          >
-            <MenuItem value="none">None (Public)</MenuItem>
-            {user &&
-              user.groupAdminIds &&
-              user.groupAdminIds.map((gid) => (
-                <MenuItem key={gid} value={gid}>
-                  {db.collection("userGroups").findOne(gid)?.name}
-                </MenuItem>
-              ))}
-          </Select>
-        </FormControl>
-        */}
-        <FormControl sx={{ minWidth: 180 }} size="small">
-          <InputLabel id="select-label-templeId">Temple</InputLabel>
-          <Select
-            value={templeId}
-            labelId="select-label-templeId"
-            label="Group"
-            onChange={(e) => setTempleId(e.target.value)}
-          >
-            <MenuItem value="none">None (Public)</MenuItem>
-            {memberships.map((membership) => (
-              <MenuItem key={membership.templeId} value={membership.templeId}>
-                {membership.temple?.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField
-          label="Min Grade"
-          size="small"
-          value={minGrade}
-          type="number"
-          onChange={(e) => setMinGrade(e.target.value)}
-          sx={{ width: 70 }}
-        />
-        <Button type="submit" disabled={title === "" || templeId === ""}>
-          Add
-        </Button>
-      </form>
-    </Box>
-  );
-}
-
-/*
-async function editDoc(id) {
-  const contents = prompt("Paste contents");
-  if (!contents) return;
-
-  const prepared = prepare(contents);
-  db.collection("docs").update(id, {
-    $set: {
-      doc: prepared,
-    },
-  });
-}
-*/
 
 export default function Rituals() {
   const userId = useGongoUserId() as string;
@@ -220,14 +63,22 @@ export default function Rituals() {
   );
   // console.log("temples", temples);
 
-  useGongoSub("docs");
+  useGongoSub("docs", ritualListSubscriptionArgs);
   const dbDocs = useGongoLive((db) => db.collection("docs").find());
   const _docs = React.useMemo(
-    () => [...builtInDocs, ...dbDocs] as unknown as typeof dbDocs,
+    () =>
+      [
+        ...builtInDocs,
+        ...dbDocs.filter((doc) => !doc.__pendingSince),
+      ] as unknown as typeof dbDocs,
     [dbDocs],
   );
 
-  type AggregatedDoc = Doc & { temple?: Temple; membership?: TempleMembership };
+  type AggregatedDoc = Doc & {
+    canEdit?: boolean;
+    temple?: Temple;
+    membership?: TempleMembership;
+  };
   const docs: AggregatedDoc[] = React.useMemo(
     () =>
       _docs
@@ -241,7 +92,7 @@ export default function Rituals() {
             : doc,
         )
         .filter((doc: AggregatedDoc) => {
-          if (!doc.templeId) return true;
+          if (doc.canEdit === true || !doc.templeId) return true;
           // TODO, re should also remove the doc in this case XXX
           if (!doc.membership) return false;
           return (
@@ -288,7 +139,7 @@ export default function Rituals() {
                         {doc.temple.slug}
                       </span>
                     ) : null}{" "}
-                    {doc.templeId && templeMemberships[doc.templeId]?.admin && (
+                    {doc.canEdit === true && (
                       <IconButton size="small" href={`/doc/${doc._id}/edit`}>
                         <Edit />
                       </IconButton>

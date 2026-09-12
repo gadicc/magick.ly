@@ -19,6 +19,8 @@ export default defineConfig({
         "src/doc/access.ts",
         "src/doc/legacyAccess.ts",
         "src/doc/publications.ts",
+        "src/doc/drafts.ts",
+        "src/doc/gongoWrites.ts",
         "src/study/scheduling.ts",
         "src/app/geomancy/tetragrams.ts",
         "src/app/chat/train/access.ts",

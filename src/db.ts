@@ -6,6 +6,7 @@ import HTTPTransport from "gongo-client/lib/transports/http";
 import { getSession } from "next-auth/react";
 // import GongoAuth from "gongo-client/lib/auth";
 import { StudySetStats } from "@/app/study/[_id]/exports";
+import { preservePendingRitualChanges } from "./doc/drafts";
 import type {
   Doc,
   DocRevision,
@@ -18,6 +19,9 @@ import type {
 // db.extend("auth", GongoAuth);
 
 function defineTransport() {
+  // Manual enable before IndexedDB population and the startup event share one transport.
+  // @ts-expect-error: Gongo extensions are not declared on Database.
+  if (db.transport) return;
   // remove old gongoStore auth (now we use next-auth)
   db.gongoStore.remove({ _id: "auth" });
 
@@ -39,8 +43,10 @@ function defineTransport() {
   const _origPoll = db.transport._poll.bind(db.transport);
   // @ts-expect-error: ok
   db.transport._poll = async function () {
+    // Installed HTTPTransport.poll() waits for db.populated before calling this wrapper.
+    await preservePendingRitualChanges(db, window.localStorage);
     const session = await getSession();
-    const userId = session?.user.id;
+    const userId = session?.user?.id;
     if (userId) {
       db.collection("studySet").update(
         { userId: { $exists: false } },

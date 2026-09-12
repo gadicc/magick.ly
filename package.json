@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:mongo": "MAGICKLI_RUN_MONGO_REHEARSAL=1 vitest run src/doc/writes.test.ts src/doc/gongoWrites.test.ts src/doc/writes.mongo.test.ts",
     "db:fixtures": "loom db fixtures",
     "db:generate": "pnpm drizzle-kit generate",
     "db:migrate": "pnpm drizzle-kit migrate",

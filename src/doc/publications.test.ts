@@ -3,8 +3,10 @@ import { createRequire } from "node:module";
 import MongoDatabaseAdapter from "gongo-server-db-mongo";
 import { ObjectId } from "mongodb";
 import { describe, expect, it, vi } from "vitest";
+import { loadRitualSnapshot } from "./drafts";
 import { legacyRitualId } from "./legacyAccess";
 import {
+  publishRitualCreationGroups,
   publishRitualDoc,
   publishRitualDocs,
   publishRitualRevisions,
@@ -117,6 +119,7 @@ describe("ritual publications", () => {
       revisions: [{ text: "HISTORY" }],
       docRevisionId: oid(20),
       arbitrarySecret: true,
+      canEdit: true,
     });
     const { db, props, queries } = setup({ docs: [row] }, null);
     for (const result of [
@@ -133,6 +136,7 @@ describe("ritual publications", () => {
               title: row.title,
               doc: row.doc,
               __updatedAt: 10,
+              canEdit: false,
             },
           ],
         },
@@ -275,6 +279,8 @@ describe("ritual publications", () => {
         ),
       ).toEqual(editor ? [id(20)] : []);
       if (read) {
+        expect(detail[0].entries[0].canEdit).toBe(editor);
+        expect(list[0].entries[0].canEdit).toBe(editor);
         expect(detail[0].entries[0]).not.toHaveProperty("source");
         expect(Object.hasOwn(detail[0].entries[0], "docRevisionId")).toBe(
           editor,
@@ -456,16 +462,21 @@ describe("ritual publications", () => {
     data.users[0] = user();
     expect(await publishRitualDocs(db, {}, props)).toEqual([]);
     data.users[0] = user({ groupIds: [oid(30)] });
-    // Existing Gongo watermarks need a client reset/full reconciliation on regrant.
-    expect(
-      await publishRitualDocs(db, {}, { ...props, updatedAt: { docs: 10 } }),
-    ).toEqual([]);
+    // Regrant returns the unchanged authorized record even with its old watermark.
+    // Revocation above still emits nothing; that is not a client cache deletion.
+    const restored = await publishRitualDocs(
+      db,
+      {},
+      { ...props, updatedAt: { docs: 10 } },
+    );
+    expect(await resultIds(restored)).toEqual([id(10)]);
+    expect(restored[0].entries[0].__updatedAt).toBe(10);
     expect(await resultIds(await publishRitualDocs(db, {}, props))).toEqual([
       id(10),
     ]);
   });
 
-  it("retains real delta timestamps, ascending order, strict watermark and 200 cap after authorization", async () => {
+  it("returns every authorized ritual with real metadata despite legacy watermark/sort/limit arguments", async () => {
     const docs = Array.from({ length: 205 }, (_, n) =>
       ritual({ _id: oid(100 + n), __updatedAt: 100 + n }),
     );
@@ -474,15 +485,20 @@ describe("ritual publications", () => {
     );
     docs.reverse();
     const { db, props } = setup({ docs }, null, {
-      updatedAt: { docs: 100 },
+      updatedAt: { docs: 99999 },
       limit: 1,
       sort: ["__updatedAt", "desc"],
+      lastSortedValue: 99999,
     });
     const result = await publishRitualDocs(db, {}, props);
-    expect(result[0].entries).toHaveLength(200);
-    expect(result[0].entries.map((row) => row.__updatedAt)).toEqual(
-      Array.from({ length: 200 }, (_, n) => 101 + n),
-    );
+    expect(result[0].entries).toHaveLength(205);
+    expect(await resultIds(result)).not.toContain(id(999));
+    expect(
+      result[0].entries
+        .map((row) => row.__updatedAt)
+        .sort((a, b) => Number(a) - Number(b)),
+    ).toEqual(Array.from({ length: 205 }, (_, n) => 100 + n));
+    // Installed Gongo treats an array publication as final; it does not reapply its cursor cap.
     expect(
       await db.publishHelper(
         result,
@@ -491,7 +507,7 @@ describe("ritual publications", () => {
     ).toBe(result);
   });
 
-  it("preserves first-page sort, limit and lastSortedValue behavior", async () => {
+  it("ignores first-page pagination options, including a cursor without a sort", async () => {
     const { db, props } = setup(
       {
         docs: [
@@ -504,34 +520,68 @@ describe("ritual publications", () => {
       { sort: ["title", "asc"], limit: 1, lastSortedValue: "A" },
     );
     expect(await resultIds(await publishRitualDocs(db, {}, props))).toEqual([
+      id(10),
+      id(11),
       id(12),
     ]);
-    await expect(
-      publishRitualDocs(db, {}, { ...props, sort: undefined }),
-    ).rejects.toThrow("lastSortedValue requires sort");
+    expect(
+      await resultIds(
+        await publishRitualDocs(db, {}, { ...props, sort: undefined }),
+      ),
+    ).toEqual([id(10), id(11), id(12)]);
   });
 
-  it("preserves history delta selection while detail remains a full authorized response", async () => {
+  it("returns complete authorized history and loads the current revision beyond the old 200-row cap", async () => {
+    const currentId = id(224);
     const { db, props } = setup(
       {
         users: [user({ admin: true })],
-        docs: [ritual()],
+        docs: [ritual({ docRevisionId: oid(224) })],
         docRevisions: [
-          { _id: oid(20), docId: oid(10), text: "Old", __updatedAt: 10 },
-          { _id: oid(21), docId: oid(10), text: "New", __updatedAt: 11 },
+          ...Array.from({ length: 205 }, (_, n) => ({
+            _id: oid(20 + n),
+            docId: oid(10),
+            text: `Revision ${n}`,
+            __updatedAt: 10 + n,
+          })),
+          {
+            _id: oid(999),
+            docId: oid(11),
+            text: "Foreign source",
+            __updatedAt: 99999,
+          },
         ],
       },
       id(1),
-      { updatedAt: { docs: 999, docRevisions: 10 } },
+      {
+        updatedAt: { docs: 99999, docRevisions: 99999 },
+        limit: 1,
+        sort: ["__updatedAt", "desc"],
+        lastSortedValue: 99999,
+      },
     );
     expect(
       await resultIds(await publishRitualDoc(db, { _id: id(10) }, props)),
     ).toEqual([id(10)]);
-    expect(
-      await resultIds(
-        await publishRitualRevisions(db, { docId: id(10) }, props),
-      ),
-    ).toEqual([id(21)]);
+    const history = await publishRitualRevisions(db, { docId: id(10) }, props);
+    expect(history[0].entries).toHaveLength(205);
+    expect(await resultIds(history)).toContain(currentId);
+    expect(JSON.stringify(history)).not.toContain("Foreign source");
+    const snapshot = await loadRitualSnapshot(
+      async (_name, input) => ({
+        results:
+          "name" in input && input.name === "doc"
+            ? await publishRitualDoc(db, { _id: id(10) }, props)
+            : await publishRitualRevisions(db, { docId: id(10) }, props),
+      }),
+      id(10),
+    );
+    expect(snapshot).toEqual({
+      docId: id(10),
+      revisionId: currentId,
+      updatedAt: 10,
+      source: "Revision 204",
+    });
   });
 
   it("only delivers tombstones with a retained authorized scope or exact authorized parent", async () => {
@@ -575,5 +625,74 @@ describe("ritual publications", () => {
         entries: [{ _id: oid(20), __deleted: true, __updatedAt: 15 }],
       },
     ]);
+  });
+});
+
+describe("ritual creation group choices", () => {
+  async function groups(data: Record<string, Row[]>, actor: unknown = id(1)) {
+    const env = setup(data, actor);
+    const result = await publishRitualCreationGroups(env.db, {}, env.props);
+    return {
+      ...env,
+      rows: Array.isArray(result) ? result : await result.toArray(),
+    };
+  }
+
+  it("returns all groups to a current global admin using the installed Gongo cursor", async () => {
+    const all = [
+      { _id: oid(30), name: "First" },
+      { _id: oid(31), name: "Second" },
+    ];
+    expect(
+      (await groups({ users: [user({ admin: true })], userGroups: all })).rows,
+    ).toEqual(all);
+  });
+
+  it("constructs real driver ObjectIds only for validated group-admin references", async () => {
+    const all = [30, 31, 32].map((n) => ({ _id: oid(n), name: `Group ${n}` }));
+    const { rows, queries } = await groups({
+      users: [
+        user({
+          groupAdminIds: [
+            id(30).toUpperCase(),
+            oid(31),
+            "bad",
+            30,
+            { toHexString: () => id(32) },
+          ],
+          groupIds: [oid(32)],
+        }),
+      ],
+      userGroups: all,
+    });
+    expect(rows).toEqual(all.slice(0, 2));
+    const query = queries.find((query) => query.coll === "userGroups")?.filter;
+    expect(query).toEqual({ _id: { $in: [oid(30), oid(31)] } });
+    expect(
+      (query?._id as { $in: unknown[] }).$in.every(
+        (value) => value instanceof ObjectId,
+      ),
+    ).toBe(true);
+  });
+
+  it.each([undefined, null, "not-an-array", ["bad", null, {}]])(
+    "does not query groups for malformed grants %j",
+    async (groupAdminIds) => {
+      const { rows, queries } = await groups({
+        users: [user({ admin: "true", groupAdminIds, groupIds: [oid(30)] })],
+        userGroups: [{ _id: oid(30) }],
+      });
+      expect(rows).toEqual([]);
+      expect(queries.some((query) => query.coll === "userGroups")).toBe(false);
+    },
+  );
+
+  it("rejects an absent identity and ambiguous typed user aliases", async () => {
+    const data = {
+      users: [user({ admin: true }), { _id: id(1), admin: true }],
+      userGroups: [{ _id: oid(30) }],
+    };
+    expect((await groups(data, null)).rows).toEqual([]);
+    expect((await groups(data)).rows).toEqual([]);
   });
 });

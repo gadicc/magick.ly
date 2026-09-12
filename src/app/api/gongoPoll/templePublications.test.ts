@@ -25,6 +25,7 @@ vi.mock("@/api-lib/db", async () => ({
 }));
 vi.mock("@/auth", () => ({ auth: (handler: unknown) => handler }));
 vi.mock("@/doc/publications", () => ({
+  publishRitualCreationGroups: vi.fn(),
   publishRitualDoc: vi.fn(),
   publishRitualDocs: vi.fn(),
   publishRitualRevisions: vi.fn(),

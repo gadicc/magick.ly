@@ -8,7 +8,9 @@ import type { Document } from "mongodb";
 import gs, { ObjectId /* User */ } from "@/api-lib/db";
 import { withVerifiedGongoAuth } from "@/api-lib/gongoHttpAuth";
 import { auth } from "@/auth";
+import { registerLegacyRitualWrites } from "@/doc/gongoWrites";
 import {
+  publishRitualCreationGroups,
   publishRitualDoc,
   publishRitualDocs,
   publishRitualRevisions,
@@ -100,22 +102,7 @@ gs.publish("users", async (db, opts, { auth }) => {
     : [];
 });
 
-gs.publish("userGroups", async (db, opts, { auth }) => {
-  const userId = await auth.userId();
-  if (!userId) return [];
-
-  const user = await db.collection("users").findOne({ _id: userId });
-
-  if (user?.admin) return db.collection("userGroups").find();
-
-  if (user?.groupAdminIds) {
-    return db
-      .collection("userGroups")
-      .find({ _id: { $in: user.groupAdminIds.map(ObjectId) } });
-  } else return [];
-
-  if (!user?.admin) return [];
-});
+gs.publish("userGroups", publishRitualCreationGroups);
 
 gs.publish("doc", publishRitualDoc);
 gs.publish("docRevisions", publishRitualRevisions);
@@ -337,14 +324,7 @@ if (gs.dba) {
     coll.allow("remove", userIsAdmin);
   }
 
-  const docs = db.collection("docs");
-  docs.allow("insert", userIsTempleAdmin);
-  docs.allow("update", userIsTempleAdmin);
-  docs.allow("remove", userIsTempleAdmin);
-  const docRevisions = db.collection("docRevisions");
-  docRevisions.allow("insert", userIdMatches);
-  docRevisions.allow("update", userIdMatches);
-  docRevisions.allow("remove", userIdMatches);
+  registerLegacyRitualWrites(gs);
 
   const temples = db.collection("temples");
   temples.allow("insert", userIsTempleAdmin);

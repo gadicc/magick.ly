@@ -45,6 +45,21 @@ export async function loadRitualPrincipal(
   return legacyRitualPrincipal(userId, users[0], memberships);
 }
 
+/** Preserve the existing admin-group cursor while validating known legacy grants. */
+export async function publishRitualCreationGroups(
+  db: MongoDatabaseAdapter,
+  _opts: unknown,
+  props: Pick<Props, "auth">,
+) {
+  const principal = await loadRitualPrincipal(db, props.auth);
+  if (!principal) return [];
+  if (principal.globalAdmin) return db.collection("userGroups").find();
+  if (!principal.groupAdminIds.length) return [];
+  return db.collection("userGroups").find({
+    _id: { $in: principal.groupAdminIds.map((id) => new ObjectId(id)) },
+  });
+}
+
 const docFields = [
   "_id",
   "title",
@@ -91,41 +106,6 @@ function tombstone(row: Row): Row {
   return { ...project(row, ["_id", "__updatedAt"]), __deleted: true };
 }
 
-/**
- * Array publications bypass Gongo's cursor helper. Reuse that helper to select
- * IDs with its existing delta/pagination rules, then return only authorized
- * projections. Authorization happens before limits so denied rows cannot crowd
- * out permitted changes. Never synthesize timestamps for permission changes.
- */
-async function finish(
-  db: MongoDatabaseAdapter,
-  coll: string,
-  rows: Row[],
-  props: Props,
-): Promise<PublicationResult> {
-  if (!rows.length) return [];
-  const ids = rows.flatMap((row) => {
-    const id = legacyRitualId(row._id);
-    return id ? [new ObjectId(id), new RegExp(`^${id}$`, "i")] : [];
-  });
-  const cursor = db
-    .collection<{ _id: ObjectId | string }>(coll)
-    .find({ _id: { $in: ids } })
-    .project({ _id: true });
-  const selected = await db.publishHelper(
-    cursor,
-    props as PublicationProps<MongoDatabaseAdapter>,
-  );
-  const byId = new Map(rows.map((row) => [legacyRitualId(row._id), row]));
-  const entries = selected.flatMap((result) =>
-    result.entries.flatMap((row) => {
-      const entry = byId.get(legacyRitualId(row._id));
-      return entry ? [entry] : [];
-    }),
-  );
-  return entries.length ? [{ coll, entries }] : [];
-}
-
 function readableDoc(row: Row, principal: RitualPrincipal | null): Row | null {
   const access = getRitualAccess(legacyRitualPolicy(row), principal);
   if (!access.read) return null;
@@ -138,10 +118,15 @@ function readableDoc(row: Row, principal: RitualPrincipal | null): Row | null {
   const fields: readonly string[] = access.readSourceHistory
     ? [...docFields, "docRevisionId"]
     : docFields;
-  return project(row, fields);
+  return { ...project(row, fields), canEdit: access.edit };
 }
 
-/** Publish readable compiled rituals; source and revision payloads stay separate. */
+/**
+ * Return the complete authorized projection. Legacy watermark/sort/limit arguments
+ * are deliberately ignored: transaction timestamps can precede another ritual's
+ * commit, so a collection watermark would otherwise permanently miss later commits.
+ * Real metadata is preserved. An empty response does not clear Gongo's old cache.
+ */
 export async function publishRitualDocs(
   db: MongoDatabaseAdapter,
   _opts: unknown,
@@ -157,7 +142,7 @@ export async function publishRitualDocs(
     const entry = readableDoc(row, principal);
     return entry ? [entry] : [];
   });
-  return finish(db, "docs", entries, props);
+  return entries.length ? [{ coll: "docs", entries }] : [];
 }
 
 function optionId(opts: unknown, field: "_id" | "docId"): string | null {
@@ -185,11 +170,15 @@ export async function publishRitualDoc(
   const row = await parentDoc(db, id);
   if (!row) return [];
   const entry = readableDoc(row, await loadRitualPrincipal(db, props.auth));
-  // Detail previously returned a full record, regardless of its update watermark.
+  // Detail shares the full-snapshot contract, regardless of legacy cursor arguments.
   return entry ? [{ coll: "docs", entries: [entry] }] : [];
 }
 
-/** Source history belongs to this exact, currently editable, live parent. */
+/**
+ * Return all source history for this exact, currently editable, live parent.
+ * Ignore legacy watermark/sort/limit arguments so the current revision remains
+ * available beyond Gongo's old 200-row cap and across out-of-order commits.
+ */
 export async function publishRitualRevisions(
   db: MongoDatabaseAdapter,
   opts: unknown,
@@ -212,5 +201,5 @@ export async function publishRitualRevisions(
       row.__deleted === true ? tombstone(row) : project(row, revisionFields),
     ];
   });
-  return finish(db, "docRevisions", entries, props);
+  return entries.length ? [{ coll: "docRevisions", entries }] : [];
 }
