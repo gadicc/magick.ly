@@ -12,7 +12,6 @@ import {
 } from "gongo-client-react";
 import { useSession } from "next-auth/react";
 import React, { use } from "react";
-import { supermemo } from "supermemo";
 import db from "@/db";
 import Link from "@/lib/link";
 import {
@@ -20,138 +19,32 @@ import {
   useSearchParams,
   useSetSearchParam,
 } from "@/lib/navigation";
-import getSet, { StudyCard, type StudySet } from "@/study/sets";
-import { StudyCardStats, StudySetStats } from "./exports";
-
-/*
-export async function getServerSideProps(context) {
-  const { _id } = context.query;
-  return { props: { _id } };
-}
-*/
-
-function newCardStats(): StudyCardStats {
-  return {
-    correct: 0,
-    incorrect: 0,
-    time: 0,
-    dueDate: new Date(),
-    supermemo: {
-      interval: 0,
-      repetition: 0,
-      efactor: 2.5,
-    },
-    repetition: {
-      weight: 1,
-    },
-  };
-}
-
-function randomCard(
-  set: StudyCard[],
-  prevCard: StudyCard | null = null,
-): StudyCard {
-  const newCard = set[Math.floor(Math.random() * set.length)];
-  return newCard === prevCard ? randomCard(set, prevCard) : newCard;
-}
+import {
+  fetchDueCards,
+  newStudySetStats,
+  randomCard,
+  repetitionCards,
+  reviewCard,
+  type StudyAttempt,
+} from "@/study/scheduling";
+import getSet from "@/study/sets";
+import type { StudySetStats } from "./exports";
 
 const StudySetCol = db.collection("studySet");
 
-function newStudySetStats(set: StudySet, userId?: string) {
-  const studySetStats: StudySetStats = {
-    setId: set.id,
-    cards: {},
-    correct: 0,
-    incorrect: 0,
-    time: 0,
-    dueDate: new Date(),
-  };
-
-  if (userId) {
-    studySetStats.userId = userId;
-    studySetStats.__ObjectIDs = ["userId"];
-  }
-
-  for (const cardId of Object.keys(set.data)) {
-    studySetStats.cards[cardId] = newCardStats();
-  }
-
-  // console.log({ studySetStats });
-  return studySetStats;
-}
-
 function updateCardSet(
-  set,
-  cardId,
+  cardId: string,
   _studyData: StudySetStats,
-  { wrongCount, startTime, mode },
+  attempt: StudyAttempt,
 ) {
-  const card = { ..._studyData.cards[cardId] };
-
-  interface StudyDataUpdate {
-    correct: number;
-    incorrect: number;
-    time: number;
-    dueDate?: Date;
-    userId?: string;
-    [key: string]: unknown; // e.g. $set: { ["cards.card_id"]: card }
-  }
-
-  const studyDataUpdate: StudyDataUpdate = {
-    correct: _studyData.correct,
-    incorrect: _studyData.incorrect,
-    time: _studyData.time,
+  const { card, ...setUpdate } = reviewCard(cardId, _studyData, attempt);
+  const studyDataUpdate: typeof setUpdate & { userId?: string } & Record<
+      string,
+      unknown
+    > = {
+    ...setUpdate,
     ["cards." + cardId]: card,
   };
-
-  // console.log({ cardSet, card });
-
-  const elapsed = Date.now() - startTime;
-  card.time += elapsed;
-  studyDataUpdate.time += elapsed;
-
-  let grade;
-  if (wrongCount === 0) {
-    card.correct++;
-    studyDataUpdate.correct++;
-    if (elapsed < 3000) grade = 5;
-    else if (elapsed < 5000) grade = 4;
-    else grade = 3;
-  } else {
-    card.incorrect++;
-    studyDataUpdate.incorrect++;
-    if (elapsed < 3000) grade = 2;
-    else if (elapsed < 8000) grade = 1;
-    else grade = 0;
-  }
-
-  // console.log({ wrongCount, startTime, elapsed, grade });
-
-  if (mode === "supermemo") {
-    console.log(card);
-    card.supermemo = supermemo(card.supermemo, grade);
-
-    const dayInMs = 86400000;
-    //const oldDueDate = card.dueDate.getTime();
-    card.dueDate = new Date(Date.now() + card.supermemo.interval * dayInMs);
-
-    let earliestDueDate = card.dueDate;
-    for (const [id, card2] of Object.entries(_studyData.cards)) {
-      // Skip currentId because we already used it but more importantly, we
-      // didn't mutate _studyData.cards[currentId] so it would be the previous
-      // dueDate, i.e. before now & thus guaranteed (but incorrect) "earliest"
-      if (id !== cardId && card2.dueDate < earliestDueDate)
-        earliestDueDate = card2.dueDate;
-    }
-    studyDataUpdate.dueDate = earliestDueDate;
-  } else if (mode === "repetition") {
-    card.repetition = {
-      // 6 so if they get it correct (5) it will still repeat (once, unweighted)
-      weight: 6 - grade,
-    };
-  }
-
-  //if (studyData.dueDate.getTime() === oldDueDate) studyData.dueDate = card.dueDate;
 
   // If we weren't logged in before, but are now, take this opportunity to
   // populate userId.  TODO: probably a better place to do this.
@@ -173,19 +66,6 @@ function updateCardSet(
     StudySetCol.update(_studyData._id, {
       $set: studyDataUpdate,
     });
-}
-
-function fetchDueCards(
-  allCards: StudyCard[],
-  studyData: StudySetStats,
-): StudyCard[] {
-  const now = new Date();
-  const cards: StudyCard[] = [];
-  for (const setCard of allCards) {
-    const studySetCard = studyData.cards[setCard.id] || newCardStats();
-    if (studySetCard.dueDate <= now) cards.push(setCard);
-  }
-  return cards;
 }
 
 export default function StudySetLoad(props: {
@@ -266,12 +146,7 @@ export default function StudySetLoad(props: {
       );
     }
   } else {
-    cards = [];
-    for (const setCard of allCards) {
-      const studySetCard = studyData.cards[setCard.id] || newCardStats();
-      const weight = studySetCard?.repetition?.weight || 1;
-      for (let i = 0; i < weight; i++) cards.push(setCard);
-    }
+    cards = repetitionCards(allCards, studyData);
   }
 
   return (
@@ -309,7 +184,7 @@ function StudySet({ set, cards, studyData, mode, setMode }) {
           setTotal(total + 1);
           setStartTime(Date.now());
         }, 200);
-      updateCardSet(set, card.id, studyData, { wrongCount, startTime, mode });
+      updateCardSet(card.id, studyData, { wrongCount, startTime, mode });
     } else {
       setWrong(answer);
       setWrongCount(wrongCount + 1);

@@ -17,7 +17,6 @@ import {
   Typography,
 } from "@mui/material";
 import { formatDistanceToNowStrict } from "date-fns";
-import { WithId } from "gongo-client/lib/browser/Collection";
 import {
   useGongoIsPopulated,
   useGongoLive,
@@ -34,17 +33,8 @@ import {
   useSearchParams,
   useSetSearchParam,
 } from "@/lib/navigation";
+import { dueCount } from "@/study/scheduling";
 import { sets as allSets, tags as allTags } from "@/study/sets";
-import { StudySetStats } from "./[_id]/exports";
-
-function dueCount(set: WithId<StudySetStats>) {
-  let count = 0;
-  const now = new Date();
-
-  for (const card of Object.values(set.cards)) if (card.dueDate <= now) count++;
-
-  return count;
-}
 
 function StudyPage() {
   const router = useRouter();
