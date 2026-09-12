@@ -354,3 +354,14 @@ rollback after injected quota/deletion errors. The owned browser/server were
 stopped. Evidence: `/tmp/magickli-dexie-repository/browser/` and
 `/tmp/magickli-dexie-*.log`. This is repository acceptance; runtime private-reader,
 auth, service-worker, lifecycle and legacy recovery integration remain separate.
+
+The local Vercel configuration now records the approved London function region
+and disables automatic Git deployments of `master`. Vercel documents that
+unspecified branches retain their existing enabled default; no broad preview
+exception can override the production fence. References:
+[Git configuration](https://vercel.com/docs/project-configuration/git-configuration)
+and [function regions](https://vercel.com/docs/functions/configuring-functions/region).
+This file has not been pushed or deployed, so the live Paris compute and existing
+provider settings remain unchanged. A reviewed migration/release workflow,
+preview database isolation and staged acceptance are still required before
+release; the production Loom check must continue failing on the missing workflow.
