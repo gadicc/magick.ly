@@ -29,7 +29,7 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import React from "react";
 import { Render } from "@/doc/blocks";
 
@@ -436,7 +436,6 @@ export default function DocRender({
   wrapWithErrorBoundary?: boolean;
 }) {
   // console.log({ doc });
-  const router = useRouter();
   const searchParams = useSearchParams();
   //const doc = { children: [{ type: "text", value: "hi" }] };
   //const [doc, setDoc] = React.useState(origDoc);
@@ -471,17 +470,11 @@ export default function DocRender({
     // const [value, set] = React.useState(varDesc.default);
     const value = searchParams?.get(varDesc.name) ?? varDesc.default;
     const set = (value) => {
-      const newParams = new URLSearchParams(searchParams || {});
-      newParams.set(varDesc.name, value);
-      const url =
-        location.href.substring(0, -location.search.length) +
-        "?" +
-        newParams.toString();
-
-      router.replace(url, {
-        scroll: false,
-        // shallow: true,
-      });
+      // These variables are local display state; a router navigation needs RSC
+      // data and fails offline. Read the live URL so queued edits keep each other.
+      const url = new URL(window.location.href);
+      url.searchParams.set(varDesc.name, value);
+      window.history.replaceState(null, "", url);
     };
     context.vars[varDesc.name] = { value, set };
   }
