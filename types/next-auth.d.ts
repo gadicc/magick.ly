@@ -1,7 +1,7 @@
+import { EnhancedOmit } from "gongo-server-db-mongo/lib/collection";
 import { DefaultSession } from "next-auth";
 import { User as DefaultUser } from "next-auth/lib/types";
 import type { UserServer } from "@/schemas/user";
-import { EnhancedOmit } from "gongo-server-db-mongo/lib/collection";
 
 // https://authjs.dev/getting-started/typescript
 declare module "next-auth" {

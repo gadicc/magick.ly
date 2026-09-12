@@ -13,4 +13,4 @@ export function useSetSearchParam() {
   };
 }
 
-export { useRouter, usePathname, useSearchParams };
+export { usePathname, useRouter, useSearchParams };

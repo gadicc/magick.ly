@@ -44,3 +44,4 @@ next-env.d.ts
 tsconfig.tsbuildinfo
 /public/swe-worker-*.js
 /public/swe-worker-*.js.map
+.loom/skills/

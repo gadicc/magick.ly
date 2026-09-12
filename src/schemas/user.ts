@@ -53,4 +53,4 @@ type UserClient = Prettify<
   MappedOmit<UserServer, keyof UserClientFields> & UserClientFields
 >;
 
-export type { UserServer, UserClient };
+export type { UserClient, UserServer };

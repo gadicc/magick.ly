@@ -174,5 +174,5 @@ async function createFileFromBuffer(
   return entry;
 }
 
-export { AWS, AWS_S3_BUCKET, createFileFromBuffer, Files };
 export type { FileEntry, FileError };
+export { AWS, AWS_S3_BUCKET, createFileFromBuffer, Files };

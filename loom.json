@@ -1,0 +1,23 @@
+{
+  "$schema": "https://loom.gadicc.local/project-manifest.schema.json",
+  "version": 1,
+  "project": {
+    "name": "magickli",
+    "framework": {
+      "kind": "nextjs",
+      "router": "app",
+      "srcDir": true
+    },
+    "tooling": {
+      "dependencies": {
+        "config": "package.json",
+        "manager": "pnpm"
+      },
+      "tasks": {
+        "config": "package.json",
+        "runner": "pnpm"
+      }
+    }
+  },
+  "features": {}
+}

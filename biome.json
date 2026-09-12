@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.5/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -14,6 +14,7 @@
       "!archive/**",
       "!dump/**",
       "!public/fonts/**",
+      "!**/*.svg",
       "!src/components/enochian/font/**"
     ]
   },
@@ -28,7 +29,7 @@
       "react": "recommended"
     },
     "rules": {
-      "recommended": false,
+      "preset": "none",
       "complexity": {
         "noUselessTypeConstraint": "error"
       },
@@ -44,6 +45,7 @@
         "useBlockStatements": "off"
       },
       "suspicious": {
+        "noArrayIndexKey": "warn",
         "noExplicitAny": "error",
         "noExtraNonNullAssertion": "error",
         "noMisleadingInstantiator": "error",
@@ -53,6 +55,16 @@
     }
   },
   "overrides": [
+    {
+      "includes": ["src/doc/blocks.js"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useHookAtTopLevel": "off"
+          }
+        }
+      }
+    },
     {
       "includes": ["*.ts", "*.tsx", "*.mts", "*.cts"],
       "linter": {
