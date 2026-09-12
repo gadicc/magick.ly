@@ -71,10 +71,6 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         {/* PWA primary color */}
         <meta name="theme-color" content="#FFFFFF" />
         <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
-        />
-        <link
           rel="apple-touch-icon"
           sizes="57x57"
           href="/favicons/apple-icon-57x57.png"
