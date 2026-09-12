@@ -1,6 +1,6 @@
 import pugLex from "pug-lexer";
 import pugParse from "pug-parser";
-import { transformAndMapShortcuts } from "@/app/doc/[_id]/edit/shortcuts";
+import { transformAndMapShortcuts } from "./shortcuts";
 
 export function prepare(src) {
   const { transformed } = transformAndMapShortcuts(src);
