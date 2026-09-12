@@ -14,9 +14,13 @@ Independent controlled-GC tests retained all 128 discarded objects with the old
 Map and collected all 128 with WeakMap, while preserving a deliberately live node.
 Forced GC is outside ordinary CI. Package compatibility and source-build evidence
 is in `/tmp/magickli-jrt-cache/`; the upstream checkout and publication remain
-unchanged. Private-view integration must still remove application references:
-in particular, the current editor's `window.doc` scripting handle needs an owned
-unmount cleanup before it can be included in private lifetime acceptance.
+unchanged. Private-view integration must still remove application references.
+The editor's `window.doc` handle now has owned effect cleanup: it is emptied and
+removed on unmount, and captured callbacks cannot affect a replacement editor.
+Live console scripting remains available. Compilation results are fenced by both
+editor lifetime and source generation; every created source-map consumer is
+released, including those that resolve after unmount. This does not activate the
+14-day policy in the current Gongo/localStorage editor.
 
 All 1,573 default tests, scoped coverage, types, Biome, frozen install, ordinary
 Loom checks and a clean production build pass. Five installed-package regressions
@@ -34,6 +38,19 @@ the browser verified the served `1355-8f616ae039a21a6f.js` WeakMap module with S
 Future dependency patches require emitted-bundle inspection and cache invalidation
 when needed, not just an installed-file check. Detailed baseline/patch evidence:
 `/tmp/magickli-jrt-app-browser/` and `/tmp/magickli-jrt-*.log`.
+
+The separate editor cleanup passes all 1,651 default tests, scoped coverage,
+types, Biome, ordinary Loom checks and a production build. Thirteen new editor
+cases cover stale async work, current errors, account replacement, captured
+callbacks and actual StrictMode effect replay. Twelve Chromium stages verify
+the real editor, same-document Back/remount, inert old handles, account changes,
+the built-in `unshortcut` script, saving and unsaved-draft recovery after reload.
+Known hook diagnostics remain #310/#300 with existing recovery; no unexpected
+errors occurred. StrictMode and stalled promises are tested separately from the
+production browser. Evidence: `/tmp/magickli-editor-lifetime/` and
+`/tmp/magickli-editor-*.log`. The original browser harness incorrectly reused a
+JSHandle across a hard navigation; its retained failure and corrected same-realm
+harness distinguish this test defect from application behavior.
 
 ## Agreed contract
 

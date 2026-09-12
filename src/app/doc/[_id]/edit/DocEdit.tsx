@@ -202,26 +202,22 @@ function RitualEditor({ _id, userId }: { _id: string; userId: string | null }) {
     };
   }, [load]);
   const viewRef = React.useRef<EditorView | undefined>(undefined);
-  const windowDocRef = React.useRef<Partial<ScriptProps>>({});
-  if (typeof window !== "undefined") {
-    // @ts-expect-error: it's ok
-    window.doc = windowDocRef.current;
-  }
-  windowDocRef.current.run = function run(scriptName: string) {
-    const script = scripts[scriptName];
-    if (!script) {
-      console.log(Object.keys(scripts).join(", "));
-      throw new Error(`Script ${scriptName} not found in scripts.ts`);
-    }
-    script(windowDocRef.current as ScriptProps);
-  };
-  windowDocRef.current.view = viewRef.current;
+  const windowDocRef = React.useRef<Partial<ScriptProps> | null>(null);
+  const editorLifetime = React.useRef({ active: false, epoch: 0 });
+  const sourceGeneration = React.useRef(0);
 
   const isDirty = draft?.source !== lastSavedValue;
 
   const onChange = React.useCallback(
     (value, viewUpdate) => {
-      windowDocRef.current.value = value;
+      if (!editorLifetime.current.active) return;
+      const epoch = editorLifetime.current.epoch;
+      const generation = ++sourceGeneration.current;
+      const isCurrent = () =>
+        editorLifetime.current.active &&
+        editorLifetime.current.epoch === epoch &&
+        sourceGeneration.current === generation;
+      if (windowDocRef.current) windowDocRef.current.value = value;
       if (draftRef.current) {
         try {
           keepDraft({
@@ -241,14 +237,19 @@ function RitualEditor({ _id, userId }: { _id: string; userId: string | null }) {
 
       clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(async () => {
-        const { transformed, sourceMap } =
-          await transformAndMapShortcuts(value);
-        windowDocRef.current.transformed = transformed;
-
-        // @ts-expect-error: it's ok
-        const consumer = await new SourceMapConsumer(sourceMap);
-
+        let consumer:
+          | Awaited<InstanceType<typeof SourceMapConsumer>>
+          | undefined;
         try {
+          const { transformed, sourceMap } =
+            await transformAndMapShortcuts(value);
+          if (!isCurrent()) return;
+          // @ts-expect-error: the shortcut map is accepted by the installed consumer
+          consumer = await new SourceMapConsumer(sourceMap);
+          if (!isCurrent()) return;
+          if (windowDocRef.current)
+            windowDocRef.current.transformed = transformed;
+
           const lexed = pugLex(transformed);
           const parsed = pugParse(lexed, { src: transformed });
           // console.log(parsed);
@@ -265,11 +266,11 @@ function RitualEditor({ _id, userId }: { _id: string; userId: string | null }) {
           setDoc(jrt);
           setError(null);
         } catch (error) {
-          // console.log(error);
+          if (!isCurrent()) return;
           const match = error.message.match(
             /^Pug:(?<line>\d+):(?<column>\d+)\n(?<inline>[\s\S]+?)\n\n(?<message>.+)$/,
           );
-          if (match) {
+          if (match && consumer) {
             const { message, type: _type } = match.groups;
             let line = Number(match.groups.line);
             let column = Number(match.groups.column);
@@ -291,12 +292,54 @@ function RitualEditor({ _id, userId }: { _id: string; userId: string | null }) {
           } else {
             setError(error);
           }
+        } finally {
+          consumer?.destroy();
         }
       }, 300);
     },
     [keepDraft],
   );
-  windowDocRef.current.onChange = onChange;
+  React.useEffect(() => {
+    const lifetime = editorLifetime.current;
+    lifetime.active = true;
+    const epoch = ++lifetime.epoch;
+    // A fresh handle on every setup keeps StrictMode replay usable while any
+    // captured retired handle stays empty and its old callbacks stay inert.
+    const handle: Partial<ScriptProps> = {
+      value: viewRef.current?.state.doc.toString() ?? "",
+      transformed: "",
+      view: viewRef.current,
+    };
+    const isCurrent = () =>
+      lifetime.active &&
+      lifetime.epoch === epoch &&
+      windowDocRef.current === handle;
+    handle.onChange = (value, update) => {
+      if (isCurrent()) onChange(value, update);
+    };
+    handle.run = (scriptName) => {
+      if (!isCurrent() || !handle.view) return;
+      const script = scripts[scriptName];
+      if (!script) {
+        console.log(Object.keys(scripts).join(", "));
+        throw new Error(`Script ${scriptName} not found in scripts.ts`);
+      }
+      script(handle as ScriptProps);
+    };
+    windowDocRef.current = handle;
+    const scriptingWindow = window as Window & { doc?: Partial<ScriptProps> };
+    scriptingWindow.doc = handle;
+    return () => {
+      lifetime.active = false;
+      ++lifetime.epoch;
+      ++sourceGeneration.current;
+      clearTimeout(timeoutRef.current);
+      viewRef.current = undefined;
+      windowDocRef.current = null;
+      for (const key of Object.keys(handle)) delete handle[key];
+      if (scriptingWindow.doc === handle) delete scriptingWindow.doc;
+    };
+  }, [onChange]);
 
   const save = React.useCallback(async () => {
     const current = draftRef.current;
@@ -410,7 +453,7 @@ function RitualEditor({ _id, userId }: { _id: string; userId: string | null }) {
 
   React.useEffect(() => {
     viewRef.current = view;
-    windowDocRef.current.view = view;
+    if (windowDocRef.current) windowDocRef.current.view = view;
     if (view && initialValue !== null) {
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: initialValue },

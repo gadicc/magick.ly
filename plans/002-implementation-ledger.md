@@ -49,6 +49,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Verified legacy file locations | Complete locally; import pending | All ten canonical R2 reads prove bucket-prefixed keys; explicit import prefix/provenance preserves public URLs; 1,506 tests, full checks/build, production-bound in-memory preflight and real Postgres upgrade/rerun pass |
 | Protected R2 storage adapter | Complete locally; activation pending | Explicit SQL-bound locations, signed size/SHA/provenance, cancellable reads and same-operation orphan reconciliation through Loom; 62 new cases, 1,568 tests, coverage/types/Biome/Loom/build pass |
 | JRT discarded-tree cache | Complete locally | Pinned one-line WeakMap patch preserves live identity/mutations and output profile; 1,573 tests, full checks, clean emitted-bundle verification and ten Chromium stages pass; known hook recovery unchanged |
+| Editor scripting and compile lifetime | Complete locally | Owned console handle cleanup, inert retired callbacks, stale-result fencing and source-map release; 1,651 tests, full checks/build and twelve Chromium stages pass, preserving scripts/save/recovery |
 | Rendered ritual asset inventory | Complete locally; resolution pending | Exact source paths/query/fragment identity and actual child/task/footnote rules; 65 new tests, 1,638 tests, coverage/types/Biome/Loom pass; protected preflight exposes two stale PNG paths |
 | Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
 | Offline storage and view lifecycle | Complete locally; runtime integration pending | Dexie repository plus synchronous view guards, two-tab sign-out fence, owned Blob cleanup and opaque locked recovery; 1,499 tests, coverage/types/Biome/Loom/build; ten native lifecycle scenarios pass |
@@ -476,3 +477,13 @@ outside CI. See the [offline record](006-private-offline.md) for evidence and th
 separate editor-console reference cleanup. No JRT release or private UI activation
 occurred. Production Loom validation still fails only on the missing migration
 release workflow.
+
+The editor now retires its console scripting handle on unmount or account
+replacement, ignores late compilation results, and releases source-map consumers.
+Console scripts, current error reporting and retained drafts remain usable.
+All 1,651 tests, scoped coverage, types, Biome, ordinary Loom checks and production
+build pass. Twelve native browser stages cover same-document navigation, account
+changes, actual scripting, saving and cold-reload recovery. Known hook-order
+recovery remains unchanged; private offline runtime integration is still pending.
+See the [offline record](006-private-offline.md) for the separate unit/browser
+evidence and the corrected same-document browser harness.

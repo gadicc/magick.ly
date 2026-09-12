@@ -21,6 +21,14 @@ const mock = vi.hoisted(() => ({
   userId: "000000000000000000000001",
   call: vi.fn(),
   pending: [] as Record<string, unknown>[],
+  transform: vi.fn(),
+  consumer: vi.fn(),
+  script: vi.fn(),
+  diagnostics: vi.fn(),
+  consumers: [] as {
+    originalPositionFor: (value: unknown) => unknown;
+    destroy: ReturnType<typeof vi.fn>;
+  }[],
 }));
 vi.mock("gongo-client-react", () => ({
   useGongoUserId: () => mock.userId,
@@ -90,23 +98,28 @@ vi.mock("@uiw/react-split", () => ({
     <div>{children}</div>
   ),
 }));
-vi.mock("@codemirror/lint", () => ({ setDiagnostics: () => ({}) }));
-vi.mock("../DocRender", () => ({ default: () => <div>Preview</div> }));
-vi.mock("./scripts", () => ({ default: {} }));
+vi.mock("@codemirror/lint", () => ({
+  setDiagnostics: (...args: unknown[]) => mock.diagnostics(...args),
+}));
+vi.mock("../DocRender", () => ({
+  default: ({ doc }: { doc: unknown }) => (
+    <output aria-label="Preview">{JSON.stringify(doc)}</output>
+  ),
+}));
+vi.mock("./scripts", () => ({
+  default: { synthetic: (props: unknown) => mock.script(props) },
+}));
 vi.mock("./checkSrc", () => ({ checkSrc: () => [] }));
 vi.mock("./SourceMapConsumer", () => ({
   default: class {
-    originalPositionFor(value: unknown) {
-      return value;
+    constructor(map: unknown) {
+      return mock.consumer(map);
     }
   },
 }));
 vi.mock("./shortcuts", () => ({
   shortcutHighlighters: [],
-  transformAndMapShortcuts: async (source: string) => ({
-    transformed: source,
-    sourceMap: {},
-  }),
+  transformAndMapShortcuts: (...args: unknown[]) => mock.transform(...args),
 }));
 
 const actor = "000000000000000000000001";
@@ -126,6 +139,25 @@ beforeEach(() => {
   mock.userId = actor;
   mock.pending = [];
   mock.call.mockReset();
+  mock.transform.mockReset().mockImplementation(async (source: string) => ({
+    transformed: source,
+    sourceMap: { source },
+  }));
+  mock.consumers = [];
+  mock.consumer.mockReset().mockImplementation(() => {
+    const consumer = {
+      originalPositionFor: (value: unknown) => value,
+      destroy: vi.fn(),
+    };
+    mock.consumers.push(consumer);
+    return consumer;
+  });
+  mock.script
+    .mockReset()
+    .mockImplementation(({ view }) =>
+      view.dispatch({ changes: { insert: "p Scripted" } }),
+    );
+  mock.diagnostics.mockReset().mockReturnValue({});
   write = async () => success;
   mock.call.mockImplementation((name, request) => {
     if (name === "ritualWrite") return write(request);
@@ -398,4 +430,302 @@ it("offers the in-memory source as a recovery download if local storage fills up
     storage.mockRestore();
     click.mockRestore();
   }
+});
+
+type ConsoleHandle = Partial<import("./DocEdit").ScriptProps>;
+const consoleWindow = window as Window & { doc?: ConsoleHandle };
+const currentSource = () =>
+  (screen.getByLabelText("Ritual source") as HTMLTextAreaElement).value;
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
+};
+const transformed = (source: string) => ({
+  transformed: source,
+  sourceMap: { source },
+});
+const previewContains = (value: string) =>
+  waitFor(
+    () => expect(screen.getByLabelText("Preview").textContent).toContain(value),
+    { timeout: 2500 },
+  );
+const started = (value: string) =>
+  waitFor(() => expect(mock.transform).toHaveBeenCalledWith(value), {
+    timeout: 2500,
+  });
+
+it("keeps console scripting live, then empties the old handle and fences captured callbacks", async () => {
+  const mounted = open();
+  await screen.findByLabelText("Ritual source");
+  const handle = consoleWindow.doc!,
+    oldRun = handle.run!,
+    oldChange = handle.onChange!;
+  act(() => oldRun("synthetic"));
+  expect(currentSource()).toBe("p Scripted");
+  await previewContains("Scripted");
+  expect(handle.transformed).toBe("p Scripted");
+  expect(mock.script).toHaveBeenCalledOnce();
+  mounted.unmount();
+  expect(consoleWindow.doc).toBeUndefined();
+  expect(Object.keys(handle)).toEqual([]);
+  mock.userId = "000000000000000000000002";
+  open();
+  await screen.findByLabelText("Ritual source");
+  act(() => {
+    oldRun("synthetic");
+    oldChange("p Stale callback");
+  });
+  expect(currentSource()).toBe("p Other account");
+  expect(mock.script).toHaveBeenCalledOnce();
+  expect(readRitualRecovery(localStorage, actor, docId)[0]).toMatchObject({
+    kind: "draft",
+    source: "p Scripted",
+  });
+  expect(readRitualRecovery(localStorage, mock.userId, docId)[0]).toMatchObject(
+    { kind: "draft", source: "p Other account" },
+  );
+});
+
+it("does not delete a replacement editor's global when an older mounted editor cleans up", async () => {
+  const first = open();
+  await screen.findByLabelText("Ritual source");
+  const old = consoleWindow.doc!;
+  const second = open();
+  await waitFor(() =>
+    expect(screen.getAllByLabelText("Ritual source")).toHaveLength(2),
+  );
+  const replacement = consoleWindow.doc!;
+  expect(replacement).not.toBe(old);
+  first.unmount();
+  expect(Object.keys(old)).toEqual([]);
+  expect(consoleWindow.doc).toBe(replacement);
+  act(() => replacement.run!("synthetic"));
+  expect(currentSource()).toBe("p Scripted");
+  second.unmount();
+  expect(consoleWindow.doc).toBeUndefined();
+});
+
+it("rehydrates a functioning console handle after StrictMode effect replay", async () => {
+  const setups: {
+    handle: ConsoleHandle;
+    run: NonNullable<ConsoleHandle["run"]>;
+    change: NonNullable<ConsoleHandle["onChange"]>;
+  }[] = [];
+  function ObserveSetup() {
+    React.useEffect(() => {
+      const handle = consoleWindow.doc!;
+      setups.push({ handle, run: handle.run!, change: handle.onChange! });
+    }, []);
+    return <DocEdit params={{ _id: docId }} />;
+  }
+  const mounted = render(
+    <React.StrictMode>
+      <ObserveSetup />
+    </React.StrictMode>,
+  );
+  await screen.findByLabelText("Ritual source");
+  expect(setups).toHaveLength(2);
+  expect(setups[0].handle).not.toBe(setups[1].handle);
+  expect(Object.keys(setups[0].handle)).toEqual([]);
+  const handle = consoleWindow.doc!;
+  expect(handle).toBe(setups[1].handle);
+  expect(handle.value).toBe("p Original");
+  expect(handle.view).toBeDefined();
+  act(() => {
+    setups[0].run("synthetic");
+    setups[0].change("p Retired replay");
+  });
+  expect(currentSource()).toBe("p Original");
+  expect(mock.script).not.toHaveBeenCalled();
+  act(() => handle.run!("synthetic"));
+  expect(currentSource()).toBe("p Scripted");
+  await previewContains("Scripted");
+  expect(handle.transformed).toBe("p Scripted");
+  expect(mock.script).toHaveBeenCalledOnce();
+  mounted.unmount();
+  expect(Object.keys(handle)).toEqual([]);
+  expect(consoleWindow.doc).toBeUndefined();
+});
+
+it("clears the old account's handle without allowing its callbacks to affect the replacement", async () => {
+  const mounted = open();
+  await screen.findByLabelText("Ritual source");
+  type("p Account A source");
+  await previewContains("Account A source");
+  const handle = consoleWindow.doc!,
+    oldRun = handle.run!,
+    oldChange = handle.onChange!;
+  mock.userId = "000000000000000000000002";
+  mounted.rerender(<DocEdit params={{ _id: docId }} />);
+  await waitFor(() => expect(currentSource()).toBe("p Other account"));
+  expect(consoleWindow.doc).not.toBe(handle);
+  expect(Object.keys(handle)).toEqual([]);
+  act(() => {
+    oldRun("synthetic");
+    oldChange("p Account A late write");
+  });
+  expect(mock.script).not.toHaveBeenCalled();
+  expect(currentSource()).toBe("p Other account");
+  expect(readRitualRecovery(localStorage, actor, docId)[0]).toMatchObject({
+    kind: "draft",
+    source: "p Account A source",
+  });
+});
+
+it("ignores an older source transform that resolves after a newer source preview", async () => {
+  const old = deferred<ReturnType<typeof transformed>>();
+  mock.transform.mockImplementation((value: string) =>
+    value === "p Slow old" ? old.promise : Promise.resolve(transformed(value)),
+  );
+  open();
+  await screen.findByLabelText("Ritual source");
+  type("p Slow old");
+  await started("p Slow old");
+  type("p Current");
+  await previewContains("Current");
+  const consumersBefore = mock.consumer.mock.calls.length;
+  await act(async () => old.resolve(transformed("p Slow old")));
+  expect(screen.getByLabelText("Preview").textContent).toContain("Current");
+  expect(consoleWindow.doc!.value).toBe("p Current");
+  expect(consoleWindow.doc!.transformed).toBe("p Current");
+  expect(mock.consumer).toHaveBeenCalledTimes(consumersBefore);
+});
+
+it("destroys a stale source-map consumer without replacing newer diagnostics or preview", async () => {
+  const old = deferred<{
+    originalPositionFor: (value: unknown) => unknown;
+    destroy: ReturnType<typeof vi.fn>;
+  }>();
+  const originalFactory = mock.consumer.getMockImplementation()!;
+  mock.consumer.mockImplementation((map: { source: string }) =>
+    map.source === "p Slow map" ? old.promise : originalFactory(map),
+  );
+  open();
+  await screen.findByLabelText("Ritual source");
+  type("p Slow map");
+  await waitFor(
+    () => expect(mock.consumer).toHaveBeenCalledWith({ source: "p Slow map" }),
+    { timeout: 2500 },
+  );
+  type("p Current");
+  await previewContains("Current");
+  const diagnosticsBefore = mock.diagnostics.mock.calls.length;
+  const stale = { originalPositionFor: vi.fn(), destroy: vi.fn() };
+  await act(async () => old.resolve(stale));
+  expect(stale.destroy).toHaveBeenCalledOnce();
+  expect(stale.originalPositionFor).not.toHaveBeenCalled();
+  expect(mock.diagnostics).toHaveBeenCalledTimes(diagnosticsBefore);
+  expect(screen.getByLabelText("Preview").textContent).toContain("Current");
+  expect(consoleWindow.doc!.transformed).toBe("p Current");
+});
+
+it.each(["resolve", "reject"] as const)(
+  "does not repopulate a retired handle when a stalled transform later %ss",
+  async (outcome) => {
+    const old = deferred<ReturnType<typeof transformed>>();
+    mock.transform.mockImplementation(() => old.promise);
+    const mounted = open();
+    await screen.findByLabelText("Ritual source");
+    type("p Old pending");
+    await started("p Old pending");
+    const handle = consoleWindow.doc!;
+    mounted.unmount();
+    await act(async () =>
+      outcome === "resolve"
+        ? old.resolve(transformed("p Old pending"))
+        : old.reject(new Error("Retired transform failed")),
+    );
+    expect(Object.keys(handle)).toEqual([]);
+    expect(consoleWindow.doc).toBeUndefined();
+    expect(mock.consumer).not.toHaveBeenCalled();
+  },
+);
+
+it("destroys a consumer that is created after its editor unmounts", async () => {
+  const pending = deferred<{ destroy: ReturnType<typeof vi.fn> }>();
+  mock.consumer.mockImplementation(() => pending.promise);
+  const mounted = open();
+  await screen.findByLabelText("Ritual source");
+  type("p Pending consumer");
+  await waitFor(() => expect(mock.consumer).toHaveBeenCalledOnce(), {
+    timeout: 2500,
+  });
+  const handle = consoleWindow.doc!,
+    consumer = { destroy: vi.fn() };
+  mounted.unmount();
+  await act(async () => pending.resolve(consumer));
+  expect(consumer.destroy).toHaveBeenCalledOnce();
+  expect(Object.keys(handle)).toEqual([]);
+  expect(consoleWindow.doc).toBeUndefined();
+  expect(mock.diagnostics).not.toHaveBeenCalled();
+});
+
+it("destroys completed consumers after both successful compilation and parser failure", async () => {
+  open();
+  await screen.findByLabelText("Ritual source");
+  type("p Valid");
+  await previewContains("Valid");
+  expect(mock.consumers).toHaveLength(1);
+  expect(mock.consumers[0].destroy).toHaveBeenCalledOnce();
+  type("p(");
+  await waitFor(() => expect(mock.consumers).toHaveLength(2), {
+    timeout: 2500,
+  });
+  expect(mock.consumers[1].destroy).toHaveBeenCalledOnce();
+  expect(screen.getByLabelText("Preview").textContent).toContain("Valid");
+});
+
+it("reports a current transform rejection without an unhandled async callback", async () => {
+  mock.transform.mockRejectedValue(new Error("Synthetic transform failure"));
+  open();
+  await screen.findByLabelText("Ritual source");
+  type("p Current error");
+  await screen.findByText("Synthetic transform failure");
+  expect(mock.consumer).not.toHaveBeenCalled();
+  expect(consoleWindow.doc!.value).toBe("p Current error");
+});
+
+it("reports a current source-map initialization rejection without overwriting the valid preview", async () => {
+  open();
+  await screen.findByLabelText("Ritual source");
+  type("p Valid preview");
+  await previewContains("Valid preview");
+  mock.consumer.mockRejectedValueOnce(
+    new Error("Synthetic map initialization failure"),
+  );
+  type("p Current source");
+  await screen.findByText("Synthetic map initialization failure");
+  expect(screen.getByLabelText("Preview").textContent).toContain(
+    "Valid preview",
+  );
+  expect(consoleWindow.doc!.value).toBe("p Current source");
+  expect(mock.consumers[0].destroy).toHaveBeenCalledOnce();
+});
+
+it("retires an older compile immediately when typing starts, before the new debounce runs", async () => {
+  const old = deferred<ReturnType<typeof transformed>>();
+  mock.transform.mockImplementation((source: string) =>
+    source === "p Slow old"
+      ? old.promise
+      : Promise.resolve(transformed(source)),
+  );
+  open();
+  await screen.findByLabelText("Ritual source");
+  type("p Valid preview");
+  await previewContains("Valid preview");
+  type("p Slow old");
+  await started("p Slow old");
+  type("p New typing");
+  await act(async () => old.resolve(transformed("p Slow old")));
+  expect(screen.getByLabelText("Preview").textContent).toContain(
+    "Valid preview",
+  );
+  expect(consoleWindow.doc!.value).toBe("p New typing");
+  expect(consoleWindow.doc!.transformed).toBe("p Valid preview");
+  await previewContains("New typing");
 });
