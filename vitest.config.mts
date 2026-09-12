@@ -30,6 +30,8 @@ export default defineConfig({
         "src/app/chat/contracts.ts",
         "src/app/chat/conversation.ts",
         "src/app/chat/providers.ts",
+        "src/app/chat/corpus.ts",
+        "src/app/chat/mmr.ts",
         "src/app/chat/server.ts",
       ],
       thresholds: {

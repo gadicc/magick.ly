@@ -1,9 +1,7 @@
 import { createHash } from "node:crypto";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import { OpenAIEmbeddings } from "@langchain/openai";
-import { PineconeStore } from "@langchain/pinecone";
-import { Pinecone } from "@pinecone-database/pinecone";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { createPineconeCorpus } from "../corpus";
 
 // Leave room for multipart overhead within Vercel's request-body limit.
 export const MAX_PDF_BYTES = 4 * 1024 * 1024;
@@ -73,20 +71,11 @@ export async function ingestPdf(file: File) {
   }
 
   try {
-    const pinecone = new Pinecone();
-    const store = await PineconeStore.fromExistingIndex(
-      // Match the installed retrieval client's defaults explicitly. Changing
-      // embedding models requires reindexing the existing corpus first.
-      new OpenAIEmbeddings({
-        model: "text-embedding-ada-002",
-        stripNewLines: true,
-      }),
-      {
-        pineconeIndex: pinecone.Index(PINECONE_INDEX_NAME),
-        namespace: PINECONE_NAME_SPACE,
-      },
+    const corpus = createPineconeCorpus(
+      PINECONE_INDEX_NAME,
+      PINECONE_NAME_SPACE,
     );
-    const writtenIds = await store.addDocuments(chunks, { ids });
+    const writtenIds = await corpus.upsertChunks(chunks, ids);
     if (
       writtenIds.length !== ids.length ||
       writtenIds.some((id, index) => id !== ids[index])

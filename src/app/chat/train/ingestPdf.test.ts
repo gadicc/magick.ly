@@ -3,10 +3,8 @@ import { ingestPdf, MAX_PDF_BYTES } from "./ingestPdf";
 
 const mocks = vi.hoisted(() => ({
   load: vi.fn(),
-  embeddings: vi.fn(),
-  index: vi.fn(),
-  fromExistingIndex: vi.fn(),
-  addDocuments: vi.fn(),
+  createCorpus: vi.fn(),
+  upsertChunks: vi.fn(),
 }));
 
 vi.mock("@langchain/community/document_loaders/fs/pdf", () => ({
@@ -14,21 +12,7 @@ vi.mock("@langchain/community/document_loaders/fs/pdf", () => ({
     load = mocks.load;
   },
 }));
-vi.mock("@langchain/openai", () => ({
-  OpenAIEmbeddings: class {
-    constructor(options: unknown) {
-      mocks.embeddings(options);
-    }
-  },
-}));
-vi.mock("@pinecone-database/pinecone", () => ({
-  Pinecone: class {
-    Index = mocks.index;
-  },
-}));
-vi.mock("@langchain/pinecone", () => ({
-  PineconeStore: { fromExistingIndex: mocks.fromExistingIndex },
-}));
+vi.mock("../corpus", () => ({ createPineconeCorpus: mocks.createCorpus }));
 
 const pdf = (name = "ritual.pdf") =>
   new File(["%PDF-1.7\nfixture"], name, { type: "application/pdf" });
@@ -46,13 +30,8 @@ beforeEach(() => {
       },
     },
   ]);
-  mocks.index.mockReturnValue({ name: "test-index" });
-  mocks.fromExistingIndex.mockResolvedValue({
-    addDocuments: mocks.addDocuments,
-  });
-  mocks.addDocuments.mockImplementation(async (_documents, options) => [
-    ...options.ids,
-  ]);
+  mocks.createCorpus.mockReturnValue({ upsertChunks: mocks.upsertChunks });
+  mocks.upsertChunks.mockImplementation(async (_documents, ids) => [...ids]);
 });
 
 afterEach(() => vi.unstubAllEnvs());
@@ -88,7 +67,7 @@ describe("PDF corpus ingestion", () => {
     mocks.load.mockImplementation(() => new PDFLoader(file).load());
 
     await expect(ingestPdf(file)).resolves.toMatchObject({ chunks: 1 });
-    expect(mocks.addDocuments.mock.calls[0][0][0]).toMatchObject({
+    expect(mocks.upsertChunks.mock.calls[0][0][0]).toMatchObject({
       pageContent: "A ritual reference.",
       metadata: { source: "reference.pdf", loc: { pageNumber: 1 } },
     });
@@ -98,21 +77,18 @@ describe("PDF corpus ingestion", () => {
     const result = await ingestPdf(pdf());
     expect(result.chunks).toBeGreaterThan(1);
     expect(result.sourceId).toMatch(/^[a-f0-9]{64}$/);
-    expect(mocks.index).toHaveBeenCalledWith("chat-index");
-    expect(mocks.fromExistingIndex).toHaveBeenCalledWith(expect.anything(), {
-      pineconeIndex: { name: "test-index" },
-      namespace: "chat-corpus",
-    });
-    expect(mocks.embeddings).toHaveBeenCalledWith({
-      model: "text-embedding-ada-002",
-      stripNewLines: true,
-    });
-    const [chunks, options] = mocks.addDocuments.mock.calls[0];
-    expect(options.ids).toHaveLength(chunks.length);
-    expect(new Set(options.ids).size).toBe(chunks.length);
-    expect(chunks.every((chunk) => chunk.pageContent.length <= 1000)).toBe(
-      true,
+    expect(mocks.createCorpus).toHaveBeenCalledWith(
+      "chat-index",
+      "chat-corpus",
     );
+    const [chunks, ids] = mocks.upsertChunks.mock.calls[0];
+    expect(ids).toHaveLength(chunks.length);
+    expect(new Set(ids).size).toBe(chunks.length);
+    expect(
+      chunks.every(
+        (chunk: { pageContent: string }) => chunk.pageContent.length <= 1000,
+      ),
+    ).toBe(true);
     expect(chunks[0].metadata).toMatchObject({
       source: "ritual.pdf",
       sourceSha256: result.sourceId,
@@ -122,20 +98,20 @@ describe("PDF corpus ingestion", () => {
   });
 
   it("reuses the same vector keys when retrying a partially failed upload", async () => {
-    mocks.addDocuments.mockRejectedValueOnce(new Error("private SDK details"));
+    mocks.upsertChunks.mockRejectedValueOnce(new Error("private SDK details"));
     await expect(ingestPdf(pdf())).rejects.toMatchObject({
       status: 502,
       message: expect.stringContaining("Some chunks may already be indexed"),
     });
-    const firstIds = mocks.addDocuments.mock.calls[0][1].ids;
+    const firstIds = mocks.upsertChunks.mock.calls[0][1];
     await expect(ingestPdf(pdf("renamed.pdf"))).resolves.toMatchObject({
       chunks: firstIds.length,
     });
-    expect(mocks.addDocuments.mock.calls[1][1].ids).toEqual(firstIds);
+    expect(mocks.upsertChunks.mock.calls[1][1]).toEqual(firstIds);
   });
 
   it("does not acknowledge an incomplete vector result", async () => {
-    mocks.addDocuments.mockResolvedValueOnce([]);
+    mocks.upsertChunks.mockResolvedValueOnce([]);
     await expect(ingestPdf(pdf())).rejects.toMatchObject({ status: 502 });
   });
 
@@ -156,7 +132,7 @@ describe("PDF corpus ingestion", () => {
     async (_name, makeFile, status) => {
       await expect(ingestPdf(makeFile())).rejects.toMatchObject({ status });
       expect(mocks.load).not.toHaveBeenCalled();
-      expect(mocks.fromExistingIndex).not.toHaveBeenCalled();
+      expect(mocks.createCorpus).not.toHaveBeenCalled();
     },
   );
 
@@ -164,7 +140,7 @@ describe("PDF corpus ingestion", () => {
     vi.stubEnv("PINECONE_NAME_SPACE", "");
     await expect(ingestPdf(pdf())).rejects.toMatchObject({ status: 503 });
     expect(mocks.load).not.toHaveBeenCalled();
-    expect(mocks.index).not.toHaveBeenCalled();
+    expect(mocks.createCorpus).not.toHaveBeenCalled();
   });
 
   it("rejects unreadable PDFs without leaking parser details", async () => {
@@ -173,7 +149,7 @@ describe("PDF corpus ingestion", () => {
       status: 400,
       message: expect.not.stringContaining("private"),
     });
-    expect(mocks.addDocuments).not.toHaveBeenCalled();
+    expect(mocks.upsertChunks).not.toHaveBeenCalled();
   });
 
   it.each([[], [{ pageContent: "  \n", metadata: {} }]])(
@@ -181,7 +157,7 @@ describe("PDF corpus ingestion", () => {
     async (...pages) => {
       mocks.load.mockResolvedValue(pages);
       await expect(ingestPdf(pdf())).rejects.toMatchObject({ status: 400 });
-      expect(mocks.addDocuments).not.toHaveBeenCalled();
+      expect(mocks.upsertChunks).not.toHaveBeenCalled();
     },
   );
 });
