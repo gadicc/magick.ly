@@ -42,4 +42,5 @@ public/sitemap-0.xml
 .vercel
 next-env.d.ts
 tsconfig.tsbuildinfo
-public/swe-worker-development.js
+/public/swe-worker-*.js
+/public/swe-worker-*.js.map

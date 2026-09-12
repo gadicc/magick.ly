@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master, "codex/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      ROOT_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      AUTH_SECRET: ci-build-only-not-a-production-secret
+      # Build verification must never connect to production services.
+      MONGO_URL: mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=100
+      MONGODB_URI: mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=100
+      MONGODB_URL: mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=100
+      OPENAI_API_KEY: ci-build-only-placeholder
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm typecheck
+      - run: pnpm test:coverage
+      - run: pnpm build

@@ -7,9 +7,6 @@ import {
 
 export default async function (phase: string): Promise<NextConfig> {
   const nextConfig: NextConfig = {
-    eslint: {
-      ignoreDuringBuilds: true,
-    },
     // See also alternative with patch-package:
     // https://stackoverflow.com/a/77722836/1839099
     serverExternalPackages: ["pdf-parse"],
