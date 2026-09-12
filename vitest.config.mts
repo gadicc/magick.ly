@@ -27,6 +27,7 @@ export default defineConfig({
         "src/study/scheduling.ts",
         "src/study/progressSnapshot.ts",
         "src/temples/create.ts",
+        "src/offline/lease.ts",
         "src/app/geomancy/tetragrams.ts",
         "src/app/chat/train/access.ts",
         "src/app/chat/train/ingestPdf.ts",

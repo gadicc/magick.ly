@@ -168,6 +168,12 @@ behavior, without promising DRM or deletion of copies. This 14-day policy
 supersedes the earlier no-expiry proposal while retaining planned airplane-mode
 use within the authorization window.
 
+The [private offline design](006-private-offline.md) and pure lease tests now
+define owner/epoch/request fencing, read-versus-source capability, bounded
+renewal and locked recovery. Runtime storage and UI enforcement are still
+pending. The limit begins once the new client is installed; a never-updating
+client's existing offline code cannot receive this policy from the server.
+
 **Dry run and import validation.** Implement the importer only after sanitized fixtures capture the shapes above. Use controlled staging or a protected export for raw legacy material; committed fixtures and reports contain no production names, emails, source text, tokens, IDs or secrets. Aggregate exception reports may refer to local protected detail records without embedding their values.
 
 1. Verify source fingerprints and target identity. Refuse an unexpected database/project/environment, an incompatible schema version, or a changed input that lacks a new import-run identity. Validate UUIDv7 defaults and driver behavior in PGlite and the selected disposable Postgres/Neon target.

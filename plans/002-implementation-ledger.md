@@ -44,6 +44,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Authorized SQL ritual reads | Complete locally | Server-only repository shares policy and loads current grants/source in read-only repeatable-read transactions; 20 new tests, 765 full-suite tests, coverage/types/Biome/build and real Postgres concurrent-demotion/source-preservation acceptance pass |
 | Preserved SQL rendered rituals | Complete locally | Exact current compiled archives under ordinary read permissions; nine query regressions and installed JRT legacy-shape test; 855 tests, scoped coverage/types/Biome/build; protected backup preflight passes with reviewed exceptions |
 | Files metadata SQL foundation | Complete locally; runtime planned | Exact Loom UUIDv7 schema and protected legacy provenance; 71 new tests, 926 full-suite tests, coverage/types/Biome/build and real Postgres migration/date/metadata/rollback/rerun acceptance; all ten actual metadata rows pass read-only preflight |
+| Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
 | Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
 | SuperMemo compatibility upgrade | Complete locally | 2.0.17→2.0.23 keeps the algorithm and moves package entrypoints to ESM/CJS; 14,320 exact old/new comparisons, all 692 tests, unchanged scoped coverage, typecheck, Biome, frozen install and production build pass |
@@ -294,3 +295,24 @@ Evidence: `/tmp/magickli-protected-preflight/files-plan-report.json`.
 Files remains `planned` in Loom until the closed runtime adapters are complete.
 No new routes, provider writes, private attachment grants or Neon migrations
 were activated by this unit.
+
+The approved private offline policy now has a pure implementation and a reviewed
+[integration design](006-private-offline.md). A fresh authenticated ritual
+permission check grants at most 14 days; local reads and generic session/network
+success do not renew it. The local deadline conservatively accounts for request
+start and remaining server time. Expiry and observed clock rollback latch until
+a new allowed check. Account epochs and latest request IDs fence late replies.
+
+Read and source/edit capabilities are separate. Confirmed denial removes
+renewable downloads and locks unique recovery; edit-only revocation keeps read
+access but removes source snapshots and locks draft reopening/export. Temporary
+auth or network failure preserves only the existing lease's remaining window.
+All 962 default tests, 34-module coverage, types, Biome and ordinary Loom checks
+pass. The 36 pure lease cases have complete scoped coverage. Evidence:
+`/tmp/magickli-offline-lease-*.log`.
+
+Dexie transactions, complete bundles/assets, the permission endpoint, migration,
+sign-out and reader/editor guards remain to be integrated together. No current
+Gongo cache gains a lease through this module. Never-updating old clients cannot
+be retrofitted with expiry. Application locks preserve unique source bytes and
+are not a promise of tamperproof recall or physical deletion of every copy.

@@ -1,0 +1,117 @@
+# Private ritual offline storage and 14-day authorization
+
+Status: reviewed integration design plus the implemented pure [lease policy](../src/offline/lease.ts). This unit adds no Dexie dependency, app activation, provider calls, data migration or browser acceptance.
+
+## Agreed contract
+
+A successful **server ritual permission check** may issue at most 14 × 24 hours of offline access. Local reads, an existing cached grant, successful session lookup, `navigator.onLine`, firewall/VPN changes and failed requests cannot renew it. Keep read and source/edit capabilities separate. Ordinary readers receive rendered content, not source/history.
+
+Explicit sign-out removes downloaded rituals, source snapshots and private assets. Expiry or confirmed revocation removes the corresponding renewable downloads at the next running lifecycle check. Preserve unique editor recovery and pending commands, but lock them. Expired/revoked/signed-out recovery cannot be reopened, previewed, copied or exported until the same owner passes a successful online **source/edit** permission check for the target. A read-only grant is insufficient. New offline creation is deferred; recovery of a not-yet-created ritual requires verified create permission for its original scope, never a fabricated ritual grant.
+
+The app must distinguish these results:
+
+| Event | Existing unexpired rendered grant | Source/drafts | Downloaded data |
+| --- | --- | --- | --- |
+| Fresh allowed read + source/edit | Renew from this check | Available under the new lease | Replace/renew a complete authorized bundle |
+| Fresh allowed read, source/edit removed | Renew read | Remove source snapshots; lock recovery/export | Keep rendered bundle and read assets |
+| Explicit same-account denied/missing ritual result | Revoke immediately | Lock unique recovery | Remove that ritual's downloads/assets |
+| 401 / expired session | Do not renew; offer re-auth | Same existing source lease remains bounded | Do not misclassify as revocation |
+| Timeout / offline / 429 / 5xx / malformed or incomplete response | Do not renew | Preserve pending requests | Keep only the existing grant's remaining window |
+| Explicit sign-out/account replacement | Clear account binding immediately | Preserve but lock recovery | Remove old account's downloads |
+| Deadline reached / observed clock rollback | Lock before display | Preserve but lock recovery | Remove renewable downloads; online check required |
+
+A generic HTTP403/404, proxy/login HTML, empty Gongo result or omission from a paginated list is not proof of revocation. The offline protocol must return an explicit, validated result for each requested ritual, bound to its request ID and freshly authenticated account. Missing results are retryable protocol failures, not tombstones.
+
+## What the reference code actually provides
+
+- [Shadowlang clientCache.ts](/home/dragon/www/projects/shadowlang/src/flashcards/clientCache.ts) uses installed Dexie 4.4.3, a singleton `shadowlang-flashcards` database, versioned stores, account/course compound indexes and transactional snapshot/metadata writes. Its six-hour `staleAt` is content freshness, not authorization. Private Magickly reads must never normalize a missing identity to Shadowlang's `anonymous` key.
+- [reviewOutbox.ts](/home/dragon/www/projects/shadowlang/src/flashcards/reviewOutbox.ts) persists client UUIDv7 review IDs and before/after state. [drainOutbox.ts](/home/dragon/www/projects/shadowlang/src/flashcards/drainOutbox.ts) groups ordered requests, handles partial acknowledgements and backs off transient errors. Reuse these ideas, not its global drain singleton/global inflight reset: each Magickly claim and reply must stay account/epoch scoped.
+- [useOutboxSync.ts](/home/dragon/www/projects/shadowlang/src/flashcards/useOutboxSync.ts) listens for mount, online and visible events. Those are retry triggers only. Its disposal clears listeners but does not cancel an in-flight domain operation; Magickly additionally needs epoch/CAS guards and abort signals.
+- [deviceCleanup.ts](/home/dragon/www/projects/shadowlang/src/account/deviceCleanup.ts) deletes declared owned stores and reports partial failure. Its whole flashcard database deletion would destroy an outbox here. Its shared [media cache](/home/dragon/www/projects/shadowlang/src/flashcards/mediaCache.ts) and URL-based [prewarm](/home/dragon/www/projects/shadowlang/src/flashcards/mediaPrewarm.ts) are unsuitable for private account/ritual assets.
+- [Magickly db.ts](/home/dragon/www/projects/magickli/src/db.ts) persists `docs`, `docRevisions`, users, groups, temples/memberships and study data in Gongo's shared browser database. It enables polling from persisted network preference after collection population. [publications.ts](/home/dragon/www/projects/magickli/src/doc/publications.ts) now returns full authorized snapshots, but an empty result still does not remove old Gongo records. That cache is not an offline permission grant.
+- [drafts.ts](/home/dragon/www/projects/magickli/src/doc/drafts.ts) already preserves exact source, CAS base, original pending requests and raw legacy mutations under `magickli:ritual-recovery:v1:` before polling can overwrite them. Preserve this evidence. `raw.userId` can describe a legacy creator/author rather than the actor who made a pending edit; unknown provenance cannot be reassigned to the account currently signing in.
+- [MyAppBar.tsx](/home/dragon/www/projects/magickli/src/app/MyAppBar.tsx) currently calls Auth.js `signOut()` directly. Cache/recovery gating must be integrated into a coordinated app sign-out flow before private downloads activate.
+
+## Minimal storage model
+
+Use one dedicated Dexie database `magickli-ritual-offline`, schema version 1, with mandatory canonical UUIDv7 owner IDs. Partition every data lookup by owner **and** ritual. Avoid cross-account and cross-ritual blob deduplication initially; the dataset is small and separate deletion is easier to reason about.
+
+| Store / key | Minimum fields |
+| --- | --- |
+| `deviceState`, `&key` (`active`) | `ownerId|null`, random UUIDv7 `epoch`, cleanup-pending state. This is a local account binding, not a session token or permission grant. |
+| `checks`, `&[ownerId+ritualId]` | Latest `requestId`, account epoch, local request-start instant. Updating this row fences earlier replies across tabs. |
+| `authorizations`, `&[ownerId+ritualId]` | Versioned server grant; local request-start/deadline/last-observed time; latched lock reason; epoch. See `lease.ts`. |
+| `bundles`, `&[ownerId+ritualId]` | Data version1, opaque `bundleId`, permitted title and compiled JRT body/hash, renderer/output format versions, exact asset manifest, completeness status. Readers need no source hash/current source revision pointer. |
+| `assets`, `&[ownerId+ritualId+bundleId+assetKey]` | Blob, digest, MIME, byte size, exact logical reference, purpose `read` or `source`. Never key only by URL/hash. |
+| `sourceSnapshots`, `&[ownerId+ritualId+revisionId]` | Exact requested source/history metadata and hashes, compiler provenance, parent version/CAS token; authorized editors only. Default download includes current source only if editing was requested; no automatic full history download. |
+
+Keep durable recovery in separate object stores of the same dedicated database, so epoch, lease, draft and outbox operations can share one IndexedDB transaction. Expose no whole-database delete/reset API; cleanup explicitly targets renewable download stores and never unique recovery:
+
+- `drafts`: UUIDv7 draft ID, owner, target kind, exact source/current base, original request when present, lock metadata and authorized check/epoch reference.
+- `outbox`: immutable UUIDv7 operation/request ID; owner; original backend/protocol version and byte-preserving payload/hash; target; CAS base; status `queued|sending|authentication-required|conflict|rejected|acknowledged|locked`; bounded retry metadata. Do not change request ID or source after an uncertain result.
+- `quarantine`: deterministic legacy key/digest and original raw serialized record, including corrupt/unattributed records. This store has no guessed owner and no normal editor/export path. An unknown owner needs explicit verified recovery mapping, not an account picker that grants access.
+- `migrationLedger`: source store/key, digest, destination key, copied/verified status. Do not mark migration complete when copying or re-reading fails.
+
+Existing localStorage recovery can remain the durable source until this migration is verified. Preserving its exact serialization and original keys is safer than immediately changing its persistence format. Never delete a whole Gongo database while study/other pending work still lives there.
+
+## Permission and download protocol
+
+Add a versioned, uncached server endpoint separate from ordinary list/detail pages. A bounded batch accepts fresh UUIDv7 `requestId`, `expectedActorId` and requested ritual IDs/current bundle tokens. The handler must verify the current request session and reject actor mismatch, then read persisted grants, ritual policy, current render provenance and requested source access consistently through the SQL repository. Do not copy cached Gongo memberships or treat client `canEdit` as authority.
+
+Return an explicit per-ritual `granted`, `denied`, authentication-required or temporary-failure result. A grant contains owner/ritual/request binding, a fresh lease ID, `checkedAtMs`, `respondedAtMs`, `expiresAtMs <= checkedAtMs + 14 days`, and separate source/edit capability. Render data must come from the approved rendered SQL projection, not an unvalidated original compiled archive. Per-role JRT hiding is presentation: receiving a compiled ritual means receiving its authorized whole body.
+
+The response's explicit grant authorizes app-managed offline payload storage. HTTP `Cache-Control: private, no-store` and a NetworkOnly service-worker rule still prevent automatic HTML/RSC/API response caching. Never infer permission from an ETag304, successful session endpoint, defaultCache entry or a generic200 body. No server write endpoint accepts an offline lease as its authorization.
+
+The client captures request-start time before sending, and records the latest check ID in a Dexie transaction. Only accept a reply if owner, ritual, account epoch and latest check ID still match in another transaction. A late A reply must never repopulate downloads after sign-out or after B signs in; an older grant cannot overwrite a newer denial.
+
+Fetch/validate/hash all required assets outside a Dexie transaction. Then atomically publish the complete bundle, asset rows and accepted authorization. IndexedDB transactions must not wait for unrelated network work ([Dexie transaction guidance](https://dexie.org/docs/Dexie/Dexie.transaction())). Partial downloads never receive a Ready badge. On refresh failure, an existing complete bundle may keep only its previous unexpired lease; a successful check of a changed bundle must not silently extend the old bundle's lease. Apply denial and source-right downgrade immediately, even if a replacement download later fails.
+
+For a same-bundle renewal, update authorization atomically without downloading unchanged blobs. For a new bundle, stage bytes and swap the active bundle only when complete; clean old renewable bytes after the swap. Unknown/missing asset types remain explicitly incomplete until supported.
+
+## Asset visibility is a prerequisite
+
+[Legacy file2](/home/dragon/www/projects/magickli/src/app/api/file2/route.ts) currently serves a content hash with public immutable caching and no visibility check. Such a URL is public today; placing its response in a private Dexie table does not make the original protected. Root's Loom file migration must classify these files and govern delivery before protected media downloads activate.
+
+The server's asset manifest must distinguish public bundled/generated media from ritual-read and source-only assets, and bind protected files to the same permitted ritual/revision. A user's authority to upload a file does not automatically make it readable by every ritual reader. Do not forward cookies/authorization to arbitrary source URLs or create an unrestricted server URL proxy.
+
+Use private blobs directly from the gated Dexie repository with short-lived object URLs. Revoke those URLs and clear rendered/editor memory on expiry, revocation, sign-out, account switch and unmount. Do not introduce a generic cached private-file service-worker route. Source-only assets are removed on edit-right downgrade even if read access remains.
+
+Gather only known renderer asset references, preserving every functional query and SVG fragment. The bundled source concretely includes inline data images, local SVG/PNG files, external images and `/api/treeOfLife?...` generated output. Do not assume every `src`/`text` in JRT is editor source, or mutate the protected compiled archive while building an asset map. Unknown external URLs may prevent complete offline readiness; they need an explicit supported fetch/hosting policy. A file extension or URL hash is not a visibility decision.
+
+## Lifecycle, timing and draft locks
+
+The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.
+
+The active account/epoch, latest check and authorization decisions must be read/updated together in Dexie transactions. Recompute the current clock inside that transaction, not from an earlier queued callback. `BroadcastChannel`/Dexie live queries notify other tabs, but every operation still checks persisted epoch; notifications are not authority. Abort pending downloads/sync on lifecycle changes and also fence late completions, since abort can race.
+
+Sign-out first closes the visible private view and clears/fences the active account in the offline DB, then purges that account's download/source/asset rows. Drafts/outbox remain. Failure to delete must leave the account blocked and cleanup pending; do not report successful removal while bytes remain. Re-authentication alone does not reopen a draft: perform the target's source/edit check. First commit a durable account fence and cleanup-pending marker in its own transaction. Then purge renewable stores in a second transaction: a purge failure rolls back deletion but leaves access blocked. Fresh authentication cannot bypass pending cleanup. Because all protected stores share the dedicated database, every draft/source/export/outbox gate reads the persisted account and lease in the same transaction as the protected operation; cached UI flags are never authority.
+
+Before hiding an editor, preserve its latest in-memory source as locked recovery even if the normal autosave debounce has not fired. Persisting recovery is permitted while locking; reading/previewing/exporting it is not. Keep a locked-draft indicator without leaking source/title to another account. Unknown-outcome creation requests remain attached to their owner and original scope; resolve their receipt online without manufacturing a nonexistent ritual ID. New offline creation stays disabled.
+
+A browser cannot provide tamperproof DRM: local privileges or script compromise can read/change browser storage ([OWASP](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#storage-apis)). The lock controls application behavior, not ciphertext. An offline deadline cannot become a trusted clock across device resets/boots: wall clocks can change, and `performance.now()` has cross-platform sleep behavior unsuitable as a persistent lease clock ([MDN](https://developer.mozilla.org/en-US/docs/Web/API/Performance/now)). A rollback that is not observable from persisted state cannot be proven. These safeguards should not be presented as defeating a determined device owner.
+
+Connectivity events only trigger a request; `navigator.onLine` can be true on a disconnected LAN or affected by firewalls ([MDN](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine)). Browser storage can be evicted or cleared; request persistence when appropriate, display readiness honestly, and preserve/recover failures without promising guaranteed device storage ([MDN](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria)).
+
+## Migration and release order
+
+1. Review/commit the pure lease rules independently; they activate nothing. Finish the server rendered bundle/asset authority contract and versioned typed endpoint with synthetic SQL/transport tests.
+2. Add Dexie and the owner-scoped repository behind an inactive integration boundary. Test atomic completion, epoch/check CAS, source downgrade, cleanup failure and quota/crash recovery with real IndexedDB/browser fixtures.
+3. Fence old polling before importing. Await Gongo `collectionsPopulated`, durably archive **all** pending ritual mutations/current recovery, verify the copy, then stop ritual subscriptions and prevent old rows repopulating. Existing generic mutation bypasses stay closed. Reuse the tested current polling/archive ordering.
+4. Treat every legacy downloaded ritual/source as unleased. Map known legacy IDs only through the trusted server import mapping for the verified owner. Re-fetch after current permission checks; do not grant 14 days based on a legacy row's timestamp. Preserve unknown/corrupt/ambiguous work in locked quarantine. Resolve known uncertain Mongo command receipts before disabling that backend, or provide a deliberate receipt-translation bridge; never replay a changed SQL payload under the same old request ID.
+5. Integrate reader/source UI, sign-out/account epoch, draft/export guards and private asset delivery **together before enabling downloads**. Keep public builtin caches unchanged. Use a static anonymous private-reader fallback shell; it obtains all protected data through the lease-gated repository. Do not cache dynamic private SSR HTML or RSC as a shortcut.
+6. Replace automatic private response caching with NetworkOnly for relevant private HTML/RSC/API/file requests. Clear owned legacy private-capable `others`, RSC, API and `pages` entries under an explicit migration plan, without deleting public asset caches or unique recovery. Test existing tabs/BFCache and Next router memory; sign-out must reset private in-memory routing state too.
+7. Activate the SQL/Dexie reader and owner-bound outbox, remove legacy ritual reads after parity, then perform the production write pause/import/reauth cutover already approved by the operator. Existing offline creation remains deferred.
+
+The 14-day policy starts only after the new client/migration is installed. A never-reconnecting browser running old code already has an indefinite cache; the server cannot retrofit expiry into that offline program. Minimum-client/protocol gates at cutover stop further legacy network reads/writes but cannot retract previously copied data. Preserved locked recovery can itself contain old source and saved-source copies, so sign-out removes downloads, not every byte of private text.
+
+## Concrete acceptance matrix
+
+- **Lease boundaries:** 13d23:59 usable; exact deadline unavailable; source/export checks immediate; idle foreground expiry, suspended tab, BFCache resume and cold start all lock. Local read, browser reload, session-only success, firewall flip and repeated failed requests do not move deadline. Missing/malformed/unknown-version records fail closed. Detected rollback latches until a successful check.
+- **Capabilities:** creator/global/scoped editor can download source; ordinary/grade-gated reader cannot. Read-only renewal after edit revocation retains rendered content but removes source/editor assets and locks existing drafts, previews, clipboard and export. Restoration unlocks only after a new owner-bound source/edit check.
+- **Identity/concurrency:** A downloads, signs out, B signs in; B sees none of A's content/drafts/assets. Late download/renew/save replies cannot repopulate A or B. A→sign-out→A still changes epoch. An older allowed response cannot override a later denied response. Two tabs and a killed leader retry the same operation ID safely.
+- **Network/errors:** 401 requires re-auth without deleting an unexpired grant; typed same-account denied removes cached ritual; proxy403/login HTML/missing batch items/timeouts/429/5xx do not revoke or renew. Permission checks themselves bypass SW/HTTP application caches and always re-read server grants.
+- **Bundles/assets:** fresh offline deep link renders a previously completed private bundle with HTTP cache disabled; all required images/fonts/generated outputs available. No Ready state after failed/missing asset, wrong hash/MIME, account mismatch or incomplete transaction. Same URL under two owners/rituals cannot leak across keys. Private payloads/sentinels appear in no shared SW/HTTP cache; expired blob URLs and source-only blobs stop rendering.
+- **Recovery/migration:** mixed old accounts, raw pending insert/update/delete, corrupt/unattributed records, a pending unconfirmed create, and new draft text inside the debounce window survive migration/sign-out/expiry byte-for-byte but remain locked. A full/quota-blocked recovery store aborts destructive migration. Fresh verified target capability is required before reopen/export. No automatic adoption or replay under another identity/backend.
+- **Cleanup:** crash after epoch invalidation but before blob purge resumes cleanup on next start. Blocked deletion reports failure and stays locked. Other accounts' unique recovery, anonymous study data and unrelated browser databases remain untouched.
+
+The pure tests cover lease transitions only. They do not establish transaction, renderer, asset, auth transport or browser offline acceptance; those integration checks remain required.
