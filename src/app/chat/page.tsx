@@ -1,16 +1,16 @@
 "use client";
-import { Message, useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import Image from "next/image";
 import React from "react";
-
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { dark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { ToastContainer, toast } from "react-toastify";
 import rehypeAddClasses from "rehype-add-classes";
 import remarkGfm from "remark-gfm";
+import { createUuidV7 } from "@/lib/ids";
 import "react-toastify/dist/ReactToastify.css";
-// import { Document as LangChainDocument } from "@langchain/core/documents";
 import {
   Autorenew,
   DeleteForever,
@@ -27,25 +27,21 @@ import {
 } from "@mui/material";
 import AndroidMagicianAvatar from "@/app/img/android-magician-avatar.png";
 import { UserAvatar } from "../MyAppBar";
-import type { ChatMessageMetaData } from "./api/route";
+import {
+  type ChatMessage,
+  type ChatSource,
+  messageSources,
+  messageText,
+} from "./contracts";
 
 const remarkPlugins = [remarkGfm];
 const rehypePlugins = [[rehypeAddClasses, { table: "rehype-table" }]];
-
-function metaMessage(message: Message) {
-  const parts = message.content.split("\n__META_JSON__\n");
-  return {
-    ...message,
-    meta: parts[2] ? (JSON.parse(parts[1]) as ChatMessageMetaData) : null,
-    content: parts[2] || parts[0],
-  };
-}
 
 function Source({
   source,
   cheatModeEnabled,
 }: {
-  source: ChatMessageMetaData["sources"][0];
+  source: ChatSource;
   cheatModeEnabled: boolean;
 }) {
   const meta = source.metadata;
@@ -59,8 +55,8 @@ function Source({
       };
     } else if (meta.pdf) {
       return {
-        title: meta.pdf.info.Title,
-        author: meta.pdf.info.Author,
+        title: meta.pdf.info?.Title ?? "Unknown",
+        author: meta.pdf.info?.Author ?? "Unknown",
         pageNumber: meta.loc?.pageNumber,
         identifier: "TODO",
       };
@@ -117,7 +113,7 @@ function Sources({
   sources,
   cheatModeEnabled,
 }: {
-  sources: ChatMessageMetaData["sources"];
+  sources: ChatSource[];
   cheatModeEnabled: boolean;
 }) {
   return (
@@ -142,26 +138,25 @@ export default function Chat() {
   const [cheatModeEnabled, setCheatModeEnabled] = React.useState(false);
   const cheatModeCount = React.useRef(0);
   const cheatModeLast = React.useRef(0);
-  /*
-  const [sourcesForMessages, setSourcesForMessages] = React.useState<
-    Record<string, LangChainDocument[]>
-  >({});
-  */
-
+  const [input, setInput] = React.useState("");
+  const [chatId, setChatId] = React.useState(createUuidV7);
+  const transport = React.useMemo(
+    () => new DefaultChatTransport<ChatMessage>({ api: "/chat/api/v2" }),
+    [],
+  );
   const {
     messages: _messages,
-    setMessages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-    reload,
+    sendMessage,
+    status,
+    regenerate,
     stop,
-  } = useChat({
-    api: "/chat/api",
-    onError: (e) => toast(e.message),
+  } = useChat<ChatMessage>({
+    id: chatId,
+    transport,
+    generateId: createUuidV7,
+    onError: (error) => toast(error.message),
   });
-  // console.log({ messages, input, isLoading, sourcesForMessages });
+  const isLoading = status === "submitted" || status === "streaming";
   const autoscroll = React.useRef(true);
 
   const messages =
@@ -170,20 +165,24 @@ export default function Chat() {
       : ([
           {
             id: "START",
-            createdAt: new Date(),
-            content:
-              "Hi, I'm your friendly Magician's Assistant.  Ask me anything " +
-              "about Magick, but please remember that I'm not perfect and " +
-              "can make mistakes.",
+            parts: [
+              {
+                type: "text",
+                text:
+                  "Hi, I'm your friendly Magician's Assistant.  Ask me anything " +
+                  "about Magick, but please remember that I'm not perfect and " +
+                  "can make mistakes.",
+              },
+            ],
             role: "assistant",
           },
-        ] as Message[]);
+        ] satisfies ChatMessage[]);
 
   React.useEffect(() => {
-    if (autoscroll.current) window.scrollTo(0, document.body.scrollHeight);
-    // ref.current?.scrollIntoViewIfNeeded();
-    // console.log({ messages });
-  }, []);
+    if (_messages.length && autoscroll.current) {
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+  }, [_messages]);
 
   React.useEffect(() => {
     function checkScroll() {
@@ -225,7 +224,8 @@ export default function Chat() {
   return (
     <>
       <div id="messages">
-        {messages.map(metaMessage).map((m) => {
+        {messages.map((m) => {
+          const sources = messageSources(m);
           return (
             <div
               key={m.id}
@@ -315,11 +315,11 @@ export default function Chat() {
                     },
                   }}
                 >
-                  {m.content}
+                  {messageText(m)}
                 </ReactMarkdown>
-                {m.meta?.sources ? (
+                {sources ? (
                   <Sources
-                    sources={m.meta.sources}
+                    sources={sources}
                     cheatModeEnabled={cheatModeEnabled}
                   />
                 ) : null}
@@ -341,7 +341,7 @@ export default function Chat() {
             "linear-gradient(rgba(255, 255, 255, 0) 0%, rgb(255, 255, 255) 12px)",
         }}
       >
-        {messages.length > 1 && !isLoading && (
+        {_messages.length > 0 && !isLoading && (
           <div
             style={{
               bottom: 66,
@@ -355,7 +355,7 @@ export default function Chat() {
             <Chip
               icon={<Autorenew fontSize="small" />}
               label="Regenerate Response"
-              onClick={() => reload()}
+              onClick={() => void regenerate()}
               sx={{
                 "&:hover": {
                   background: "#dadada",
@@ -380,7 +380,7 @@ export default function Chat() {
             <Chip
               icon={<StopCircle fontSize="small" />}
               label="Stop Generating"
-              onClick={() => stop()}
+              onClick={() => void stop()}
               sx={{
                 "&:hover": {
                   background: "#dadada",
@@ -394,20 +394,29 @@ export default function Chat() {
         )}{" "}
         <form
           onSubmit={(e) => {
+            e.preventDefault();
+            if (isLoading || !input.trim()) return;
             autoscroll.current = true;
-            handleSubmit(e);
+            void sendMessage({ text: input });
+            setInput("");
           }}
         >
           <TextField
             fullWidth
             placeholder="Send a message"
             value={input}
-            onChange={handleInputChange}
+            onChange={(event) => setInput(event.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
                   <IconButton
-                    onClick={(e) => setMessages([])}
+                    onClick={() => {
+                      void stop();
+                      // A new hook instance cannot receive late chunks from
+                      // the conversation that was just cancelled.
+                      setChatId(createUuidV7());
+                      setInput("");
+                    }}
                     edge="start"
                     title="New Chat"
                   >
@@ -421,7 +430,7 @@ export default function Chat() {
                     title="Send Message"
                     onClick={(e) => buttonRef.current?.click()}
                     edge="end"
-                    disabled={isLoading || input === ""}
+                    disabled={isLoading || !input.trim()}
                   >
                     {isLoading ? <CircularProgress size="20px" /> : <Send />}
                   </IconButton>
