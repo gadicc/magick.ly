@@ -39,6 +39,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Atomic ritual writes and editor recovery | Complete locally | Versioned save/create/publication commands, compare-and-swap tokens, exact source, server compilation and durable operation receipts; converted editor/creation UI, full authorized snapshots and explicit legacy recovery; 646 default tests plus 14 disposable Mongo cases, scoped coverage, types, Biome and production build pass; six browser scenarios with synthetic HTTP responses pass |
 | Ritual and revision SQL foundation | Complete locally | Four tables distinguish exact source, original compiled archives and versioned artifacts; strict typed import plan and parent/source-hash constraints; 46 new tests, 692 full-suite tests, types/Biome/coverage/build and real Postgres migration/rollback/unchanged rerun pass; no live import |
 | Shared form dependencies | Complete locally | React Hook Form 7.88.0, resolvers 5.9.1 and Radash 12.1.1; no source changes; 28 actual membership form/schema tests, all 692 tests, unchanged coverage, typecheck, Biome, frozen install and production build pass |
+| Atomic SQL temple creation | Complete locally; UI activation pending | Any verified existing user creates temple, first grade-zero admin and durable retry receipt atomically; no automatic invite; 37 new tests, 802 full-suite tests, coverage/types/Biome/build and real Postgres races/lock-timeout/replay checks pass |
 | Authorized SQL ritual reads | Complete locally | Server-only repository shares policy and loads current grants/source in read-only repeatable-read transactions; 20 new tests, 765 full-suite tests, coverage/types/Biome/build and real Postgres concurrent-demotion/source-preservation acceptance pass |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
 | Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
@@ -49,7 +50,7 @@ Pinecone is the authoritative vector store. The unused Mongo ingestion experimen
 
 The Node 24 baseline production build completes with existing tarot import and BSON target warnings, expected local-placeholder Mongo connection errors from eager initialization, and an invalid sitemap base URL caused by the old config loader. These are tracked for separate fixes. Service credentials were overridden with local/build-only values; Google Font downloads were allowed. CI is configured but has not run on GitHub yet.
 
-Coverage currently gates twenty-nine extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.62% statements, 99.26% lines, 100% functions and 97.01% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 765 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
+Coverage currently gates thirty extracted compiler, study, geomancy, chat/training, identity, auth-import, ritual-policy, recovery and domain-import modules: 98.61% statements, 99.23% lines, 100% functions and 97.07% branches. This is intentionally scoped coverage, not a whole-site percentage. Expand the include list as domain logic is extracted. The default suite has 802 tests; 14 additional real Mongo transaction tests run through the explicit `pnpm test:mongo` rehearsal. The Mongo write engine is verified there, rather than counted as covered by default CI's boundary tests.
 
 Loom is bootstrapped with no application features active yet. Its required formatter compatibility prompted the Biome update and configuration migration. The new SVG parser is excluded from existing designer assets. The explicitly intentional JRT hook model has a file-scoped exception; an unrelated unused hook component was removed. Forty-four newly reported array-index-key findings remain warnings while their owning features are migrated: changing component identity as a formatting fix would be unsafe. Import ordering uses the new defaults.
 
@@ -193,3 +194,23 @@ ritual, for PNG/JPEG/GIF/WebP up to 20 MiB. Supporting that approved size on
 Vercel requires direct-to-storage transfer and validated server finalization;
 the ordinary function request cannot carry 20 MiB. Keep legacy links available
 and defer SVG, audio and general new uploads.
+
+The SQL temple creation service implements the approved policy for any verified
+existing user. It creates the temple, first grade-zero administrator membership
+and immutable receipt in one transaction. It preserves separate invite setup,
+rejects normalized slug collisions, and checks the expected account. A UUIDv7
+operation lock serializes identical retries; receipts confirm the original result
+without restoring removed records or administration. Request changes and
+cross-account receipt reuse fail. Unknown acknowledgements keep the same request.
+
+All 802 default tests, 30-module coverage, types, Biome, ordinary Loom checks and
+production build pass. Real Postgres with seven migrations/24 tables proves
+concurrent identical requests create one result, colliding slugs produce one
+safe conflict, lost acknowledgements replay once, an externally held lock times
+out after five seconds with zero writes, and demotion/deletion stays effective
+on replay. The disposable database was removed. Evidence:
+`/tmp/magickli-temple-create-postgres/` and `/tmp/magickli-temple-*.log`.
+The service is transport-neutral; runtime auth and the creation form still need
+conversion. Reviewed copy distinguishes joining an existing temple from creating
+one to manage, states the first-admin responsibility, and uses an explicit CTA
+instead of the old Add button. No inactive SQL service is presented as live UI.

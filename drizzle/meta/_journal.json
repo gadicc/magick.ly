@@ -43,6 +43,13 @@
       "when": 1789220770727,
       "tag": "0005_study_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789221300473,
+      "tag": "0006_temple_creation",
+      "breakpoints": true
     }
   ]
 }

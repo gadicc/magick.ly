@@ -106,7 +106,7 @@ Before deploying the Mongo bridge, verify production supports transactions and i
 
 **Group and temple SQL boundary.** `src/db/schema/memberships.ts` and `src/migration/planLegacyMembershipImport.ts` implement six tables and pure insert planning. Group membership/admin booleans remain independent; protected per-user evidence preserves each array's presence and ordered typed references, including duplicates. Only the documented group-array string/ObjectId conversion is permitted. Canonical UUID values normalize case before comparison; original source identity spelling and BSON type remain separate. Temple names and exact slugs are retained, nullable historical creator/date values stay null, and invite codes move to `temple_invites` instead of ordinary metadata. Memberships retain exact added/member-since dates, motto and grade zero, with unique user/temple keys. A present but unresolved creator fails preflight instead of inventing attribution.
 
-The domain mapper requires every canonical user's grant projection. Unknown source fields, deletion/pending markers, invalid arrays/dates/grades, duplicate identities, ambiguous aliases and orphan references fail with only category/input position in errors. Slug collision preflight matches PostgreSQL `lower(btrim(slug))`, including its ASCII-space-only trimming; non-ASCII case behavior still needs production-input validation under the target collation. Foreign keys restrict incidental deletion. Returned source-field/reference evidence must be persisted by the final protected import ledger; returning a plan alone is not durable import bookkeeping. The generated migration, UUIDv7 defaults, constraints, rollback and unchanged rerun passed on disposable Postgres with synthetic rows. This schema does not activate temple commands, define deletion/last-admin semantics, clear existing browser invitation caches or activate the now-approved temple-creation bootstrap. Any signed-in user may create a temple and its first administrator membership atomically; the UI must explain who should create one and why, and distinguish joining an existing temple. New temples retain separate invite setup rather than inventing an invitation code.
+The domain mapper requires every canonical user's grant projection. Unknown source fields, deletion/pending markers, invalid arrays/dates/grades, duplicate identities, ambiguous aliases and orphan references fail with only category/input position in errors. Slug collision preflight matches PostgreSQL `lower(btrim(slug))`, including its ASCII-space-only trimming; non-ASCII case behavior still needs production-input validation under the target collation. Foreign keys restrict incidental deletion. Returned source-field/reference evidence must be persisted by the final protected import ledger; returning a plan alone is not durable import bookkeeping. The generated migration, UUIDv7 defaults, constraints, rollback and unchanged rerun passed on disposable Postgres with synthetic rows. This schema does not activate temple commands, define deletion/last-admin semantics, clear existing browser invitation caches or activate the now-approved temple-creation bootstrap. Any signed-in user may create a temple and its first administrator membership atomically; the UI must explain who should create one and why, and distinguish joining an existing temple. New temples retain separate invite setup rather than inventing an invitation code. The SQL service in `src/temples/create.ts` commits temple, first grade-zero administrator and an immutable UUIDv7 creation receipt together. Replays confirm original IDs without restoring removed membership or deleted temples. Its receipt survives domain deletion; runtime auth and the explanatory creation UI remain to be integrated.
 
 **Study SQL boundary.** `study_progress` keeps stored user/set totals, due dates
 and a new SQL version independently of individual `study_card_states`. Exact
@@ -134,7 +134,29 @@ remain separate work.
 
 Server import cannot recover unsynchronized browser data. Ship the Gongo export/recovery path before removing persisted collection registrations or turning off the legacy backend. Retain pending inserts/updates/deletes, bases, ObjectId metadata and account ownership in the browser migration. Use a separate Dexie database, resumable checkpoints and verification before cleaning old stores. Anonymous progress must not become another account's data through login switching. New offline operations need UUIDv7 operation IDs and durable idempotent receipts; an old cumulative snapshot must not be replayed as a new review event.
 
-A downloaded private ritual must reopen after a cold start with no session/network request, including its required assets. Test reconnect, permission refresh, logout/account switching, two-tab migration, interrupted imports, stale service workers and long-offline clients. Offline revocation cannot be instantaneous; the explicit logout/cache-retention policy and online permission-refresh behavior still need a product decision. Do not introduce a short online lease that defeats the approved airplane-mode requirement.
+A downloaded private ritual must reopen after a cold start with no session/network request, including its required assets. Test reconnect, permission refresh, logout/account switching, two-tab migration, interrupted imports, stale service workers and long-offline clients. The operator now specifies a renewable **14-day offline-access window**. Only a
+successful authenticated server permission check renews it; local reads, failed
+requests and mere network availability never do. Explicit sign-out removes
+private downloaded rituals and their cached images. Confirmed revocation removes
+access on reconnect, and expiry blocks offline reading until a new permission
+check succeeds. Recheck on cold start, foreground/resume and use, including
+already open views; do not rely on a background timer alone.
+
+Unsent drafts survive, but expiry or revocation locks reopening and export until
+a successful online permission check. Preserve unique edits without offering a
+recovery bypass around the private-content expiry. A different signed-in account
+must not inherit them. Auth/session expiration and network failure are distinct
+from an authenticated, confirmed permission denial.
+
+This is an app access policy, not tamper-proof recall of bytes already delivered
+to a user-controlled browser. Local browser controls can be bypassed by a user
+with control of that device ([OWASP browser storage guidance](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html)).
+System-clock rollback also prevents a browser from providing a trusted elapsed
+time across restarts ([MDN timing guidance](https://developer.mozilla.org/en-US/docs/Web/API/Performance/now)).
+Use server-issued expiry and conservative rollback detection for ordinary app
+behavior, without promising DRM or deletion of copies. This 14-day policy
+supersedes the earlier no-expiry proposal while retaining planned airplane-mode
+use within the authorization window.
 
 **Dry run and import validation.** Implement the importer only after sanitized fixtures capture the shapes above. Use controlled staging or a protected export for raw legacy material; committed fixtures and reports contain no production names, emails, source text, tokens, IDs or secrets. Aggregate exception reports may refer to local protected detail records without embedding their values.
 
@@ -154,4 +176,4 @@ Before Postgres accepts new application writes, recovery can restore traffic to 
 
 Retain the final backup, canonical alias mapping, import ledger, compatible release artifact and old Mongo data read-only for the agreed recovery period. Do not remove browser recovery tooling on a date alone: returning devices may still hold unique pending work. Stop the cutover if counts/dispositions, source hashes, references, permissions, offline journeys or recovery checks have unexplained failures. Prefer extending the maintenance window to accepting writes into an unverified state; measure and minimize that window through rehearsal.
 
-The remaining decisions are deliberately narrow: identify the unresolved ritual creator if known; complete the auth-release boundary; define absent production permission cases and logout/offline-retention behavior; and set a recovery window plus a tested policy for post-cutover writes. None requires repeating the approved region, UUIDv7, short-pause, private-offline or reauthentication decisions.
+The remaining decisions are deliberately narrow: identify the unresolved ritual creator if known; complete the auth-release boundary; define any remaining production permission cases and implement the approved 14-day offline/draft policy; and set a recovery window plus a tested policy for post-cutover writes. None requires repeating the approved region, UUIDv7, short-pause, private-offline or reauthentication decisions.
