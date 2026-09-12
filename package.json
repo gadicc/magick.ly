@@ -109,14 +109,15 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/slug": "^5.0.8",
-    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/coverage-v8": "5.0.0",
     "next-sitemap": "^2.5.4",
     "pug-lexer": "^5.0.1",
     "pug-parser": "^6.0.0",
     "raw-loader": "^4.0.2",
     "serwist": "^9.2.1",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vite": "8.3.0",
+    "vitest": "^5.0.0"
   },
   "resolutions": {
     "corpora": "https://github.com/dariusk/corpora/tarball/ff1941630dc5a7aa3d4459fc038cb7a04ec93cb0"
