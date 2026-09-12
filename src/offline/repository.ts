@@ -12,6 +12,11 @@ import {
   type PermissionReply,
 } from "./lease";
 import type {
+  OfflineClockObservation,
+  OfflineResourceState,
+  OfflineRuntimeState,
+} from "./runtimeState";
+import type {
   DraftInput,
   OfflineDraft,
   OutboxRow,
@@ -803,6 +808,152 @@ export class OfflineRitualRepository {
         claimUntilMs: null,
       });
       return true;
+    });
+  }
+
+  /** Sweep owned leases and return only requested capability/deadline metadata for view lifetime. */
+  runtimeState(
+    ritualIds: string[],
+    observation?: OfflineClockObservation,
+  ): Promise<OfflineRuntimeState> {
+    observation = observation ? structuredClone(observation) : undefined;
+    requireValue(
+      !observation ||
+        (id(observation.account.ownerId) &&
+          id(observation.account.epoch) &&
+          instant(observation.observedAtMs) &&
+          observation.leases.every(
+            (row) =>
+              id(row.ritualId) &&
+              (row.leaseId === null || id(row.leaseId)) &&
+              (row.bundleLeaseId === null || id(row.bundleLeaseId)),
+          )),
+      "INVALID",
+    );
+    const requested = [...new Set(ritualIds)];
+    requireValue(requested.every(id), "INVALID");
+    return this.transaction(async () => {
+      const state = await this.db.device.get("active");
+      if (!state?.account || state.cleanupOwnerId)
+        return {
+          account: null,
+          cleanupPending: !!state?.cleanupOwnerId,
+          observedAtMs: this.now(),
+          resources: [],
+        };
+      const account = await this.account(state.account);
+      if (
+        observation?.account.ownerId === account.ownerId &&
+        observation.account.epoch === account.epoch
+      ) {
+        for (const observed of observation.leases) {
+          const key: [string, string] = [account.ownerId, observed.ritualId];
+          const authorization = await this.db.authorizations.get(key);
+          if (
+            authorization?.accountEpoch === account.epoch &&
+            authorization.grant?.leaseId === observed.leaseId &&
+            authorization.lastObservedAtMs !== null
+          ) {
+            await this.db.authorizations.put({
+              ...authorization,
+              lastObservedAtMs: Math.max(
+                authorization.lastObservedAtMs,
+                observation.observedAtMs,
+              ),
+            });
+          }
+          const bundle = await this.db.bundles.get(key);
+          if (
+            bundle?.authorization.accountEpoch === account.epoch &&
+            bundle.authorization.grant?.leaseId === observed.bundleLeaseId &&
+            bundle.authorization.lastObservedAtMs !== null
+          ) {
+            await this.db.bundles.put({
+              ...bundle,
+              authorization: {
+                ...bundle.authorization,
+                lastObservedAtMs: Math.max(
+                  bundle.authorization.lastObservedAtMs,
+                  observation.observedAtMs,
+                ),
+              },
+            });
+          }
+        }
+      }
+      for (const row of await this.db.authorizations
+        .where("ownerId")
+        .equals(account.ownerId)
+        .toArray())
+        await this.gate(account, row.ritualId);
+      // A check-only grant can outlive the downloaded bundle's original lease.
+      // Sweep every owned bundle even when no ritual is currently being viewed.
+      for (const [, ritualId] of await this.db.bundles
+        .where("ownerId")
+        .equals(account.ownerId)
+        .primaryKeys())
+        await this.bundle(account, ritualId);
+      const resources: OfflineResourceState[] = [];
+      for (const ritualId of requested) {
+        const bundle = await this.bundle(account, ritualId);
+        let complete = !!bundle;
+        if (bundle) {
+          for (const entry of bundle.assets.filter(
+            (entry) => entry.purpose === "read",
+          )) {
+            const asset = await this.db.assets.get([
+              account.ownerId,
+              ritualId,
+              bundle.bundleId,
+              entry.key,
+            ]);
+            if (
+              !asset ||
+              asset.ownerId !== account.ownerId ||
+              asset.ritualId !== ritualId ||
+              asset.bundleId !== bundle.bundleId ||
+              asset.key !== entry.key ||
+              asset.sha256 !== entry.sha256 ||
+              asset.mime !== entry.mime ||
+              asset.reference !== entry.reference ||
+              asset.purpose !== "read" ||
+              asset.bytes !== entry.bytes ||
+              !(asset.blob instanceof Blob) ||
+              asset.blob.size !== entry.bytes ||
+              asset.blob.type !== entry.mime
+            )
+              complete = false;
+          }
+        }
+        const gate = await this.gate(account, ritualId);
+        const deadline = gate.authorization?.localDeadlineMs ?? null;
+        const bundleDeadline = bundle?.authorization.localDeadlineMs ?? null;
+        resources.push({
+          ritualId,
+          read:
+            gate.read &&
+            complete &&
+            deadline !== null &&
+            bundleDeadline !== null,
+          sourceEdit: gate.sourceEdit,
+          readDeadlineMs:
+            gate.read &&
+            complete &&
+            deadline !== null &&
+            bundleDeadline !== null
+              ? Math.min(deadline, bundleDeadline)
+              : null,
+          sourceDeadlineMs: gate.sourceEdit ? deadline : null,
+          leaseId: gate.authorization?.grant?.leaseId ?? null,
+          bundleLeaseId: bundle?.authorization.grant?.leaseId ?? null,
+        });
+      }
+      return {
+        account,
+        cleanupPending: false,
+        observedAtMs: this.now(),
+        resources,
+      };
     });
   }
 

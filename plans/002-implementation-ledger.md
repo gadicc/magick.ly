@@ -47,6 +47,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Protected image finalization | Complete locally; adapters pending | Strict v1 requests, actual bytes/hash/all-frame decoding, Loom private save and current-policy atomic publication contract; 98 new tests, 1,344 default tests, coverage/types/Biome/Loom/build; native decode deadline smoke passes |
 | SQL ritual upload publication | Complete locally; provider/UI pending | Immutable intents, current grants, fenced claims and atomic file/link/receipt; 97 new cases, 1,441 default tests, coverage/types/Biome/Loom/build; 16 real Postgres race/constraint gates and unchanged ten-migration/29-table rerun |
 | Private offline lease policy | Pure rules complete; storage/UI pending | Renewable 14-day read/source authorization, owner/epoch/request guards, expiry/rollback locks and preserved locked recovery; 36 tests, 962 full-suite tests, scoped coverage/types/Biome pass; no runtime activation |
+| Offline storage and view lifecycle | Complete locally; runtime integration pending | Dexie repository plus synchronous view guards, two-tab sign-out fence, owned Blob cleanup and opaque locked recovery; 1,499 tests, coverage/types/Biome/Loom/build; ten native lifecycle scenarios pass |
 | Study-progress SQL foundation | Complete locally | Three tables preserve cumulative totals, exact schedules and protected full-source archives; 47 new tests, 745 full-suite tests, expanded scoped coverage, types/Biome/build and disposable Postgres migration/rollback/unchanged rerun pass |
 | Published Loom lifecycle adoption | Complete locally | Loom 1.24.0 published through its approved main workflow and pinned exactly; shared consent lifecycle, explicit waiting worker and master release-branch config; 698 tests, scoped coverage, types, Biome, frozen install and production build pass |
 | SuperMemo compatibility upgrade | Complete locally | 2.0.17→2.0.23 keeps the algorithm and moves package entrypoints to ESM/CJS; 14,320 exact old/new comparisons, all 692 tests, unchanged scoped coverage, typecheck, Biome, frozen install and production build pass |
@@ -424,3 +425,14 @@ acceptance gates and unchanged migration rerun across 29 tables pass; the owned
 database was removed. See the [Files contract](008-protected-ritual-files.md) and
 `/tmp/magickli-upload-postgres-rehearsal/`. Migration 0009 is local only; no route,
 auth, provider or private-data cutover occurred.
+
+The [offline lifecycle](006-private-offline.md) now coordinates cold start, resume,
+expiry, account changes and sign-out with the gated Dexie repository. A separate
+permission-check token repairs expired access without granting cached bytes.
+Cross-tab close notifications cannot reopen the old account before its durable
+fence. Opaque recovery survives coordinator disposal and failed persistence.
+Review reproduced and fixed unviewed old-bundle retention after check-only renewal
+and duplicate persistence from reentrant observers. All 1,499 default tests,
+49-module coverage, types, Biome, ordinary Loom checks and production build pass.
+Ten native Chromium lifecycle scenarios pass with no external requests or page
+errors. No reader/editor/auth/service-worker activation occurred.

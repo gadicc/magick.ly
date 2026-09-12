@@ -172,3 +172,46 @@ must establish uncached same-origin, nonredirected transport before accepting th
 strict envelope; generic HTTP errors or malformed bodies never become revocation.
 Source responses must bind the requested parent/revision and editor CAS state.
 Complete server asset manifests remain a separate requirement for downloads.
+
+## Implemented view lifecycle
+
+The framework-independent coordinator now closes private views synchronously on
+startup, hide/resume, expiry, account changes and sign-out. It aborts pending work,
+revokes owned Blob URLs and captures the latest editor value before hiding it.
+Protected operations have opaque account/generation/deadline tokens and a final
+synchronous guard before updating a view. Separate online-check tokens can renew
+an absent or expired lease but cannot display protected bytes.
+
+The repository's `runtimeState` returns only identity, cleanup status, capabilities,
+deadlines and opaque lease IDs. It checks complete read assets and sweeps all owned
+authorizations and each bundle's independent original lease, including downloads
+that are not open. An old clock observation applies only to its exact account and
+lease; it cannot re-lock a fresh grant after a legitimate clock correction.
+
+Cross-tab sign-out notifications close views before the durable fence. Receiving
+tabs keep that old epoch closed until persisted state shows the fence or a new
+epoch. A sign-out bound to A cannot silently sign out a newer B discovered during
+an async lookup. Cold-start sign-out inspects the stored account when no local
+snapshot exists. Generic authentication failures remain separate from explicit
+sign-out.
+
+An application-lifetime recovery queue retains opaque persistence handles through
+route/coordinator disposal and write failures. It exposes only counts and retry,
+with no source/export getter. Subscribers cannot reenter a save and start a second
+copy. A future editor adapter must keep uncaptured text in an opaque holder if
+capture itself fails, report pending recovery and guard destructive navigation.
+This does not promise durability when storage fails and the browser is killed.
+
+All 1,499 default tests, 49-module coverage, types, Biome, ordinary Loom checks and
+production build pass. The unit adds 58 tests. Ten native Chromium scenarios use
+actual IndexedDB, Blob URLs and BroadcastChannel, including delayed two-tab
+sign-out, stale paint, locked recovery, corrected clocks, reentrant retries and
+unviewed old-bundle expiry. They use synthetic time/visibility and scoped injected
+storage failure, with no external requests or page errors. Evidence:
+`/tmp/magickli-offline-lifecycle/` and `/tmp/magickli-offline-lifecycle-*.log`.
+
+This is lifecycle/repository acceptance, not live private-offline activation.
+React adapters, beforeunload handling, complete asset delivery, authenticated
+transport, legacy recovery migration, private shell/cache policy and end-to-end
+reader/editor acceptance remain required. The existing JRT node cache also needs
+a bounded retention fix before renderer-held private data can be released.
