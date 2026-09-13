@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { formatRitualFileLocator } from "@/files/ritualFileLocator";
 import { createUuidV7 } from "@/lib/ids";
 import Upload, { uploadRitualImage } from "@/lib/upload";
 
@@ -271,5 +272,49 @@ describe("private ritual image upload", () => {
     );
     await screen.findByRole("button", { name: "Retry upload" });
     expect(input.disabled).toBe(false);
+  });
+
+  it("exposes the canonical private source reference after finalization", async () => {
+    const completed = receipt();
+    const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
+      completed.operationId = JSON.parse(String(init?.body)).operationId;
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          state: "completed",
+          replayed: true,
+          receipt: completed,
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetcher);
+    render(
+      <Upload
+        expectedActorId={actorId}
+        rituals={[{ id: ritualId, title: "Synthetic ritual" }]}
+      />,
+    );
+    const input = screen.getByLabelText("Image file");
+    fireEvent.change(input, { target: { files: [image()] } });
+    fireEvent.submit(input.closest("form")!);
+    const labelled = await screen.findByLabelText(
+      "Ritual image source reference",
+    );
+    const source =
+      labelled instanceof HTMLInputElement
+        ? labelled
+        : labelled.querySelector("input");
+    expect(source?.value).toBe(
+      formatRitualFileLocator({
+        ritualId,
+        attachmentId: completed.attachmentId,
+        fileId: completed.fileId,
+      }),
+    );
+    expect(
+      screen
+        .getByRole("button", { name: "Copy source reference" })
+        .hasAttribute("disabled"),
+    ).toBe(false);
   });
 });

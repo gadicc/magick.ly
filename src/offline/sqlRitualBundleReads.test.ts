@@ -146,6 +146,63 @@ function freshPublication(
 }
 
 describe("completed bundle current-access reads", () => {
+  it("preserves completed historical v4/v2 publications after the private-file upgrade", async () => {
+    const historical = structuredClone(saved);
+    updatePlan(historical, (plan) => {
+      plan.profile = "magickli-ritual-asset-plan-v4";
+      plan.inventoryProfile = "magickli-jrt-assets-v2";
+      delete plan.privateCatalogSha256;
+    });
+    await db
+      .update(intents)
+      .set(historical.intent)
+      .where(eq(intents.operationId, saved.intent.operationId));
+    const result = await reader().getManifest(input());
+    expect(result?.manifest.bundleId).toBe(saved.intent.bundleId);
+    expect((await reader().getAsset(assetInput()))?.location).toEqual({
+      provider: saved.rows[0].storageProvider,
+      bucket: saved.rows[0].bucket,
+      objectKey: saved.rows[0].objectKey,
+    });
+    const [persisted] = await db
+      .select()
+      .from(intents)
+      .where(eq(intents.operationId, saved.intent.operationId));
+    expect(persisted.planJson).toBe(historical.intent.planJson);
+    expect(persisted.planSha256).toBe(historical.intent.planSha256);
+  });
+
+  it("rejects mixed historical/current plan contracts at the SQL boundary", async () => {
+    const mutations = [
+      (plan: MutablePlan) => {
+        plan.profile = "magickli-ritual-asset-plan-v4";
+      },
+      (plan: MutablePlan) => {
+        plan.inventoryProfile = "magickli-jrt-assets-v2";
+      },
+      (plan: MutablePlan) => {
+        delete plan.privateCatalogSha256;
+      },
+      (plan: MutablePlan) => {
+        plan.profile = "magickli-ritual-asset-plan-v4";
+        plan.inventoryProfile = "magickli-jrt-assets-v2";
+      },
+    ];
+    for (const mutate of mutations) {
+      const invalid = structuredClone(saved);
+      updatePlan(invalid, mutate);
+      await expect(
+        db
+          .update(intents)
+          .set(invalid.intent)
+          .where(eq(intents.operationId, saved.intent.operationId)),
+      ).rejects.toThrow();
+    }
+    expect((await reader().getManifest(input()))?.manifest.bundleId).toBe(
+      saved.intent.bundleId,
+    );
+  });
+
   it("treats expired, noncanonical and removed signed-in identities as unavailable", async () => {
     const missing = createUuidV7();
     for (const actor of [

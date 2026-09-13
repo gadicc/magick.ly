@@ -200,12 +200,22 @@ export async function decodeRitualBundleRecords(
     });
     if (!manifest) return null;
     const plan: unknown = JSON.parse(intent.planJson);
+    const historicalPlan =
+      record(plan) &&
+      plan.profile === "magickli-ritual-asset-plan-v4" &&
+      plan.inventoryProfile === "magickli-jrt-assets-v2" &&
+      !Object.hasOwn(plan, "privateCatalogSha256");
+    const currentPlan =
+      record(plan) &&
+      plan.profile === "magickli-ritual-asset-plan-v5" &&
+      plan.inventoryProfile === "magickli-jrt-assets-v3" &&
+      Object.hasOwn(plan, "privateCatalogSha256") &&
+      (plan.privateCatalogSha256 === null || hash(plan.privateCatalogSha256));
     if (
       !record(plan) ||
       JSON.stringify(plan) !== intent.planJson ||
       Object.hasOwn(plan, "sha256") ||
-      plan.profile !== "magickli-ritual-asset-plan-v4" ||
-      plan.inventoryProfile !== "magickli-jrt-assets-v2" ||
+      (!historicalPlan && !currentPlan) ||
       plan.contentSha256 !== intent.contentSha256 ||
       !hash(plan.staticCatalogSha256) ||
       !hash(plan.validationSha256) ||
@@ -240,6 +250,7 @@ export async function decodeRitualBundleRecords(
           "legacy-public",
           "external",
           "generated",
+          ...(currentPlan ? ["private-ritual"] : []),
         ].includes(asset.provenance.kind as string)
       )
         return null;

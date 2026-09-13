@@ -1,5 +1,7 @@
+import { parseRitualFileLocator } from "../files/ritualFileLocator";
+
 /** Reachability/classification contract for the current app blocks plus JRT 1.3.1. */
-export const RITUAL_ASSET_INVENTORY_PROFILE = "magickli-jrt-assets-v2";
+export const RITUAL_ASSET_INVENTORY_PROFILE = "magickli-jrt-assets-v3";
 export const RITUAL_ASSET_INVENTORY_LIMITS = Object.freeze({
   jsonBytes: 4 * 1024 * 1024,
   nodes: 20_000,
@@ -19,6 +21,12 @@ export interface RitualAssetInventoryOptions {
 /** Classification only; each kind still needs its reviewed byte/dependency resolver. */
 export type RitualAssetReference =
   | { kind: "legacy-file2"; sha256: string }
+  | {
+      kind: "private-ritual-file";
+      ritualId: string;
+      attachmentId: string;
+      fileId: string;
+    }
   | { kind: "local-static"; pathname: string }
   | { kind: "generated-tree-of-life" }
   | { kind: "inline-image"; mediaType: string }
@@ -258,6 +266,12 @@ function classify(
     )
       return { kind: "unresolved", reason: "unsupported-legacy-file-query" };
     return { kind: "legacy-file2", sha256: pairs[0][1] };
+  }
+  if (url.pathname === "/api/files") {
+    const locator = parseRitualFileLocator(src);
+    return locator
+      ? { kind: "private-ritual-file", ...locator }
+      : { kind: "unresolved", reason: "unsupported-private-file-query" };
   }
   if (
     url.pathname === "/api/treeOfLife" ||

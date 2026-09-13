@@ -38,7 +38,7 @@ describe("ritual asset occurrence identity", () => {
       "/pics/synthetic.svg#",
     ];
     const result = good(node(refs.map((src) => img(src))));
-    expect(result.profile).toBe("magickli-jrt-assets-v2");
+    expect(result.profile).toBe("magickli-jrt-assets-v3");
     expect(result.occurrences.map((o) => o.src)).toEqual(refs);
     expect(result.occurrences.map((o) => o.path)).toEqual([[0], [1], [2], [3]]);
     expect(result.occurrences[0]).toMatchObject({
@@ -114,6 +114,33 @@ describe("ritual asset occurrence identity", () => {
     ])
       expect(codes(node([img("/api/file2?" + query)]))).toContain(
         "unsupported-legacy-file-query",
+      );
+  });
+  it("recognizes only canonical private ritual attachment locators", () => {
+    const ritualId = "019e8897-d775-7a37-b93e-a482961c10b6";
+    const attachmentId = "019e8897-d792-71dd-9a71-377368e55a36";
+    const fileId = "019e8897-d79c-7552-a524-94973249fd1c";
+    const source = `/api/files?id=${fileId}&ritualId=${ritualId}&attachmentId=${attachmentId}&mode=download`;
+    expect(good(node([img(`${source}#display`)])).occurrences[0]).toMatchObject(
+      {
+        networkReference: source,
+        displayFragment: "#display",
+        reference: {
+          kind: "private-ritual-file",
+          ritualId,
+          attachmentId,
+          fileId,
+        },
+      },
+    );
+    for (const changed of [
+      source.replace("?id=", "?%69d="),
+      `${source}&extra=1`,
+      source.replace("mode=download", "mode=metadata"),
+      source.replace(fileId, fileId.toUpperCase()),
+    ])
+      expect(codes(node([img(changed)]))).toContain(
+        "unsupported-private-file-query",
       );
   });
   it("classifies generated, inline and external images without claiming resolved bytes", () => {

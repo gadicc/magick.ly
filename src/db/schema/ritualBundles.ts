@@ -101,7 +101,7 @@ export const ritualBundlePublicationIntents = pgTable(
     ),
     check(
       "ritual_bundle_intents_plan",
-      sql`octet_length(${t.planJson}) between 1 and 16777216 and coalesce(json_typeof(${t.planJson}::json) = 'object' and ${t.planJson}::json ->> 'profile' = 'magickli-ritual-asset-plan-v4' and ${t.planJson}::json ->> 'inventoryProfile' = 'magickli-jrt-assets-v2' and ${t.planJson}::json ->> 'contentSha256' = ${t.contentSha256} and ${t.planJson}::json ->> 'resolutionComplete' = 'true' and json_typeof(${t.planJson}::json -> 'issues') = 'array' and json_array_length(${t.planJson}::json -> 'issues') = 0 and not (${t.planJson}::jsonb ? 'sha256'), false)`,
+      sql`octet_length(${t.planJson}) between 1 and 16777216 and coalesce(json_typeof(${t.planJson}::json) = 'object' and ((${t.planJson}::json ->> 'profile' = 'magickli-ritual-asset-plan-v4' and ${t.planJson}::json ->> 'inventoryProfile' = 'magickli-jrt-assets-v2' and not (${t.planJson}::jsonb ? 'privateCatalogSha256')) or (${t.planJson}::json ->> 'profile' = 'magickli-ritual-asset-plan-v5' and ${t.planJson}::json ->> 'inventoryProfile' = 'magickli-jrt-assets-v3' and ${t.planJson}::jsonb ? 'privateCatalogSha256' and (${t.planJson}::json ->> 'privateCatalogSha256' is null or ${t.planJson}::json ->> 'privateCatalogSha256' ~ '^[0-9a-f]{64}$'))) and ${t.planJson}::json ->> 'contentSha256' = ${t.contentSha256} and ${t.planJson}::json ->> 'resolutionComplete' = 'true' and json_typeof(${t.planJson}::json -> 'issues') = 'array' and json_array_length(${t.planJson}::json -> 'issues') = 0 and not (${t.planJson}::jsonb ? 'sha256'), false)`,
     ),
     check(
       "ritual_bundle_intents_expiry",

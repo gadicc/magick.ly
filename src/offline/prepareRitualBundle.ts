@@ -122,8 +122,8 @@ export async function prepareRitualBundle(options: {
     const sourcePlan = options.plan;
     const plan = structuredClone(sourcePlan.metadata);
     if (
-      plan.profile !== "magickli-ritual-asset-plan-v4" ||
-      plan.inventoryProfile !== "magickli-jrt-assets-v2" ||
+      plan.profile !== "magickli-ritual-asset-plan-v5" ||
+      plan.inventoryProfile !== "magickli-jrt-assets-v3" ||
       !digest(plan.sha256) ||
       !digest(plan.validationSha256) ||
       !Array.isArray(plan.assets) ||

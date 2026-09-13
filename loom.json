@@ -21,7 +21,7 @@
   },
   "features": {
     "files": {
-      "status": "planned",
+      "status": "active",
       "config": {
         "entrypoints": {
           "routeHandler": "src/app/api/files/route.ts"
@@ -44,7 +44,8 @@
         "storage": {
           "adapter": "custom"
         }
-      }
+      },
+      "activatedOn": "2026-09-13"
     },
     "db": {
       "status": "active",

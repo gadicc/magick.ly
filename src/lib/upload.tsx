@@ -8,8 +8,10 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  TextField,
 } from "@mui/material";
 import React from "react";
+import { formatRitualFileLocator } from "../files/ritualFileLocator";
 import {
   RITUAL_IMAGE_TYPES,
   RITUAL_UPLOAD_MAX_BYTES,
@@ -251,6 +253,13 @@ export default function Upload({
   const [result, setResult] = React.useState<RitualUploadResult | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
   const inFlight = React.useRef(false);
+  const sourceReference = result?.ok
+    ? formatRitualFileLocator({
+        ritualId: result.receipt.ritualId,
+        attachmentId: result.receipt.attachmentId,
+        fileId: result.receipt.fileId,
+      })
+    : null;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -326,7 +335,28 @@ export default function Upload({
       )}
       {result?.ok && (
         <Alert severity="success" sx={{ mt: 2 }}>
-          Image attached to the selected ritual.
+          Image attached to the selected ritual. Insert this source reference in
+          an image block:
+          <TextField
+            fullWidth
+            margin="dense"
+            value={sourceReference}
+            slotProps={{
+              htmlInput: {
+                "aria-label": "Ritual image source reference",
+                readOnly: true,
+              },
+            }}
+          />
+          <Button
+            size="small"
+            onClick={() => {
+              if (sourceReference)
+                void navigator.clipboard?.writeText(sourceReference);
+            }}
+          >
+            Copy source reference
+          </Button>
         </Alert>
       )}
     </form>

@@ -4,6 +4,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
+| Private file delivery and source locators | Complete locally; publication/provider activation pending | Active Loom Files adapters, finalized same-ritual locators, fresh access checks around bounded object reads, private catalog and compatible plan v5 migration; [delivery contract](021-private-file-delivery.md) |
 | Study SQL/Dexie runtime | Complete locally; global login switch pending | Durable review events and SQL receipts, separate anonymous/account progress, lost-reply recovery and cross-tab sign-out; [study runtime](018-sql-study-runtime.md) |
 | SQL ritual reader and offline navigation | Complete locally; publication/runtime cutover pending | Guarded private Dexie reads, SQL public/catalog projection, scoped old-link aliases, downloaded catalog and anonymous service-worker fallback; see [reader contract](017-sql-ritual-reader.md) |
 | SQL upload routes and legacy public URLs | Complete locally; source insertion/publication pending | Authorized selected-ritual uploads, retained retry UUIDs and protected legacy snapshot reads; 251 focused tests, isolated types/build, Biome and Loom check pass; [upload boundary](016-sql-upload-runtime.md) |

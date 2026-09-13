@@ -13,6 +13,8 @@ import {
   type LegacyRitualImageCatalog,
   type LegacyRitualImageSource,
 } from "../files/legacyRitualImageCatalog";
+import type { PrivateRitualImageCatalog } from "../files/privateRitualImageCatalogTypes";
+import { formatRitualFileLocator } from "../files/ritualFileLocator";
 import {
   createStaticRitualImageCatalog,
   type StaticRitualImageCatalog,
@@ -46,6 +48,7 @@ const plans: RitualAssetPlan[] = [];
 const legacyCatalogs: LegacyRitualImageCatalog[] = [];
 const externalCatalogs: ExternalRitualImageCatalog[] = [];
 const generatedCatalogs: GeneratedRitualImageCatalog[] = [];
+const privateCatalogs: PrivateRitualImageCatalog[] = [];
 beforeEach(async () => {
   directory = await fs.mkdtemp(path.join(tmpdir(), "magickli-asset-plan-"));
   await fs.mkdir(path.join(directory, "pics"));
@@ -68,6 +71,8 @@ afterEach(async () => {
   for (const legacy of legacyCatalogs.splice(0)) legacy.dispose();
   for (const external of externalCatalogs.splice(0)) external.dispose();
   for (const generated of generatedCatalogs.splice(0)) generated.dispose();
+  for (const privateCatalog of privateCatalogs.splice(0))
+    privateCatalog.dispose();
   catalog.dispose();
   await fs.rm(directory, { recursive: true, force: true });
 });
@@ -180,6 +185,45 @@ function external(
     },
   };
   externalCatalogs.push(result);
+  return result;
+}
+
+function privateCatalog(reference: string): PrivateRitualImageCatalog {
+  const locator = new URL(reference, "https://magick.ly").searchParams;
+  const entry = {
+    kind: "available" as const,
+    referenceSha256: hash(reference),
+    ritualId: locator.get("ritualId")!,
+    attachmentId: locator.get("attachmentId")!,
+    fileId: locator.get("id")!,
+    sourceSha256: hash(png),
+    sha256: hash(png),
+    bytes: png.length,
+    validationKind: "raster" as const,
+    mime: "image/png" as const,
+    width: 3,
+    frameHeight: 2,
+    frames: 1,
+    decodedPixels: 6,
+  };
+  const identity = {
+    profile: "magickli-private-ritual-image-catalog-v1" as const,
+    validationSha256: catalog.metadata.validationSha256,
+    entries: [entry],
+  };
+  let captured: Uint8Array | null = Uint8Array.from(png);
+  const result = {
+    metadata: { ...identity, sha256: hash(JSON.stringify(identity)) },
+    copyBytes: (referenceSha256: string) =>
+      captured && referenceSha256 === entry.referenceSha256
+        ? Uint8Array.from(captured)
+        : null,
+    dispose: () => {
+      captured?.fill(0);
+      captured = null;
+    },
+  };
+  privateCatalogs.push(result);
   return result;
 }
 
@@ -340,7 +384,7 @@ it("resolves legacy public snapshots while retaining exact query spelling, origi
     "/pics/image.png",
   );
   const result = await plan(source, { legacyCatalog });
-  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v4");
+  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v5");
   expect(result.metadata.legacyCatalogSha256).toBe(
     legacyCatalog.metadata.sha256,
   );
@@ -373,6 +417,56 @@ it("resolves legacy public snapshots while retaining exact query spelling, origi
     JSON.parse(source).children.map((row: { src: string }) => row.src),
   );
   expect(handle).toHaveBeenCalledTimes(1); // Catalog acquisition only; planning performs no GET.
+});
+
+it("resolves a finalized private locator with its distinct ritual association provenance", async () => {
+  const locator = {
+    ritualId: createUuidV7(),
+    attachmentId: createUuidV7(),
+    fileId: createUuidV7(),
+  };
+  const reference = formatRitualFileLocator(locator);
+  const privateImages = privateCatalog(reference);
+  const result = await plan(doc(`${reference}#crop`, reference), {
+    privateCatalog: privateImages,
+  });
+  expect(result.metadata).toMatchObject({
+    profile: "magickli-ritual-asset-plan-v5",
+    inventoryProfile: "magickli-jrt-assets-v3",
+    privateCatalogSha256: privateImages.metadata.sha256,
+    resolutionComplete: true,
+  });
+  expect(result.metadata.occurrences.map((row) => row.assetIndex)).toEqual([
+    0, 0,
+  ]);
+  expect(result.metadata.assets[0]).toMatchObject({
+    networkReference: reference,
+    sha256: hash(png),
+    provenance: { kind: "private-ritual", ...locator, sourceSha256: hash(png) },
+    validationKind: "raster",
+    mime: "image/png",
+  });
+  expect(result.copyBytes(0)).toEqual(Uint8Array.from(png));
+});
+
+it("keeps private locators incomplete without an exact authorized catalog entry", async () => {
+  const reference = formatRitualFileLocator({
+    ritualId: createUuidV7(),
+    attachmentId: createUuidV7(),
+    fileId: createUuidV7(),
+  });
+  const without = await plan(doc(reference));
+  expect(without.metadata.privateCatalogSha256).toBeNull();
+  expect(without.metadata.issues[0]?.code).toBe("private-ritual-file-pending");
+  const wrong = privateCatalog(reference);
+  const available = wrong.metadata.entries[0];
+  if (available.kind !== "available") throw Error();
+  Object.assign(available, { attachmentId: createUuidV7() });
+  const mismatched = await plan(doc(reference), { privateCatalog: wrong });
+  expect(mismatched.metadata.resolutionComplete).toBe(false);
+  expect(mismatched.metadata.issues[0]?.code).toBe(
+    "private-ritual-file-unavailable",
+  );
 });
 
 it("keeps legacy SVG dependency facts and original bytes without treating them as raster dimensions", async () => {
@@ -543,7 +637,7 @@ it("resolves external captures by the exact original network reference and prese
   const result = await plan(doc(reference + "#one", reference + "#two"), {
     externalCatalog,
   });
-  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v4");
+  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v5");
   expect(result.metadata.externalCatalogSha256).toBe(
     externalCatalog.metadata.sha256,
   );
@@ -748,8 +842,8 @@ it("resolves exact generated aliases while retaining source URLs, fragments and 
       generatedCatalog: { ...generatedCatalog, copyBytes },
     });
   expect(result.metadata).toMatchObject({
-    profile: "magickli-ritual-asset-plan-v4",
-    inventoryProfile: "magickli-jrt-assets-v2",
+    profile: "magickli-ritual-asset-plan-v5",
+    inventoryProfile: "magickli-jrt-assets-v3",
     generatedCatalogSha256: generatedCatalog.metadata.sha256,
     resolutionComplete: true,
   });
