@@ -146,6 +146,18 @@ describe("complete SQL import reconciliation", () => {
     });
     await mismatch();
   });
+  it("refuses study review receipts created before the legacy import checkpoint", async () => {
+    const progress = expected.study_progress[0];
+    await db.insert(schema.studyReviewReceipts).values({
+      eventId: "01993000-0000-7000-8000-000000000fff",
+      actorId: progress.userId as string,
+      requestHash: "a".repeat(64),
+      progressId: progress.id as string,
+      acceptedVersion: 1,
+      acceptedAt: new Date("2026-01-01"),
+    });
+    await mismatch();
+  });
   it("does not accept duplicate expected rows as a matching set", async () => {
     expected.auth_user.push({ ...expected.auth_user[0] });
     await mismatch();

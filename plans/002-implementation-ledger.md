@@ -4,6 +4,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
+| Study review receipt schema and import boundary | Complete locally; live migration pending | Additive migration 0014; immutable UUIDv7 review receipts; all 34 application tables and required migration artifacts checked; 313 scoped tests, isolated types and Biome pass |
 | Private R2 buckets | Provisioned; application credentials/configuration pending | Verified existing account; separate Production/Preview WEUR buckets, public access disabled, exact Production upload CORS checked; legacy bucket and public links untouched; see [runtime provisioning](014-private-r2-runtime.md) |
 | SQL administration, temples and Discourse | Complete locally; global login switch pending | Request-time pages and current SQL grants; atomic creation/join/member edits; verified forum identity reconciliation and complete pagination; 71 scoped tests, isolated types/build and Biome pass; no live forum calls |
 | SQL sign-in runtime foundations | Complete locally; global login switch pending | Explicit deployment origin, fresh server identity, private `/api/session`, safe Google callback paths and synthetic CI configuration; 72 focused tests plus isolated types/build, Biome and ordinary Loom check pass |

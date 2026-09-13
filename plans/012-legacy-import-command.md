@@ -132,3 +132,24 @@ Production still has only migrations 0000–0001 and no private import. Final
 provider configuration, effective Preview isolation/readiness, private file
 storage, runtime/authentication integration, browser acceptance and the paused
 cutover remain pending. The reusable modernization skill remains a local draft.
+
+## Study runtime receipt migration
+
+Migration `0014_good_power_pack.sql` adds `study_review_receipts` for UUIDv7
+review IDs, authenticated actor, canonical request hash and the accepted progress
+version. It is additive and has not been applied to the live Neon database.
+Legacy import creates no review events: the closed inventory now checks 34
+application tables, including this deliberately empty table. Reconciliation
+rejects an unexpected receipt instead of adopting runtime writes into the import.
+The command's required artifact list includes migration 0014 and its snapshot,
+so older reviews/checkpoints cannot silently authorize the changed schema.
+
+The scoped command/catalog/reconciliation/import suite passes 313 tests. Two
+named-pipe fixture tests required running the command suite outside the filesystem
+sandbox; all 101 command tests then passed. The other 212 scoped tests passed in
+the initial run. Isolated typechecking and targeted Biome pass. Evidence:
+`/tmp/magickli-study-import-boundary-tests.log`,
+`/tmp/magickli-study-import-command-tests.log`,
+`/tmp/magickli-study-import-types.log` and
+`/tmp/magickli-study-import-boundary-biome.log`. Live migration, runtime review
+acceptance and final cutover are separate steps.

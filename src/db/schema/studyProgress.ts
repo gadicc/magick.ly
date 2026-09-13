@@ -100,6 +100,36 @@ export const studyCardStates = pgTable(
   ],
 );
 
+/** Immutable idempotency proof for one accepted account-scoped review event. */
+export const studyReviewReceipts = pgTable(
+  "study_review_receipts",
+  {
+    eventId: uuid("event_id").primaryKey(),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => user.id),
+    requestHash: text("request_hash").notNull(),
+    progressId: uuid("progress_id")
+      .notNull()
+      .references(() => studyProgress.id),
+    acceptedVersion: count("accepted_version"),
+    acceptedAt: instant("accepted_at").notNull(),
+  },
+  (table) => [
+    check(
+      "study_review_receipt_event_v7",
+      sql`substring(${table.eventId}::text from 15 for 1) = '7' and substring(${table.eventId}::text from 20 for 1) in ('8','9','a','b')`,
+    ),
+    check(
+      "study_review_receipt_hash_valid",
+      sql`${table.requestHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    safe("study_review_receipt_version_safe", table.acceptedVersion),
+    index("study_review_receipt_actor_idx").on(table.actorId),
+    index("study_review_receipt_progress_idx").on(table.progressId),
+  ],
+);
+
 /** Protected original source snapshots, including every archived duplicate card and quirk. */
 export const legacyStudySnapshots = pgTable(
   "legacy_study_snapshots",

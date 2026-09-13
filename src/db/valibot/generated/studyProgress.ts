@@ -353,3 +353,56 @@ export const studyProgressUpdate = v.object({
 export type StudyProgressSelect = v.InferOutput<typeof studyProgressSelect>;
 export type StudyProgressInsert = v.InferInput<typeof studyProgressInsert>;
 export type StudyProgressUpdate = v.InferInput<typeof studyProgressUpdate>;
+export const studyReviewReceiptsSelect = v.object({
+  eventId: v.pipe(v.string(), v.uuid()),
+  actorId: v.pipe(v.string(), v.uuid()),
+  requestHash: v.string(),
+  progressId: v.pipe(v.string(), v.uuid()),
+  acceptedVersion: v.pipe(
+    v.number(),
+    v.minValue(-9007199254740991),
+    v.maxValue(9007199254740991),
+    v.integer(),
+  ),
+  acceptedAt: v.date(),
+});
+
+export const studyReviewReceiptsInsert = v.object({
+  eventId: v.pipe(v.string(), v.uuid()),
+  actorId: v.pipe(v.string(), v.uuid()),
+  requestHash: v.string(),
+  progressId: v.pipe(v.string(), v.uuid()),
+  acceptedVersion: v.pipe(
+    v.number(),
+    v.minValue(-9007199254740991),
+    v.maxValue(9007199254740991),
+    v.integer(),
+  ),
+  acceptedAt: v.date(),
+});
+
+export const studyReviewReceiptsUpdate = v.object({
+  eventId: v.optional(v.pipe(v.string(), v.uuid())),
+  actorId: v.optional(v.pipe(v.string(), v.uuid())),
+  requestHash: v.optional(v.string()),
+  progressId: v.optional(v.pipe(v.string(), v.uuid())),
+  acceptedVersion: v.optional(
+    v.pipe(
+      v.number(),
+      v.minValue(-9007199254740991),
+      v.maxValue(9007199254740991),
+      v.integer(),
+    ),
+  ),
+  acceptedAt: v.optional(v.date()),
+});
+
+export type StudyReviewReceiptsSelect = v.InferOutput<
+  typeof studyReviewReceiptsSelect
+>;
+export type StudyReviewReceiptsInsert = v.InferInput<
+  typeof studyReviewReceiptsInsert
+>;
+export type StudyReviewReceiptsUpdate = v.InferInput<
+  typeof studyReviewReceiptsUpdate
+>;

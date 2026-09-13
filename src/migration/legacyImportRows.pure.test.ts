@@ -24,6 +24,7 @@ const emptyTables = [
   "ritual_compiled_artifacts",
   "ritual_write_receipts_v2",
   "temple_creation_receipts",
+  "study_review_receipts",
   "ritual_upload_intents",
   "ritual_file_links",
   "ritual_bundle_publication_intents",
@@ -81,7 +82,7 @@ describe("complete legacy import row projection", () => {
       .filter((table) => table !== schema.legacyImportRuns)
       .map((table) => getTableName(table))
       .sort();
-    expect(schemaNames).toHaveLength(33);
+    expect(schemaNames).toHaveLength(34);
     expect(Object.keys(LEGACY_IMPORT_TABLES).sort()).toEqual(schemaNames);
     expect(Object.keys(rows).sort()).toEqual(schemaNames);
     for (const name of Object.keys(rows) as (keyof LegacyImportRows)[]) {
