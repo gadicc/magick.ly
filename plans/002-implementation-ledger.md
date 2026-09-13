@@ -711,3 +711,17 @@ All 3,318 tests (30 new; 14 opt-in Mongo cases skipped), 78-module coverage gate
 types, Biome, ordinary Loom check and production build pass. Coverage is 98.31%
 statements, 97.16% branches, 99.90% functions and 99.34% lines. Evidence:
 `/tmp/magickli-bson-decoder-{coverage,final-types,biome,loom,build}.log`.
+
+The [verified backup loader](011-legacy-import-checkpoint.md) now checks explicit
+source layout, manifest/file hashes, bounded gzip/BSON decoding and source-wide
+limits before returning the prepared plan. It rechecks every source file after
+preparation and refuses changes during allocation. All 21 production backup
+files and 190 records pass the actual loader/builder/checkpoint path with unchanged
+source/module fingerprints. No private checkpoint, database or provider state was
+written. The durable SQL run/application transaction is next.
+
+All 3,367 tests (49 new; 14 opt-in Mongo cases skipped), 79-module coverage gates,
+types, Biome, ordinary Loom check and production build pass. Coverage is 98.28%
+statements, 97.14% branches, 99.90% functions and 99.33% lines. Review was local
+and adversarial, with independent workers still unavailable. Evidence:
+`/tmp/magickli-backup-loader-{coverage,final-types,biome,loom,build}.log`.

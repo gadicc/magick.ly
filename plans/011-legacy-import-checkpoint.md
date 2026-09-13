@@ -1,8 +1,8 @@
 The importer now has a pure preparation step and exact protected checkpoint
 format. It allocates every canonical, alias-row and email-provenance UUID before
-serialization. The SQL checkpoint table, atomic apply transaction, authoritative
-backup loader and maintenance command remain to be implemented. No runtime route
-uses this code.
+serialization. A verified file/BSON loader now feeds that step. The SQL checkpoint
+table, atomic apply transaction and maintenance command remain to be implemented.
+No runtime route uses this code.
 
 ## Preparation and source accounting
 
@@ -105,7 +105,7 @@ Bounds are 256 MiB per inflated collection, 16 MiB per frame, 100,000 rows, one
 million values and depth 256. These are capture/representation bounds, not a
 total process-memory claim. Temporary byte copies are wiped; immutable decoded
 strings are released normally. File provenance, gzip limits and source-wide
-budgets still belong to the pending file loader.
+budgets belong to the file loader below.
 
 All 190 production BSON frames pass exact typed round trips and then the actual
 decoder, combined builder and checkpoint round trip. Backup files and 12 module
@@ -116,6 +116,41 @@ Thirty new tests cover wire/type preservation, ownership, malformed/duplicate
 fields, unsafe/unsupported values, depth/row limits and full-domain integration.
 The review was local and adversarial; independent workers remained unavailable.
 
+## Verified file capture
+
+`prepareLegacyBackup` takes an explicit directory, database name, pinned manifest
+digest and copied import configuration. It accepts the reviewed logical-dump
+layout only: ten BSON/metadata pairs and one prelude, optionally an additional
+receipt pair. Unknown/missing files, duplicate/traversing paths, symlinks,
+nonregular files and malformed metadata are refused. Manifest prose and restore
+claims do not establish integrity; this execution checks actual file bytes.
+
+The loader reads bounded regular files with no-follow handles, compares sizes
+and file metadata across each read, checks compressed hashes before decompression,
+and runs the verified BSON decoder before the pure builder. It rechecks directory
+inventories, the manifest and every compressed file after preparation. An
+allocator that changes the backup cannot cause a stale plan to be returned.
+Configuration and dates are copied before filesystem awaits.
+
+Source-wide limits are 1 MiB manifest, 64 MiB compressed data, 256 MiB inflated
+data, 1 MiB per metadata/prelude file, 100,000 rows and a 30-second deadline.
+Callers can tighten but cannot increase those limits. The deadline is checked
+between filesystem/CPU operations; it does not promise interruption of an
+in-flight filesystem call. Gzip pipelines are cancelled and settled before owned
+buffers are wiped. No original auth/session rows, manifest prose or private
+filesystem diagnostics enter the returned source descriptor. Per-collection
+evidence hashes bind frame/type records without retaining session identifiers.
+
+All 49 new tests pass, covering capture, source mutation, cancellation, tightened
+bounds, malformed manifests/gzip/BSON/UTF-8, symlinks, unknown files and receipt
+policy. The real pinned backup passes the complete loader, builder and checkpoint
+round trip: 21 files, ten collections, 190 records, identical prepared output,
+unchanged backup bytes and 13 module fingerprints. This still uses synthetic file
+destination/schema/target bindings and writes no database or provider state.
+Evidence: `/tmp/magickli-backup-loader-preflight/report.json`, SHA-256
+`49688313a0852c2cb8a1d806ec23f0b5ef34e2c05a44f2248c5d3129c09c81c6`.
+Final verification is recorded in the implementation ledger.
+
 ## Next integration
 
 Use one protected singleton prepared run and one ordered atomic application
@@ -125,8 +160,7 @@ complete expected rows before recording completion. An uncertain commit resumes
 the saved plan; completed retries never recreate deleted rows or overwrite newer
 state. This corpus does not need a generic batch or expiring-claim framework.
 
-The owned source loader must verify the pinned manifest/files, bound gzip/BSON
-decoding, retain raw frame/type evidence before native scalar projection and
-refuse unknown collections or receipt-policy violations. Final cutover still
-requires a fresh backup under the approved write pause and the separately tested
-canonical-auth, SQL runtime, private offline and recovery paths.
+The maintenance command must bind this verified source capture to the durable
+run and actual selected database. Final cutover still requires a fresh backup
+under the approved write pause and the separately tested canonical-auth, SQL
+runtime, private offline and recovery paths.
