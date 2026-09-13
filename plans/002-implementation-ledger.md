@@ -490,6 +490,12 @@ recovery remains unchanged; private offline runtime integration is still pending
 See the [offline record](006-private-offline.md) for the separate unit/browser
 evidence and the corrected same-document browser harness.
 
+Inline-image transport now preserves decoded bytes under finite size limits,
+with 90 new cases and exact-byte acceptance for both backed-up inline images and
+the four PNGs embedded in public SVGs. All 1,789 tests, expanded coverage, types,
+Biome and ordinary Loom checks pass. SVG validation and offline runtime wiring
+remain pending; see the [offline record](006-private-offline.md).
+
 The static raster catalog now verifies configured public images once and retains
 their exact compressed bytes under a deterministic catalog identity. Lookup copies
 cannot mutate the snapshot, disk changes require a new catalog, and unresolved

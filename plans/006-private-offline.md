@@ -238,6 +238,34 @@ and its report/manifest companions. All 21 backup fingerprints stayed unchanged;
 no asset/provider requests or retained private sources/full URLs were involved.
 Generic public SVG documentation was consulted separately.
 
+## Implemented inline image transport
+
+`src/files/dataImage.ts` decodes explicit PNG/JPEG/GIF/WebP/SVG data URLs into
+owned original bytes. Its 1 MiB reference and decoded-byte caps can only be
+tightened. It requires callers to separate and retain literal display fragments,
+refuses malformed percent escapes and unsupported headers, and requires escaping
+raw Unicode and non-base64 whitespace. Percent escapes represent bytes, including
+binary values that are not UTF-8. Base64 accepts standard ASCII whitespace and
+optional padding; it rejects junk and malformed padding. Unused final bits follow
+the [WHATWG base64 algorithm](https://infra.spec.whatwg.org/#forgiving-base64-decode).
+Percent decoding precedes base64, following the
+[data-URL processing order](https://fetch.spec.whatwg.org/#data-url-processor).
+
+This is transport decoding only: a declared image type is not trusted, and SVG
+validation, image decoding, authorization, complete asset manifests and runtime
+integration remain separate. It does not rewrite the original reference or SVG.
+
+All 90 new cases pass, with 100% measured module coverage. The full suite passes
+1,789 tests (14 opt-in Mongo cases skipped), 53-module coverage, types, Biome and
+ordinary Loom checks. Read-only acceptance matches native data-URL fetch bytes for
+both backed-up inline images (1,311-byte GIF and 899-byte SVG) and all four embedded
+public PNGs (29,179, 7,288, 8,795 and 34,948 bytes). XML character references are
+parsed before handing embedded href values to the decoder. All 21 backup
+fingerprints and original trees remain unchanged; no provider requests occur.
+Evidence: `/tmp/magickli-data-image-acceptance.mjs`, its aggregate JSON report and
+`/tmp/magickli-data-image-{coverage,types,biome,loom}.log`. No framework or dependency
+change occurred, so this unit uses the preceding successful production build.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.
