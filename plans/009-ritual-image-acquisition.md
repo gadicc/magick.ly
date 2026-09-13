@@ -120,8 +120,10 @@ disposal and all 21 unchanged backup fingerprints pass. No image bytes or raw
 references were retained. Evidence: `/tmp/magickli-external-catalog-acceptance.json`.
 Catalog SHA: `31884a5183b0c6425e272eb43ea8d45adabc3207f577b26cb170ba550b433944`;
 policy SHA: `e223e1728f39f4598a890154bb19fdca6301c76d1dcc94728abf4b2a942f1a17`.
-The shared validator identity remains unchanged. Plan integration, durable
-publication and private offline activation remain separate gates.
+The shared validator identity remains unchanged. The optional capture capability
+is integrated into [plan v3](006-private-offline.md#external-images-in-plan-v3),
+resolving all four archived external occurrences and both public occurrences.
+Durable publication and private offline activation remain separate gates.
 
 ## Generated Tree of Life fonts
 

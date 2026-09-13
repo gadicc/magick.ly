@@ -432,6 +432,31 @@ remain unchanged, and no provider/database writes occurred. The plan uses only
 captured images; the acceptance's ten GETs belong to legacy catalog acquisition.
 Evidence: `/tmp/magickli-legacy-plan-acceptance.json`.
 
+### External images in plan v3
+
+`magickli-ritual-asset-plan-v3` also binds an optional fixed-reference external
+catalog. The plan verifies matching validator semantics and copied size/SHA,
+charges the same aggregate capture budget, and looks up only the exact original
+network-reference fingerprint. It performs no DNS/HTTP calls and never converts
+unsupported local routes into external fetches. Catalog disposal and failed or
+canceled plans retain the existing copy ownership and cleanup rules.
+
+External provenance includes the reviewed policy hash, original/acquired reference
+fingerprints and explicit original/replacement representation. The original src,
+query spelling, fragment and explicit display dimensions remain in the unchanged
+render tree; acquired raster dimensions describe image bytes only. A Wikimedia
+replacement never masquerades as byte parity with its unavailable original.
+The explicit v3 change precedes any active persisted plan consumer.
+
+Actual read-only acceptance resolves 16/17 archived occurrences: all six legacy
+and all four external occurrences plus the previously resolved static/inline
+images. Four of five archived trees have complete image plans, including the
+tree with no images. Public theoricus resolves 5/6 images. Only the generated
+Tree of Life image remains unresolved in both affected trees. Catalog identities,
+all 21 backup fingerprints, 15 public image hashes and three builtin sources stay
+unchanged. No private reader, lease, manifest publication or readiness UI changed.
+Evidence: `/tmp/magickli-external-plan-acceptance.json`.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.

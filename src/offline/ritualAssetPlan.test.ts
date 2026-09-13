@@ -6,6 +6,7 @@ import { Readable } from "node:stream";
 import { ObjectId } from "bson";
 import sharp from "sharp";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import type { ExternalRitualImageCatalog } from "../files/externalRitualImageCatalog";
 import {
   createLegacyRitualImageCatalog,
   type LegacyRitualImageCatalog,
@@ -41,6 +42,7 @@ let catalog: StaticRitualImageCatalog;
 let png: Buffer;
 const plans: RitualAssetPlan[] = [];
 const legacyCatalogs: LegacyRitualImageCatalog[] = [];
+const externalCatalogs: ExternalRitualImageCatalog[] = [];
 beforeEach(async () => {
   directory = await fs.mkdtemp(path.join(tmpdir(), "magickli-asset-plan-"));
   await fs.mkdir(path.join(directory, "pics"));
@@ -61,6 +63,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
   for (const plan of plans.splice(0)) plan.dispose();
   for (const legacy of legacyCatalogs.splice(0)) legacy.dispose();
+  for (const external of externalCatalogs.splice(0)) external.dispose();
   catalog.dispose();
   await fs.rm(directory, { recursive: true, force: true });
 });
@@ -130,6 +133,50 @@ async function legacy(bytes: Uint8Array = png, contentType = "image/png") {
   });
   legacyCatalogs.push(catalog);
   return { catalog, handle, fileId: imported.files[0].id };
+}
+// Synthetic capability for plan ownership/identity tests. Native network acquisition
+// has its own suite; actual fixed-policy captures are also exercised in corpus acceptance.
+function external(
+  reference = "https://images.example/image.png",
+  replacement = false,
+): ExternalRitualImageCatalog {
+  const identity = {
+    profile: "magickli-external-image-catalog-v1" as const,
+    policySha256: "a".repeat(64),
+    validationSha256: catalog.metadata.validationSha256,
+    entries: [
+      {
+        kind: "available" as const,
+        referenceSha256: hash(reference),
+        acquisitionReferenceSha256: hash(
+          replacement ? reference + "?replacement" : reference,
+        ),
+        representation: replacement
+          ? ("same-file-standard-thumbnail" as const)
+          : ("original" as const),
+        sha256: hash(png),
+        bytes: png.length,
+        validationKind: "raster" as const,
+        mime: "image/png" as const,
+        width: 3,
+        frameHeight: 2,
+        frames: 1,
+        decodedPixels: 6,
+      },
+    ],
+  };
+  let captured: Uint8Array | null = new Uint8Array(png);
+  const result = {
+    metadata: { ...identity, sha256: hash(JSON.stringify(identity)) },
+    copyBytes: (sha256: string) =>
+      captured && sha256 === hash(reference) ? new Uint8Array(captured) : null,
+    dispose: () => {
+      captured?.fill(0);
+      captured = null;
+    },
+  };
+  externalCatalogs.push(result);
+  return result;
 }
 
 it("resolves exact references without rewriting query spelling, fragments, paths or archived JSON", async () => {
@@ -226,7 +273,7 @@ it("resolves legacy public snapshots while retaining exact query spelling, origi
     "/pics/image.png",
   );
   const result = await plan(source, { legacyCatalog });
-  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v2");
+  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v3");
   expect(result.metadata.legacyCatalogSha256).toBe(
     legacyCatalog.metadata.sha256,
   );
@@ -421,6 +468,194 @@ it("does not let a legacy snapshot resolve a private-file route, foreign origin 
   expect(
     result.metadata.occurrences.every((row) => row.assetIndex === null),
   ).toBe(true);
+});
+
+it("resolves external captures by the exact original network reference and preserves per-occurrence fragments", async () => {
+  const reference = "https://images.example/image.png?x=%20&x=+",
+    externalCatalog = external(reference);
+  const result = await plan(doc(reference + "#one", reference + "#two"), {
+    externalCatalog,
+  });
+  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v3");
+  expect(result.metadata.externalCatalogSha256).toBe(
+    externalCatalog.metadata.sha256,
+  );
+  expect(result.metadata.resolutionComplete).toBe(true);
+  expect(result.metadata.occurrences.map((row) => row.assetIndex)).toEqual([
+    0, 0,
+  ]);
+  expect(result.metadata.occurrences.map((row) => row.displayFragment)).toEqual(
+    ["#one", "#two"],
+  );
+  expect(result.metadata.assets[0]).toMatchObject({
+    networkReference: reference,
+    provenance: {
+      kind: "external",
+      referenceSha256: hash(reference),
+      acquisitionReferenceSha256: hash(reference),
+      representation: "original",
+      policySha256: externalCatalog.metadata.policySha256,
+    },
+    mime: "image/png",
+    width: 3,
+    frameHeight: 2,
+    decodedPixels: 6,
+  });
+});
+
+it("retains explicit replacement provenance without substituting the source or display dimensions", async () => {
+  const reference = "https://images.example/800px-image.jpg",
+    externalCatalog = external(reference, true);
+  const source = JSON.stringify({
+    type: "doc",
+    children: [{ type: "img", src: reference, width: 450, height: 300 }],
+  });
+  const result = await plan(source, { externalCatalog });
+  expect(result.metadata.assets[0]).toMatchObject({
+    networkReference: reference,
+    width: 3,
+    frameHeight: 2,
+    provenance: {
+      kind: "external",
+      referenceSha256: hash(reference),
+      acquisitionReferenceSha256: hash(reference + "?replacement"),
+      representation: "same-file-standard-thumbnail",
+    },
+  });
+  expect(result.metadata.occurrences[0].src).toBe(reference);
+  expect(JSON.parse(source).children[0]).toMatchObject({
+    src: reference,
+    width: 450,
+    height: 300,
+  });
+});
+
+it("does not match a normalized/reordered external query or alternate origin", async () => {
+  const ref = "https://images.example/image.png?a=1&b=%20",
+    externalCatalog = external(ref);
+  const result = await plan(
+    doc(
+      ref,
+      ref.replace("a=1&b=%20", "b=%20&a=1"),
+      ref.replace("%20", "+"),
+      ref.replace("images.example", "other.example"),
+    ),
+    { externalCatalog },
+  );
+  expect(result.metadata.occurrences.map((row) => row.assetIndex)).toEqual([
+    0,
+    null,
+    null,
+    null,
+  ]);
+  expect(result.metadata.issues.map((row) => row.code)).toEqual(
+    Array(3).fill("external-unavailable"),
+  );
+});
+
+it("keeps external byte copies independent of source-catalog and plan disposal", async () => {
+  const externalCatalog = external(),
+    result = await plan(doc("https://images.example/image.png"), {
+      externalCatalog,
+    });
+  externalCatalog.dispose();
+  const one = result.copyBytes(0)!;
+  one.fill(0);
+  const retained = result.copyBytes(0);
+  expect(retained).toEqual(new Uint8Array(png));
+  result.dispose();
+  expect(result.copyBytes(0)).toBeNull();
+  expect(retained).toEqual(new Uint8Array(png));
+});
+
+it("snapshots external metadata before yielding and binds supplied catalog identity even when unused", async () => {
+  const externalCatalog = external(),
+    expected = structuredClone(externalCatalog.metadata);
+  const pending = plan(doc("https://images.example/image.png"), {
+    externalCatalog,
+  });
+  Object.assign(externalCatalog.metadata, { sha256: "changed", entries: [] });
+  const result = await pending;
+  expect(result.metadata.externalCatalogSha256).toBe(expected.sha256);
+  expect(result.metadata.resolutionComplete).toBe(true);
+  const without = await plan(doc()),
+    withExternal = await plan(doc(), { externalCatalog: external() });
+  expect(without.metadata.externalCatalogSha256).toBeNull();
+  expect(withExternal.metadata.sha256).not.toBe(without.metadata.sha256);
+});
+
+it("keeps missing, refused and disposed external captures incomplete", async () => {
+  const externalCatalog = external(),
+    reference = "https://images.example/image.png";
+  externalCatalog.dispose();
+  expect(
+    (await plan(doc(reference), { externalCatalog })).metadata.issues[0].code,
+  ).toBe("external-unavailable");
+  const failed = external();
+  Object.assign(failed.metadata, {
+    entries: [
+      {
+        kind: "unresolved",
+        referenceSha256: hash(reference),
+        reason: "unsafe-address",
+      },
+    ],
+  });
+  expect(
+    (await plan(doc(reference), { externalCatalog: failed })).metadata
+      .resolutionComplete,
+  ).toBe(false);
+});
+
+it.each(["profile", "validationSha256"] as const)(
+  "refuses incompatible external %s without copying",
+  async (field) => {
+    const externalCatalog = external(),
+      copyBytes = vi.fn(externalCatalog.copyBytes);
+    Object.assign(externalCatalog.metadata, { [field]: "unsupported" });
+    await expect(
+      plan(doc("https://images.example/image.png"), {
+        externalCatalog: { ...externalCatalog, copyBytes },
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    expect(copyBytes).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["size", "digest"])(
+  "checks copied external %s and clears mismatched allocations",
+  async (mismatch) => {
+    const externalCatalog = external(),
+      bytes = new Uint8Array(png.length + (mismatch === "size" ? 1 : 0)).fill(
+        1,
+      );
+    const result = await plan(doc("https://images.example/image.png"), {
+      externalCatalog: { ...externalCatalog, copyBytes: () => bytes },
+    });
+    expect(result.metadata.issues[0].code).toBe("external-snapshot-mismatch");
+    expect(bytes.every((byte) => byte === 0)).toBe(true);
+  },
+);
+
+it("charges external copies against the same aggregate budget as static and inline captures", async () => {
+  const externalCatalog = external(),
+    copies: Uint8Array[] = [];
+  const wrapped = {
+    ...externalCatalog,
+    copyBytes: (sha: string) => {
+      const bytes = externalCatalog.copyBytes(sha)!;
+      copies.push(bytes);
+      return bytes;
+    },
+  };
+  await expect(
+    plan(doc("https://images.example/image.png", "/pics/image.png"), {
+      externalCatalog: wrapped,
+      limits: { capturedBytes: png.length },
+    }),
+  ).rejects.toMatchObject({ code: "CAPTURE_LIMIT" });
+  expect(copies.length).toBe(1);
+  expect(copies[0].every((byte) => byte === 0)).toBe(true);
 });
 
 it("keeps absent/static, protected legacy, external and generated sources explicitly incomplete", async () => {

@@ -5,6 +5,7 @@ import {
   DataImageError,
   decodeDataImage,
 } from "../files/dataImage";
+import type { ExternalRitualImageCatalog } from "../files/externalRitualImageCatalog";
 import type { LegacyRitualImageCatalog } from "../files/legacyRitualImageCatalog";
 import {
   RITUAL_IMAGE_LIMITS,
@@ -77,7 +78,7 @@ function rasterFacts(image: {
 
 /**
  * Enumerate the exact selected-render JSON internally and resolve only captured
- * static/legacy snapshots and closed, validated inline images. No network requests or
+ * static/legacy/external snapshots and validated inline images. No network requests or
  * caller-supplied occurrence/manifest callbacks are accepted. The caller must
  * authorize and select content separately; even a complete plan grants no access.
  *
@@ -93,6 +94,8 @@ export async function createRitualAssetPlan(
     staticCatalog: StaticRitualImageCatalog;
     /** Only historical public imports qualify; this is never a private-upload authorization shortcut. */
     legacyCatalog?: LegacyRitualImageCatalog;
+    /** Previously acquired fixed-reference images; the plan itself never fetches a remote URL. */
+    externalCatalog?: ExternalRitualImageCatalog;
     signal?: AbortSignal;
     limits?: Partial<Limits>;
   },
@@ -125,13 +128,21 @@ export async function createRitualAssetPlan(
   const legacyMetadata = legacyCatalog
     ? structuredClone(legacyCatalog.metadata)
     : null;
+  const externalCatalog = options.externalCatalog;
+  const externalMetadata = externalCatalog
+    ? structuredClone(externalCatalog.metadata)
+    : null;
   if (
     catalogMetadata.profile !== "magickli-static-image-catalog-v2" ||
     catalogMetadata.validationProfile !==
       "magickli-static-image-validation-v2" ||
     (legacyMetadata !== null &&
       (legacyMetadata.profile !== "magickli-legacy-image-catalog-v1" ||
-        legacyMetadata.validationSha256 !== catalogMetadata.validationSha256))
+        legacyMetadata.validationSha256 !==
+          catalogMetadata.validationSha256)) ||
+    (externalMetadata !== null &&
+      (externalMetadata.profile !== "magickli-external-image-catalog-v1" ||
+        externalMetadata.validationSha256 !== catalogMetadata.validationSha256))
   )
     throw new RitualAssetPlanError("INVALID_INPUT");
   const inventory = inventoryRitualAssetJson(contentJson, {
@@ -143,6 +154,9 @@ export async function createRitualAssetPlan(
   );
   const legacyEntries = new Map(
     legacyMetadata?.entries.map((entry) => [entry.sha256, entry]),
+  );
+  const externalEntries = new Map(
+    externalMetadata?.entries.map((entry) => [entry.referenceSha256, entry]),
   );
   const captured: Uint8Array[] = [];
   const assets: RitualResolvedAsset[] = [];
@@ -240,6 +254,39 @@ export async function createRitualAssetPlan(
           fileId,
           sourceSha256,
           provenanceSha256,
+        };
+      } else if (reference.kind === "external") {
+        if (!externalCatalog) return "external-pending";
+        const referenceSha256 = await sha256Hex(
+          new TextEncoder().encode(item.networkReference),
+        );
+        check();
+        const entry = externalEntries.get(referenceSha256);
+        if (!entry || entry.kind !== "available") return "external-unavailable";
+        charge(entry.bytes);
+        bytes = externalCatalog.copyBytes(referenceSha256) ?? undefined;
+        if (!bytes) return "external-unavailable";
+        if (
+          bytes.length !== entry.bytes ||
+          (await sha256Hex(bytes)) !== entry.sha256
+        )
+          return "external-snapshot-mismatch";
+        const {
+          kind: _kind,
+          referenceSha256: _referenceSha,
+          acquisitionReferenceSha256,
+          representation,
+          sha256: _sha,
+          bytes: _size,
+          ...imageFacts
+        } = entry;
+        facts = imageFacts;
+        provenance = {
+          kind: "external",
+          referenceSha256,
+          acquisitionReferenceSha256,
+          representation,
+          policySha256: externalMetadata!.policySha256,
         };
       } else if (reference.kind === "inline-image") {
         if (++inlineImages > limits.inlineImages)
@@ -356,11 +403,12 @@ export async function createRitualAssetPlan(
         issues.push({ code: result, path: [...item.path], field: "src" });
     }
     const identity = {
-      profile: "magickli-ritual-asset-plan-v2" as const,
+      profile: "magickli-ritual-asset-plan-v3" as const,
       contentSha256,
       inventoryProfile: inventory.profile,
       staticCatalogSha256: catalogMetadata.sha256,
       legacyCatalogSha256: legacyMetadata?.sha256 ?? null,
+      externalCatalogSha256: externalMetadata?.sha256 ?? null,
       validationSha256: catalogMetadata.validationSha256,
       limits,
       resolutionComplete: inventory.enumerationComplete && issues.length === 0,

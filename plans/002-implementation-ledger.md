@@ -5,7 +5,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
 | Legacy public-image reader | Complete locally; integrated into plan v2 | Whole-batch archive/current-row checks, bounded SDK GET/error streams and validated owned snapshots; all ten actual objects pass with unchanged SHA, served MIME and backup fingerprints; all six archived legacy occurrences resolve; no runtime activation |
-| Fixed-reference external-image reader | Complete locally; plan integration pending | Exact reference/byte pins, bounded DNS/HTTPS with checked IP/TLS and no redirects; all four actual representations pass, including explicitly recorded Wikimedia replacement; no runtime activation |
+| Fixed-reference external-image reader | Complete locally; integrated into plan v3 | Exact reference/byte pins, bounded DNS/HTTPS with checked IP/TLS and no redirects; all four actual representations and their archived/public occurrences resolve, including explicitly recorded Wikimedia replacement; no runtime activation |
 | Planning and backup protection | Complete | Production dump checksums, gzip, BSON and JSON verified; isolated Mongo restore validated all 190 documents, 10 collections and 20 indexes; dump directory ignored; London/London confirmed |
 | Runtime and tooling baseline | Complete | Node 24/pnpm 10.18; frozen install, Biome, typecheck, coverage and build pass; explicit CI and scripts; obsolete ESLint/Prettier removed; redundant Biome defaults removed |
 | Unused tRPC | Complete | Removed scaffold and both dependencies; lockfile update removes only tRPC; generated route types, full typecheck and 58-test suite pass |
@@ -585,3 +585,14 @@ pass. The reader has independent design/code review, including Node 24 connectio
 and proxy behavior. No provider/database writes, raw reference/image retention or
 runtime route changes occurred. See the [acquisition record](009-ritual-image-acquisition.md)
 and `/tmp/magickli-external-catalog-{acceptance.json,coverage.log,types.log,biome.log,loom.log,build.log}`.
+
+External capture integration advances the plan to v3 and preserves exact original
+references, fragments and explicit replacement provenance. Independent review,
+48 plan tests (11 new) and all 2,112 default tests pass (14 opt-in Mongo cases
+skipped). Coverage gates for 58 modules pass at 98.20% statements, 96.80% branches,
+99.87% functions and 99.31% lines; types, Biome, ordinary Loom check and production
+build pass. Actual read-only acceptance resolves 16/17 archived image occurrences
+and public theoricus 5/6; only the generated Tree of Life image remains. Four of
+five archived trees have complete image plans, but authorized durable delivery
+and private reader activation remain pending. Evidence:
+`/tmp/magickli-external-plan-{acceptance.json,coverage.log,types.log,biome.log,loom.log,build.log}`.
