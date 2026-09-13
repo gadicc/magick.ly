@@ -1,8 +1,8 @@
 import "server-only";
 
+import type { RitualUploadInitiateResult } from "./ritualUploadInitiateResult";
 import type {
   RitualUploadCode,
-  RitualUploadInitiateResult,
   RitualUploadResult,
 } from "./ritualUploadProtocol";
 

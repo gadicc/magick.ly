@@ -9,10 +9,10 @@ import {
   type R2RitualStorageConfig,
   validateR2RitualStorageConfig,
 } from "./r2RitualStorage";
+import type { RitualUploadInitiateResult } from "./ritualUploadInitiateResult";
 import {
   type RitualUploadCode,
   RitualUploadError,
-  type RitualUploadInitiateResult,
   type RitualUploadResult,
 } from "./ritualUploadProtocol";
 import { createSqlRitualUploads } from "./sqlRitualUploads";

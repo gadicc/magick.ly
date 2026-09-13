@@ -81,21 +81,6 @@ export type RitualUploadCode =
 export type RitualUploadResult =
   | { ok: true; replayed: boolean; receipt: RitualUploadReceipt }
   | { ok: false; code: RitualUploadCode; retryable: boolean };
-/** Initiation returns either an expiring bearer capability or an authorized completed replay. */
-export type RitualUploadInitiateResult =
-  | {
-      ok: true;
-      state: "upload";
-      replayed: boolean;
-      upload: DirectRitualUpload;
-    }
-  | {
-      ok: true;
-      state: "completed";
-      replayed: true;
-      receipt: RitualUploadReceipt;
-    }
-  | { ok: false; code: RitualUploadCode; retryable: boolean };
 /** Safe domain failure. Provider/decoder exceptions and their messages must never reach callers. */
 export class RitualUploadError extends Error {
   constructor(public readonly code: RitualUploadCode) {

@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createUuidV7 } from "../lib/ids";
-import type {
-  RitualUploadInitiateResult,
-  RitualUploadResult,
-} from "./ritualUploadProtocol";
+import type { RitualUploadInitiateResult } from "./ritualUploadInitiateResult";
+import type { RitualUploadResult } from "./ritualUploadProtocol";
 import { createRitualUploadRouteHandlers } from "./ritualUploadRoutes";
 import type { RitualUploadRuntime } from "./ritualUploadRuntime";
 

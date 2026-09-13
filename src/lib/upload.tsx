@@ -12,11 +12,11 @@ import {
 } from "@mui/material";
 import React from "react";
 import { formatRitualFileLocator } from "../files/ritualFileLocator";
+import type { RitualUploadInitiateResult } from "../files/ritualUploadInitiateResult";
 import {
   RITUAL_IMAGE_TYPES,
   RITUAL_UPLOAD_MAX_BYTES,
   type RitualUploadCode,
-  type RitualUploadInitiateResult,
   type RitualUploadReceipt,
   type RitualUploadResult,
 } from "../files/ritualUploadProtocol";
