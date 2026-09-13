@@ -159,6 +159,49 @@ gzip file; their cleanup also releases the old blocking implementation on failur
 This closes the reproduced hang, without claiming all filesystem operations are
 interruptible. No other concrete finding remained in that independent review.
 
+## Complete SQL row reconciliation
+
+`legacyImportRows` projects the verified plan into every column of all 33
+application tables. Nullable omissions become explicit null; missing required
+values are refused even if SQL offers a default. Seven credential/expiry fields
+remain null, no sessions are imported, and final ritual pointers must reference
+their own planned revisions. Projection copies the protected input and does not
+allocate IDs, generate timestamps or execute defaults.
+
+The `magickli-import-complete-rows-v1` fingerprint includes table names, complete
+rows and ten explicitly empty runtime tables. Row order and JSONB object-key
+order are immaterial; arrays, multiplicity, exact text and historical nulls are
+preserved. This projection consumes verified planner output; it does not replace
+domain planning, source classification or schema validation.
+
+Reconciliation snapshots the expected rows and computes their fingerprint before
+any await. PostgreSQL compares both directions with `EXCEPT ALL`, using explicit
+column projections and typed `jsonb_populate_recordset` input. This verifies
+actual complete rows rather than hashing whatever happens to exist. Comparison
+stays in SQL to preserve sub-millisecond timestamps, arbitrary JSONB decimal
+precision, SQL NULL versus JSON null and leading BOMs that a driver may drop.
+Text uses C collation. The helper returns only the expected fingerprint and
+aggregate counts after every table matches; it performs no writes.
+
+One hundred new tests cover pure projection and PGlite integration; 79 were
+written independently. The independent review found no remaining defect. Actual
+PostgreSQL 15.17 through Loom 1.24.0 applies all 13 migrations and validates the
+33-table baseline, non-UTC timestamps, one-microsecond changes, exact text,
+high-precision JSONB changes, null distinctions, missing/extra rows and rollback.
+An unchanged migration rerun preserves the baseline, all 55 source fingerprints
+remain unchanged, and the disposable database is removed. Evidence:
+`/tmp/magickli-import-rows-postgres/result.json`, SHA-256
+`6ad7f4432964c05cdc4f22d738aad88fce917775b4479738f84797cf8c5e65cd`.
+
+The pinned production backup also passes complete-row projection and checkpoint
+round-trip equality in memory. This uses synthetic file locations and disposable
+IDs, with no private SQL import or provider calls. Evidence:
+`/tmp/magickli-import-rows-preflight/report.json`, SHA-256
+`115c5e707f904422a08c971d466dd77d418f4a1fe6e3910c62de10874ce168db`.
+The future importer must supply
+target/schema checks, a transaction, locks and deadlines; this helper does not
+make an unlocked sequence of table reads an atomic snapshot.
+
 ## Next integration
 
 Use one protected singleton prepared run and one ordered atomic application

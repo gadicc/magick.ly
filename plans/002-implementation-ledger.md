@@ -732,3 +732,22 @@ still refuses nonregular descriptors. Both manifest and gzip FIFO regressions
 pass with the previous 49 loader tests; types and Loom checks pass. This isolated
 maintenance fix needs no runtime rebuild. Evidence:
 `/tmp/magickli-backup-fifo-{tests,types,loom}.log`.
+
+Complete expected SQL rows and [exact reconciliation](011-legacy-import-checkpoint.md)
+now cover all 33 application tables, including ten deliberately empty runtime
+tables. Bidirectional SQL multiset comparison preserves exact text, timestamp
+microseconds and JSONB precision/null semantics; success returns a fingerprint
+computed from expected rows before any database read. The independent reviewer
+provided 79 of 100 new tests and found no remaining defect.
+
+All 3,469 tests (14 opt-in Mongo skipped), 80-module coverage gates, types, Biome,
+ordinary Loom check and production build pass. Coverage is 98.30% statements,
+97.15% branches, 99.90% functions and 99.32% lines. Actual PostgreSQL acceptance
+passes all 13 migrations, 33-table reconciliation and an unchanged rerun with
+all 55 source fingerprints intact; the disposable database is removed. The
+190-record production backup passes full row projection in memory, with no
+private SQL import. Evidence: `/tmp/magickli-import-rows-postgres/README.md`,
+`/tmp/magickli-import-rows-preflight/report.json` and
+`/tmp/magickli-import-rows-{coverage,final-types,biome,loom,build}.log`.
+Durable preparation/application and their target/schema/transaction fences remain
+the next integration; runtime traffic continues to use the existing database.
