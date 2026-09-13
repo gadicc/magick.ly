@@ -637,3 +637,19 @@ check and production build pass. Twelve independent Chromium parser scenarios
 pass with native cryptography and no non-fixture I/O. Provider/database writes,
 durable manifests, authenticated delivery and private reader activation remain
 pending. Evidence is linked in the bundle record.
+
+The [durable bundle SQL services](010-durable-ritual-bundles.md) now reserve exact
+private destinations before provider writes and atomically publish complete
+receipts with retained completion evidence. The reader requires current access,
+the current selected output and an accepted publication policy in one snapshot.
+Completed retries cannot recreate removed bundles, including zero-image bundles.
+Migration 0011 is generated and locally rehearsed, not applied to Neon.
+
+Independent review found and fixed expiry across awaited SQL writes. All 2,747
+default tests (305 new; 14 opt-in Mongo cases skipped), 70-module coverage gates,
+types, Biome, ordinary Loom check and production build pass. Twenty exact-source
+PostgreSQL scenarios plus reconciliation and unchanged migration rerun pass,
+including real locks, revocation, lost acknowledgements and clock regressions.
+All temporary databases are removed. Private storage, authenticated delivery,
+SQL/auth import and browser activation remain pending; the current runtime is
+unchanged. Full evidence and fingerprints are linked in the bundle record.

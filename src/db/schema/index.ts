@@ -3,6 +3,7 @@ export * from "./legacyFiles";
 export * from "./legacyIds";
 export * from "./loomFiles";
 export * from "./memberships";
+export * from "./ritualBundles";
 export * from "./ritualCommands";
 export * from "./ritualFiles";
 export * from "./rituals";

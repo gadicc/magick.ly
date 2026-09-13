@@ -1,9 +1,10 @@
 # Durable ritual bundles
 
 The image plan now resolves every image in the verified corpus. A prepared bundle
-can bind that evidence to exact selected ritual content, but preparation does not
-publish anything or grant offline access. Durable publication and the authorized
-reader described below are the next implementation unit.
+binds that evidence to exact selected ritual content. SQL publication and the
+current-access reader now preserve that binding durably. Private object storage,
+authenticated delivery and browser activation remain the next integration steps.
+Neither preparation nor publication grants an offline lease.
 
 ## Implemented preparation and wire format
 
@@ -17,8 +18,8 @@ revision tokens or source history through the descriptor.
 owned complete asset plan. It verifies the plan and content digests, rejects gaps,
 maps transient asset indices to UUIDv7 keys, and rehashes every owned byte copy.
 Caller-supplied reserved IDs permit an identical retry; omitted IDs start a new
-preparation. A future publisher must persist the IDs before provider writes and
-must never allocate replacement IDs after an uncertain acknowledgement.
+preparation. The publisher persists those IDs before provider writes and never
+allocates replacements after an uncertain acknowledgement.
 
 Preparation returns `kind: "prepared"`, a frozen manifest, exact manifest JSON
 and SHA, private plan/provenance, and a disposable byte-copy capability. The wire
@@ -56,33 +57,63 @@ frozen independent projection. A valid manifest alone must never feed
 `acceptPermission(..., bundleId)`; only a separately validated authorized
 publication response may do that.
 
-## Next: publication and current-access reads
+## Implemented publication and current-access reads
 
 Use app-owned bundle storage rather than Loom Files rows: shared static, legacy
 and generated snapshots require separate ritual-scoped copies, whereas Loom Files
 has a global digest uniqueness and uploader-ownership contract. Avoid cross-ritual
 blob deduplication initially.
 
-The proposed SQL boundary has three tables:
+Migration `0011_ritual_bundles` adds three app-owned tables:
 
 | Table | Responsibility |
 | --- | --- |
-| Publication intents | Immutable operation/request hash, actor, target descriptor, preallocated IDs/locations, bounded claim and completion receipt |
-| Ritual bundles | Completed exact body/title/manifest, manifest SHA, selected revision/artifact binding and private plan evidence |
-| Bundle assets | Per-bundle UUID key, exact byte/MIME/hash, owned private location and verified storage receipt |
+| Publication intents | Immutable operation/request hash, actor, exact manifest/private plan and selected output, bounded claim, retained completion timestamp |
+| Bundle assets | Reserved per-bundle UUID key, exact byte/MIME/hash and private location; complete verified receipt fields are populated atomically at publication |
+| Ritual bundles | Minimal completed delivery marker bound to its intent and the ritual's own revision |
 
-Pending work lives only in intents. Persist an immutable intent before conditional
-private object writes. Reconcile only its exact owned keys by bytes and provenance.
-Keep provider I/O outside SQL. Reverify the session before finalization; inside a
-short transaction use the existing operation/principal/grant/parent locking
-conventions, then check current read access, selected descriptor/title, current
-claim and all expected receipts. Publish bundle/assets and complete the intent
-atomically. A changed selection or revoked access leaves unpublished owned objects
-for reconciliation. Completed replay must recheck access/selection and existing
-rows; it must not resurrect removed or stale resources.
+`createSqlRitualBundlePublisher` reserves the immutable intent and all destinations
+in one transaction before any provider write. Pending asset rows confer no access.
+Destinations are unique within the bundle store; they must use a separate provider
+namespace from Loom Files. The request hash binds operation, actor, manifest, plan
+and explicit publication policy. A same-operation retry reuses the original IDs
+and destinations; a changed payload or policy requires a new operation.
 
-The paired reader must select only completed publications matching the currently
-authorized output. Its asset transport must verify current session/policy and
+Each operation verifies the session and reloads persisted identity/grants. The
+write transaction uses operation advisory locks, principal/grant locks and a
+parent share lock, then verifies current read access and the exact selected body,
+title and descriptor. Intents last at most 24 hours; replaceable worker claims
+last at most 120 seconds and cannot outlast the intent. Neither interval is the
+14-day offline retention policy. Stale workers cannot release a replacement claim.
+
+Publication requires every exact reserved object receipt under the current claim.
+Receipt hashes, location, byte/MIME facts and verification times are checked;
+receipts must come from a trusted storage adapter, never client claims or provider
+ETags alone. All receipts, the intent's completion timestamp and the delivery
+marker commit together. No provider operation runs inside SQL. A changed selection
+or revoked access leaves unpublished reserved work for later reconciliation.
+
+Completed retries recheck current access, selection and all stored evidence before
+returning the existing receipt. They neither renew a lease nor recreate missing
+resources. The intent retains completion evidence after marker deletion, including
+for zero-image bundles; otherwise a lost acknowledgement could revive a removed
+bundle. Historical pending selection IDs are not foreign keys to mutable current
+pointers. The completed marker uses a non-null composite binding to the intent
+and an own-ritual revision foreign key, avoiding nullable artifact columns that
+would bypass the whole composite constraint.
+
+`createSqlRitualBundleReader` selects only completed publications matching the
+currently authorized output and an explicitly accepted publication policy. Each
+call uses a read-only repeatable-read snapshot. An omitted bundle ID selects the
+newest accepted current publication deterministically; corrupt selected evidence
+fails closed without fallback to an older bundle. The shared decoder rechecks
+manifest/plan/request hashes, complete occurrence mapping, validation facts,
+reservations and historically fenced receipts. Generic missing, denied, stale or
+operational results are not authoritative offline revocation responses.
+
+The manifest projection excludes private plan/provenance and provider locations.
+The asset projection is an internal server descriptor, not a browser capability.
+Its future transport must verify current session/policy and
 exact bundle/asset membership, read bounded stored bytes outside SQL, then recheck
 access before exposing them. Knowing a UUID or holding an offline lease never
 authorizes a server download. Future protected attachments additionally require a
@@ -93,8 +124,9 @@ manifest identity. Extend Dexie storage to retain occurrence mapping and verify
 that same-bundle renewal only renews the same manifest. A changed bundle that
 fails to download cannot extend old bytes. Source/edit grants remain independent.
 
-Private R2 configuration, SQL/auth import and runtime activation remain pending.
-No HTTP endpoint, public caching rule or active reader changed in this unit.
+Private R2 configuration, the exact-byte storage adapter, SQL/auth import and
+runtime activation remain pending. No HTTP endpoint, public caching rule or
+active reader changed in this unit.
 
 ## Verification
 
@@ -126,3 +158,38 @@ The owned server/browser are closed. This is parser acceptance, not pixel decode
 installed-device readiness or iOS evidence. Report:
 `/tmp/magickli-manifest-browser/README.md`, result SHA-256
 `2fe44294187474198a5f9274c887082e1700ee5573e6ac4db9d4721c0b05abd4`.
+
+### Durable SQL checkpoint
+
+The publication unit adds 305 tests: 61 database constraint cases, 40 exact receipt
+cases, 118 publisher cases and 86 reader/decoder cases. All 2,747 default tests
+pass (14 opt-in Mongo cases skipped); 70-module coverage gates pass at 98.39%
+statements, 97.20% branches, 99.89% functions and 99.37% lines. Types, Biome,
+ordinary Loom check and production build pass with existing warnings.
+
+Independent adversarial review reproduced one timing defect: an awaited SQL write
+could finish after a claim expired while the service retained its earlier clock
+value. New in-transaction checks after reservation writes, claim update and marker
+insert reject expiry or clock rollback before returning from the transaction
+callback. Eight regression cases cover delayed acknowledgements and completed
+replay. Completed historical receipts remain recoverable after intent expiry,
+subject to fresh access and selection checks.
+
+The final exact-source rehearsal uses PostgreSQL 15.17 through Loom 1.24.0's actual
+`neonFull`/postgres-js/Drizzle path. Twenty scenario checks, aggregate reconciliation
+and an unchanged migration rerun pass. It exercises real lock interleavings,
+grant revocation, reader snapshots, atomic visibility, lost acknowledgements,
+missing empty-bundle markers and the delayed-write clock regressions. All twelve
+migration journal rows and 32 public tables remain identical across rerun; the
+actual lock timeout returns safely after 5,009 ms. All five supported image MIME
+types use actual prepared synthetic bytes. No provider or production calls occur;
+every fresh owned rehearsal database is dropped and verified absent.
+
+All 76 source fingerprints match before and after the final run. Evidence:
+`/tmp/magickli-bundle-postgres-rehearsal/README.md` and `result.json`, source
+manifest SHA `23e185a3fcc78e49f78aebb05520bfc97112764c07195e004c7d514490e95796`,
+publisher SHA `fd4a9e53bc292c5a1534c3af5fdb4ee9ba6bf335113457808086bcec6e9302c6`,
+and `/tmp/magickli-bundle-final-{coverage,types,loom}.log`. A preliminary harness
+attempt exposed a tsx CommonJS namespace/default import mismatch; correcting that
+test harness required no application change. These checks prove SQL behavior, not
+private provider configuration or actual object persistence.
