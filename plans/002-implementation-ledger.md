@@ -768,3 +768,31 @@ rejects old-journal drift with all 58 source fingerprints unchanged. Its disposa
 database is removed. Evidence: `/tmp/magickli-import-runs-postgres/README.md` and
 `/tmp/magickli-import-runs-{coverage,types,biome,loom,build}.log`. Migration 0013 is
 local only; target catalog/connection validation and import orchestration remain.
+
+The [atomic prepared importer](011-legacy-import-checkpoint.md) now reserves the
+exact durable plan and applies all expected rows in one transaction. Every
+operation checks the actual SQL database/role, complete migration journal and
+engine-specific catalog under constant import and table locks. Completed retries
+reconcile the saved baseline; they never recreate removed rows or overwrite
+later writes. No runtime or provider integration is activated.
+
+Independent review found and reproduced PostgreSQL temporary-table shadowing;
+the fixed search path now places pg_temp explicitly after public. Sixty-three
+catalog tests and 48 service tests pass, including that regression. All 3,664
+default tests (14 opt-in Mongo skipped), 83-module coverage gates, types, Biome,
+ordinary Loom check and production build pass. Coverage is 98.27% statements,
+97.14% branches, 99.91% functions and 99.31% lines.
+
+Actual PostgreSQL acceptance verifies separate-connection importer/writer races,
+rollback, no partial read visibility, uncertain acknowledgements, catalog drift
+and fresh-process completed retries. The full pinned production backup also
+passes durable preparation/application and complete SQL reconciliation in a
+separate disposable local database, including the 656-card statement boundary.
+All 60 source fingerprints and original backup files remain unchanged; both owned
+databases are removed with absence confirmed. Provider locations are synthetic
+and IDs disposable. Evidence: `/tmp/magickli-import-service-postgres/README.md`,
+`/tmp/magickli-import-service-corpus-postgres/README.md` and
+`/tmp/magickli-import-service-{final-coverage,final-types,biome,loom,build}.log`.
+The trusted maintenance launcher still needs selected-URL/control-plane identity
+and an approved matching Neon catalog; authentication/runtime integration and
+final cutover remain pending. Neon still has only migrations 0000–0001 applied.

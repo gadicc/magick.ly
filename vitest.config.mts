@@ -79,6 +79,8 @@ export default defineConfig({
         "src/migration/prepareLegacyBackup.ts",
         "src/migration/legacyImportRows.ts",
         "src/migration/legacyImportMigrations.ts",
+        "src/migration/legacyImportCatalog.ts",
+        "src/migration/sqlLegacyImport.ts",
         "src/migration/prepareLegacyImport.ts",
         "src/migration/legacyImportValue.ts",
         "src/migration/legacyImportCheckpoint.ts",

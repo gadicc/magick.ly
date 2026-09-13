@@ -1,8 +1,9 @@
-The importer now has a pure preparation step and exact protected checkpoint
-format. It allocates every canonical, alias-row and email-provenance UUID before
-serialization. A verified file/BSON loader now feeds that step. The SQL checkpoint
-table, atomic apply transaction and maintenance command remain to be implemented.
-No runtime route uses this code.
+The importer now verifies backup files/BSON, prepares exact protected checkpoints
+and applies their saved rows in one fenced SQL transaction. It allocates every
+canonical, alias-row and email-provenance UUID before serialization. Schema
+catalog and complete migration-history checks protect the prepared destination.
+The trusted maintenance command and live runtime/cutover integration remain
+pending. No runtime route uses this code.
 
 ## Preparation and source accounting
 
@@ -239,16 +240,80 @@ is removed. Evidence: `/tmp/magickli-import-runs-postgres/result.json`, SHA-256
 `db007410e15a2d3b076ee6e602b7f2534c9d695958059f24823ec24cbbbec2ad`.
 This migration has not been applied to Neon.
 
+## Fenced preparation and atomic application
+
+`legacyImportCatalog` captures a versioned, engine-specific definition snapshot:
+public relations/columns, constraints, indexes, enums, noninternal triggers, RLS
+policies, routines, extensions, collations, standalone types, rules and sequence
+configuration. It includes owners/ACLs and locale versions; it excludes OIDs,
+sequence values, row statistics and application data. A baseline must come from a
+separately reviewed fresh-migration rehearsal in the intended environment. Merely
+capturing the live target does not approve its schema. Public aggregate routines
+are refused because this profile does not serialize their transition machinery.
+The 16 MiB cap bounds accepted serialized evidence, not server query memory.
+
+`createSqlLegacyImporter` exposes maintenance-only `inspect`, `prepare` and
+`apply`. It owns a strict copy of the reviewed source/schema/destination binding.
+Every operation uses one constant database-wide advisory lock and explicit
+exclusive locks over the journal, ledger and all 33 application tables. It checks
+the actual database, session/current role, writeability, complete migration
+history and catalog before reading or changing the saved run. The required
+ordinary-table inventory is closed: 33 application tables and the import ledger.
+
+The fixed search path is `pg_catalog, public, pg_temp`. Independent review proved
+that omitting pg_temp puts temporary tables implicitly before public relations,
+allowing a reused connection's temporary ledger to shadow durable operations.
+Putting pg_temp last preserves the real public tables. Both PGlite and actual
+PostgreSQL regressions cover temporary ledger/user tables across prepare/apply.
+
+Preparation requires an empty application database and reserves only the exact
+checkpoint. Application reloads and verifies that durable payload, inserts every
+known row/column and then assigns owned ritual revision pointers. Statements use
+at most 500 rows but all share one transaction. Full SQL reconciliation and a
+second catalog/history check precede completion. No provider, file or backup I/O
+runs inside the transaction. SQL lock/statement timeouts and a cooperative
+30-second transaction deadline bound operation; the deadline is checked between
+awaited steps and does not promise immediate CPU or driver cancellation.
+
+Retries use the same run and payload. A completed retry verifies the original
+baseline and never recreates a deleted row or repairs later application writes.
+An uncertain commit acknowledgement returns `OUTCOME_UNKNOWN`; the next attempt
+inspects the same durable run instead of allocating new IDs. Header dates are
+also checked at their exact SQL millisecond domain, so a driver cannot round away
+a one-microsecond mutation. Responses contain bindings, counts and dates, never
+the protected payload or database diagnostics.
+
+Independent review supplied 63 catalog tests and reviewed all 48 service tests;
+no actionable finding remained after the search-path fix. Actual PostgreSQL
+15.17 through Loom 1.24.0 validates simultaneous importer calls, writer locks,
+no partial read visibility, late transaction rollback, lost acknowledgements,
+temporary-table shadowing, schema drift and fresh-process completed replay.
+Fifteen initial checks plus an unchanged migration/reconnect check pass with
+all 60 source fingerprints unchanged. The owned database is removed. Evidence:
+`/tmp/magickli-import-service-postgres/result.json`, SHA-256
+`1977a437bd3fd5415dbae59b1ffa0cf03785256c735541c456dfe80ca54d3963`.
+
+The pinned 190-record production backup also passes the actual loader, durable
+checkpoint and atomic import in a separate disposable local PostgreSQL database.
+Complete 33-table reconciliation includes all 656 active study cards and crosses
+the statement chunk boundary. Prepared/completed retries and a new process after
+an unchanged migration rerun preserve every saved row without further allocation.
+All source/backup fingerprints remain unchanged. Private payload/rows existed
+only in the owned database, which was removed with absence verified; local
+reports contain only aggregate evidence. File destinations are synthetic and IDs
+disposable. Evidence:
+`/tmp/magickli-import-service-corpus-postgres/result.json`, SHA-256
+`3bb7fd44772a62f46f9910f4efe8e12e412e41f27974579c1a119fac4273ea4f`.
+
 ## Next integration
 
-Use one protected singleton prepared run and one ordered atomic application
-transaction under a fixed database-wide import lock. Refuse a nonempty target;
-verify exact migration artifacts and the actual selected destination. Reconcile
-complete expected rows before recording completion. An uncertain commit resumes
-the saved plan; completed retries never recreate deleted rows or overwrite newer
-state. This corpus does not need a generic batch or expiring-claim framework.
+The maintenance command must bind the actual selected direct connection to fresh
+Neon project/branch/endpoint evidence and an independently approved matching
+catalog. Database/role strings and caller-provided target hashes alone cannot
+establish Neon branch identity. The service does not query the control plane or
+authorize a supplied baseline. Operational write and DDL pauses remain necessary;
+table locks do not promise immunity to arbitrary concurrent administrative DDL.
 
-The maintenance command must bind this verified source capture to the durable
-run and actual selected database. Final cutover still requires a fresh backup
-under the approved write pause and the separately tested canonical-auth, SQL
-runtime, private offline and recovery paths.
+Final cutover still requires a fresh backup under the approved write pause and
+the separately tested canonical-auth, SQL runtime, private offline and recovery
+paths. No Neon import, provider write, runtime switch or deployment has occurred.
