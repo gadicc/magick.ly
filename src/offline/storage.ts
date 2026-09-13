@@ -98,6 +98,17 @@ export interface OfflineDraft {
   conflictOf: string | null;
 }
 export type DraftInput = Omit<OfflineDraft, "localVersion" | "conflictOf">;
+export interface PublicationOutboxBinding {
+  /** Immutable SQL write identity that owns this publication attempt. */
+  parentWriteOperationId: string;
+  /** Current publication identity; a renewed request may differ from its parent. */
+  request: RitualPublicationRequestV1;
+}
+export interface PublicationAttemptRecord {
+  payloadJson: string;
+  payloadSha256: string;
+  result: RitualPublicationResult;
+}
 export interface OutboxRow {
   ownerId: string;
   ritualId: string;
@@ -116,7 +127,7 @@ export interface OutboxRow {
   claimEpoch: string | null;
   claimUntilMs: number | null;
   result: SqlRitualWriteResult | null;
-  /** Same durable write identity; optional fields require no IndexedDB schema/index change. */
+  /** Optional publication fields require no IndexedDB schema/index change. */
   publicationPayloadJson?: string;
   publicationPayloadSha256?: string;
   publicationStatus?:
@@ -131,10 +142,10 @@ export interface OutboxRow {
   publicationClaimEpoch?: string | null;
   publicationClaimUntilMs?: number | null;
   publicationResult?: RitualPublicationResult | null;
+  publicationAttemptHistory?: PublicationAttemptRecord[];
 }
 
-export interface PublicationOutboxClaim {
-  request: RitualPublicationRequestV1;
+export interface PublicationOutboxClaim extends PublicationOutboxBinding {
   claimId: string;
   account: OfflineAccount;
 }

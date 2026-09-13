@@ -814,6 +814,66 @@ describe("durable post-write publication outbox", () => {
     updatedAt: new Date(START).toISOString(),
   });
 
+  async function installCurrentSource(
+    f: Fixture,
+    account: OfflineAccount,
+    revisionId: string,
+    parentVersion: number,
+  ) {
+    const pending = await f.repo.beginCheck(account, R);
+    await f.repo.acceptPermission(
+      pending,
+      allowedEditor(pending, WINDOW, revisionId, parentVersion),
+      undefined,
+      sourceBinding(revisionId, parentVersion),
+    );
+    expect(
+      await f.repo.installSource(pending, {
+        ownerId: A,
+        ritualId: R,
+        revisionId,
+        parentVersion,
+        title: "Synthetic ritual",
+        source: "p Current saved source",
+      }),
+    ).toBe(true);
+  }
+
+  async function expiredScenario() {
+    const f = fixture();
+    const readyState = await ready(f);
+    const write = command();
+    const result = saved();
+    await f.repo.enqueueSave(readyState.account, write);
+    await f.repo.settleSave(
+      (await f.repo.claimSave(readyState.account, R, write.operationId))!,
+      result,
+    );
+    const publication = await f.repo.readRetriablePublication(
+      readyState.account,
+      R,
+    );
+    const claim = await f.repo.claimPublication(
+      readyState.account,
+      publication!,
+    );
+    await f.repo.settlePublication(claim!, failedRitualPublication("EXPIRED"));
+    await installCurrentSource(
+      f,
+      readyState.account,
+      result.revisionId,
+      result.version,
+    );
+    return {
+      f,
+      ...readyState,
+      write,
+      result,
+      publication: publication!,
+      claim,
+    };
+  }
+
   it("atomically queues publication from an acknowledged save and retries its exact identity", async () => {
     const f = fixture();
     const r = await ready(f);
@@ -822,17 +882,20 @@ describe("durable post-write publication outbox", () => {
     await f.repo.enqueueSave(r.account, write);
     const saveClaim = await f.repo.claimSave(r.account, R, write.operationId);
     expect(await f.repo.settleSave(saveClaim!, result)).toBe(true);
-    const request = await f.repo.readRetriablePublication(r.account, R);
-    expect(request).toEqual({
-      version: 1,
-      operationId: write.operationId,
-      expectedActorId: A,
-      ritualId: R,
-      expectedRevisionId: result.revisionId,
-      expectedVersion: 5,
+    const publication = await f.repo.readRetriablePublication(r.account, R);
+    expect(publication).toEqual({
+      parentWriteOperationId: write.operationId,
+      request: {
+        version: 1,
+        operationId: write.operationId,
+        expectedActorId: A,
+        ritualId: R,
+        expectedRevisionId: result.revisionId,
+        expectedVersion: 5,
+      },
     });
-    const first = await f.repo.claimPublication(r.account, request!);
-    expect(first).toMatchObject({ request, account: r.account });
+    const first = await f.repo.claimPublication(r.account, publication!);
+    expect(first).toMatchObject({ ...publication, account: r.account });
     expect(
       await f.repo.settlePublication(
         first!,
@@ -840,9 +903,9 @@ describe("durable post-write publication outbox", () => {
       ),
     ).toBe(true);
     expect(await f.repo.readRetriablePublication(r.account, R)).toEqual(
-      request,
+      publication,
     );
-    const retry = await f.repo.claimPublication(r.account, request!);
+    const retry = await f.repo.claimPublication(r.account, publication!);
     const completed = {
       ok: true as const,
       state: "completed" as const,
@@ -871,52 +934,74 @@ describe("durable post-write publication outbox", () => {
     await f.repo.enqueueSave(r.account, write);
     const saveClaim = await f.repo.claimSave(r.account, R, write.operationId);
     await f.repo.settleSave(saveClaim!, result);
-    const request = await f.repo.readRetriablePublication(r.account, R);
-    const claim = await f.repo.claimPublication(r.account, request!);
+    const publication = await f.repo.readRetriablePublication(r.account, R);
+    const claim = await f.repo.claimPublication(r.account, publication!);
     await f.repo.settlePublication(
       claim!,
       failedRitualPublication("AUTH_REQUIRED"),
     );
-    expect(await f.repo.claimPublication(r.account, request!)).toBeNull();
+    expect(await f.repo.claimPublication(r.account, publication!)).toBeNull();
     expect(
-      await f.repo.resumeAuthenticatedPublication(r.account, request!),
+      await f.repo.resumeAuthenticatedPublication(r.account, publication!),
     ).toBe(true);
-    expect(await f.repo.claimPublication(r.account, request!)).not.toBeNull();
+    expect(
+      await f.repo.claimPublication(r.account, publication!),
+    ).not.toBeNull();
   });
 
-  it("imports an acknowledged create handoff under the resulting ritual", async () => {
-    const f = fixture();
-    const r = await ready(f);
-    const create = {
-      version: 2 as const,
-      operationId: createUuidV7(),
-      expectedActorId: A,
-      kind: "create" as const,
-      scope: { kind: "public" as const },
-      title: "Imported create",
-      source: "p Imported",
-    };
-    const createResult = {
-      ok: true as const,
-      replayed: false,
-      ritualId: R,
-      revisionId: createUuidV7(),
-      version: 1,
-      updatedAt: new Date(START).toISOString(),
-    };
-    const request = {
-      version: 1 as const,
-      operationId: create.operationId,
-      expectedActorId: A,
-      ritualId: R,
-      expectedRevisionId: createResult.revisionId,
-      expectedVersion: 1,
-    };
-    await f.repo.enqueuePublication(r.account, create, createResult, request);
-    expect(await f.repo.readRetriablePublication(r.account, R)).toEqual(
-      request,
-    );
-  });
+  it.each([
+    { kind: "public" as const },
+    { kind: "group" as const, groupId: R2 },
+    { kind: "temple" as const, templeId: R2, minGrade: 2 },
+  ])(
+    "retains and renews an acknowledged $kind creation under its resulting ritual",
+    async (scope) => {
+      const f = fixture();
+      const r = await ready(f);
+      const create = {
+        version: 2 as const,
+        operationId: createUuidV7(),
+        expectedActorId: A,
+        kind: "create" as const,
+        scope,
+        title: "Imported create",
+        source: "p Imported",
+      };
+      const createResult = {
+        ok: true as const,
+        replayed: false,
+        ritualId: R,
+        revisionId: createUuidV7(),
+        version: 1,
+        updatedAt: new Date(START).toISOString(),
+      };
+      const request = {
+        version: 1 as const,
+        operationId: create.operationId,
+        expectedActorId: A,
+        ritualId: R,
+        expectedRevisionId: createResult.revisionId,
+        expectedVersion: 1,
+      };
+      await f.repo.enqueuePublication(r.account, create, createResult, request);
+      expect(await f.repo.readRetriablePublication(r.account, R)).toEqual({
+        parentWriteOperationId: create.operationId,
+        request,
+      });
+      // A retried browser handoff must reuse the existing acknowledged write row.
+      await f.repo.enqueuePublication(r.account, create, createResult, request);
+      const binding = (await f.repo.readRetriablePublication(r.account, R))!;
+      const claim = (await f.repo.claimPublication(r.account, binding))!;
+      await f.repo.settlePublication(claim, failedRitualPublication("EXPIRED"));
+      await installCurrentSource(f, r.account, createResult.revisionId, 1);
+      const renewed = await f.repo.renewExpiredPublication(r.account, binding);
+      expect(renewed?.parentWriteOperationId).toBe(create.operationId);
+      expect(renewed?.request.operationId).not.toBe(create.operationId);
+      expect(
+        (await f.db.outbox.get([A, create.operationId]))?.payloadJson,
+      ).toBe(JSON.stringify(create));
+    },
+  );
 
   it("marks an older pending publication stale when a newer save is acknowledged", async () => {
     const f = fixture();
@@ -941,13 +1026,383 @@ describe("durable post-write publication outbox", () => {
       newerResult,
     );
     expect(await f.repo.readRetriablePublication(r.account, R)).toMatchObject({
-      operationId: newer.operationId,
-      expectedRevisionId: newerResult.revisionId,
-      expectedVersion: 6,
+      parentWriteOperationId: newer.operationId,
+      request: {
+        operationId: newer.operationId,
+        expectedRevisionId: newerResult.revisionId,
+        expectedVersion: 6,
+      },
     });
     expect(
       (await f.db.outbox.get([A, older.operationId]))?.publicationStatus,
     ).toBe("stale");
+  });
+
+  it("renews only an exact expired attempt and reloads the replacement identity", async () => {
+    const { f, account, write, publication, claim } = await expiredScenario();
+    expect(await f.repo.readExpiredPublication(account, R)).toEqual(
+      publication,
+    );
+
+    const renewed = await f.repo.renewExpiredPublication(account, publication);
+    expect(renewed).toMatchObject({
+      parentWriteOperationId: write.operationId,
+      request: {
+        expectedActorId: A,
+        ritualId: R,
+        expectedRevisionId: publication.request.expectedRevisionId,
+        expectedVersion: publication.request.expectedVersion,
+      },
+    });
+    expect(renewed?.request.operationId).not.toBe(
+      publication.request.operationId,
+    );
+    expect(
+      await f.repo.settlePublication(
+        claim!,
+        failedRitualPublication("EXPIRED"),
+      ),
+    ).toBe(false);
+    expect(await f.db.outbox.get([A, write.operationId])).toMatchObject({
+      publicationStatus: "queued",
+      publicationResult: null,
+      publicationAttemptHistory: [
+        {
+          payloadJson: JSON.stringify(publication.request),
+          payloadSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+          result: failedRitualPublication("EXPIRED"),
+        },
+      ],
+    });
+
+    f.db.close();
+    const reloadedDb = new RitualOfflineDatabase(f.name, f.options);
+    instances.push(reloadedDb);
+    const reloaded = new OfflineRitualRepository(reloadedDb, () => f.now);
+    expect(await reloaded.readRetriablePublication(account, R)).toEqual(
+      renewed,
+    );
+    const retry = await reloaded.claimPublication(account, renewed!);
+    await reloaded.settlePublication(
+      retry!,
+      failedRitualPublication("UNAVAILABLE"),
+    );
+    expect(await reloaded.readRetriablePublication(account, R)).toEqual(
+      renewed,
+    );
+  });
+
+  it.each(["UNAVAILABLE", "ABORTED", "BUSY"] as const)(
+    "keeps the same publication identity after an uncertain %s result",
+    async (code) => {
+      const f = fixture();
+      const r = await ready(f);
+      const write = command();
+      const result = saved();
+      await f.repo.enqueueSave(r.account, write);
+      await f.repo.settleSave(
+        (await f.repo.claimSave(r.account, R, write.operationId))!,
+        result,
+      );
+      const publication = await f.repo.readRetriablePublication(r.account, R);
+      await f.repo.settlePublication(
+        (await f.repo.claimPublication(r.account, publication!))!,
+        failedRitualPublication(code),
+      );
+      expect(await f.repo.readRetriablePublication(r.account, R)).toEqual(
+        publication,
+      );
+      expect(
+        await f.repo.renewExpiredPublication(r.account, publication!),
+      ).toBeNull();
+    },
+  );
+
+  it("denies renewal after a stale result or a newer installed source", async () => {
+    const staleFixture = fixture();
+    const staleReady = await ready(staleFixture);
+    const staleWrite = command();
+    const staleResult = saved();
+    await staleFixture.repo.enqueueSave(staleReady.account, staleWrite);
+    await staleFixture.repo.settleSave(
+      (await staleFixture.repo.claimSave(
+        staleReady.account,
+        R,
+        staleWrite.operationId,
+      ))!,
+      staleResult,
+    );
+    const stalePublication = await staleFixture.repo.readRetriablePublication(
+      staleReady.account,
+      R,
+    );
+    await staleFixture.repo.settlePublication(
+      (await staleFixture.repo.claimPublication(
+        staleReady.account,
+        stalePublication!,
+      ))!,
+      failedRitualPublication("STALE"),
+    );
+    expect(
+      await staleFixture.repo.renewExpiredPublication(
+        staleReady.account,
+        stalePublication!,
+      ),
+    ).toBeNull();
+
+    const { f, account, publication } = await expiredScenario();
+    await installCurrentSource(f, account, createUuidV7(), 6);
+    expect(await f.repo.readExpiredPublication(account, R)).toBeNull();
+    expect(
+      await f.repo.renewExpiredPublication(account, publication),
+    ).toBeNull();
+  });
+
+  it("does not renew after account replacement or source-lease expiry", async () => {
+    const switched = await expiredScenario();
+    await switched.f.repo.signOut(switched.account);
+    await switched.f.repo.activateAccount(B);
+    await expect(
+      switched.f.repo.renewExpiredPublication(
+        switched.account,
+        switched.publication,
+      ),
+    ).rejects.toMatchObject({ code: "ACCOUNT" });
+    expect(
+      (await switched.f.db.outbox.get([A, switched.write.operationId]))
+        ?.publicationPayloadJson,
+    ).toBe(JSON.stringify(switched.publication.request));
+
+    const expiredLease = await expiredScenario();
+    expiredLease.f.now += WINDOW;
+    expect(
+      await expiredLease.f.repo.renewExpiredPublication(
+        expiredLease.account,
+        expiredLease.publication,
+      ),
+    ).toBeNull();
+    expect(
+      (await expiredLease.f.db.outbox.get([A, expiredLease.write.operationId]))
+        ?.publicationPayloadJson,
+    ).toBe(JSON.stringify(expiredLease.publication.request));
+  });
+
+  it("allows only one replacement when two tabs renew the same expired attempt", async () => {
+    const { f, account, publication } = await expiredScenario();
+    const results = await Promise.all([
+      f.repo.renewExpiredPublication(account, publication),
+      f.repo.renewExpiredPublication(account, publication),
+    ]);
+    const accepted = results.filter((result) => result !== null);
+    expect(accepted).toHaveLength(1);
+    expect(await f.repo.readRetriablePublication(account, R)).toEqual(
+      accepted[0],
+    );
+    expect(
+      (await f.db.outbox.get([A, publication.parentWriteOperationId]))
+        ?.publicationAttemptHistory,
+    ).toHaveLength(1);
+  });
+
+  it("reclaims an interrupted renewed attempt without accepting its old response", async () => {
+    const { f, account, publication } = await expiredScenario();
+    const renewed = (await f.repo.renewExpiredPublication(
+      account,
+      publication,
+    ))!;
+    const first = (await f.repo.claimPublication(account, renewed))!;
+    expect(await f.repo.readRetriablePublication(account, R)).toBeNull();
+    expect(await f.repo.claimPublication(account, renewed)).toBeNull();
+    f.now += 60_001;
+    expect(await f.repo.readRetriablePublication(account, R)).toEqual(renewed);
+    const retry = (await f.repo.claimPublication(account, renewed))!;
+    expect(retry.claimId).not.toBe(first.claimId);
+    expect(
+      await f.repo.settlePublication(first, failedRitualPublication("EXPIRED")),
+    ).toBe(false);
+    expect(
+      await f.repo.resumeAuthenticatedPublication(account, publication),
+    ).toBe(false);
+    expect(
+      await f.repo.claimPublication(account, {
+        ...renewed,
+        request: { ...renewed.request, expectedActorId: B },
+      }),
+    ).toBeNull();
+    expect(
+      await f.repo.settlePublication(
+        retry,
+        failedRitualPublication("UNAVAILABLE"),
+      ),
+    ).toBe(true);
+    expect(await f.repo.readRetriablePublication(account, R)).toEqual(renewed);
+  });
+
+  it("rechecks the saved revision after asynchronous renewal hashing", async () => {
+    const { f, account, publication } = await expiredScenario();
+    const original = await f.db.outbox.get([
+      A,
+      publication.parentWriteOperationId,
+    ]);
+    const digestOriginal = crypto.subtle.digest.bind(crypto.subtle);
+    let release!: () => void;
+    let started!: () => void;
+    const waiting = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const entered = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const spy = vi
+      .spyOn(crypto.subtle, "digest")
+      .mockImplementation(async (...args) => {
+        started();
+        await waiting;
+        return digestOriginal(...args);
+      });
+    try {
+      const renewal = f.repo.renewExpiredPublication(account, publication);
+      await entered;
+      await installCurrentSource(f, account, createUuidV7(), 6);
+      release();
+      expect(await renewal).toBeNull();
+      expect(
+        await f.db.outbox.get([A, publication.parentWriteOperationId]),
+      ).toEqual(original);
+    } finally {
+      release();
+      spy.mockRestore();
+    }
+  });
+
+  it("preserves every expired attempt when the recovery history is full", async () => {
+    const { f, account, publication } = await expiredScenario();
+    const history = await Promise.all(
+      Array.from({ length: 64 }, async () => {
+        const payloadJson = JSON.stringify({
+          ...publication.request,
+          operationId: createUuidV7(),
+        });
+        return {
+          payloadJson,
+          payloadSha256: await digest(payloadJson),
+          result: failedRitualPublication("EXPIRED"),
+        };
+      }),
+    );
+    await f.db.outbox.update([A, publication.parentWriteOperationId], {
+      publicationAttemptHistory: history,
+    });
+    const original = await f.db.outbox.get([
+      A,
+      publication.parentWriteOperationId,
+    ]);
+    expect(
+      await f.repo.renewExpiredPublication(account, publication),
+    ).toBeNull();
+    expect(
+      await f.db.outbox.get([A, publication.parentWriteOperationId]),
+    ).toEqual(original);
+  });
+
+  it.each([
+    "invalid publication JSON",
+    "wrong publication owner",
+    "invalid write JSON",
+    "wrong write identity",
+    "wrong write receipt",
+    "wrong publication checksum",
+    "invalid history shape",
+    "invalid history record",
+    "invalid history JSON",
+    "wrong history owner",
+    "nonexpired history result",
+    "duplicate history identity",
+    "wrong history checksum",
+  ])("retains but refuses renewal with %s", async (fault) => {
+    const { f, account, publication } = await expiredScenario();
+    const key: [string, string] = [A, publication.parentWriteOperationId];
+    const row = (await f.db.outbox.get(key))!;
+    const historyRequest = {
+      ...publication.request,
+      operationId: createUuidV7(),
+    };
+    const historyJson = JSON.stringify(historyRequest);
+    const historyRecord = {
+      payloadJson: historyJson,
+      payloadSha256: await digest(historyJson),
+      result: failedRitualPublication("EXPIRED"),
+    };
+    const damaged: Record<string, unknown> = { ...row };
+    switch (fault) {
+      case "invalid publication JSON":
+        damaged.publicationPayloadJson = "{";
+        break;
+      case "wrong publication owner":
+        damaged.publicationPayloadJson = JSON.stringify({
+          ...publication.request,
+          expectedActorId: B,
+        });
+        break;
+      case "invalid write JSON":
+        damaged.payloadJson = "{";
+        break;
+      case "wrong write identity":
+        damaged.payloadJson = JSON.stringify({
+          ...JSON.parse(row.payloadJson),
+          operationId: createUuidV7(),
+        });
+        break;
+      case "wrong write receipt":
+        damaged.result = { ...row.result, revisionId: createUuidV7() };
+        break;
+      case "wrong publication checksum":
+        damaged.publicationPayloadSha256 = "0".repeat(64);
+        break;
+      case "invalid history shape":
+        damaged.publicationAttemptHistory = {};
+        break;
+      case "invalid history record":
+        damaged.publicationAttemptHistory = [
+          { ...historyRecord, payloadSha256: "bad" },
+        ];
+        break;
+      case "invalid history JSON":
+        damaged.publicationAttemptHistory = [
+          { ...historyRecord, payloadJson: "{" },
+        ];
+        break;
+      case "wrong history owner":
+        damaged.publicationAttemptHistory = [
+          {
+            ...historyRecord,
+            payloadJson: JSON.stringify({
+              ...historyRequest,
+              expectedActorId: B,
+            }),
+          },
+        ];
+        break;
+      case "nonexpired history result":
+        damaged.publicationAttemptHistory = [
+          { ...historyRecord, result: failedRitualPublication("UNAVAILABLE") },
+        ];
+        break;
+      case "duplicate history identity":
+        damaged.publicationAttemptHistory = [historyRecord, historyRecord];
+        break;
+      case "wrong history checksum":
+        damaged.publicationAttemptHistory = [
+          { ...historyRecord, payloadSha256: "0".repeat(64) },
+        ];
+        break;
+    }
+    // Model an interrupted or incompatible persisted record, bypassing the typed writer.
+    await f.db.outbox.put(damaged as unknown as typeof row);
+    expect(
+      await f.repo.renewExpiredPublication(account, publication),
+    ).toBeNull();
+    expect(await f.db.outbox.get(key)).toEqual(damaged);
   });
 });
 

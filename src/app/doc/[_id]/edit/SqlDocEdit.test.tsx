@@ -30,6 +30,7 @@ const ids = vi.hoisted(() => ({
   bundle: "01995100-0000-7000-8000-000000000010",
   attachment: "01995100-0000-7000-8000-000000000011",
   file: "01995100-0000-7000-8000-000000000012",
+  renewedPublication: "01995100-0000-7000-8000-000000000013",
 }));
 const mock = vi.hoisted(() => ({
   register: vi.fn(),
@@ -42,6 +43,7 @@ const mock = vi.hoisted(() => ({
   drafts: vi.fn(),
   pending: vi.fn(),
   publication: vi.fn(),
+  expiredPublication: vi.fn(),
   preserve: vi.fn(),
   enqueue: vi.fn(),
   resume: vi.fn(),
@@ -51,6 +53,7 @@ const mock = vi.hoisted(() => ({
   resumePublication: vi.fn(),
   claimPublication: vi.fn(),
   settlePublication: vi.fn(),
+  renewPublication: vi.fn(),
   exportDraft: vi.fn(),
   send: vi.fn(),
   sendPublication: vi.fn(),
@@ -79,6 +82,8 @@ const runtime = {
     listDrafts: (...args: unknown[]) => mock.drafts(...args),
     readRetriableSave: (...args: unknown[]) => mock.pending(...args),
     readRetriablePublication: (...args: unknown[]) => mock.publication(...args),
+    readExpiredPublication: (...args: unknown[]) =>
+      mock.expiredPublication(...args),
     preserveDraft: (...args: unknown[]) => mock.preserve(...args),
     enqueueSave: (...args: unknown[]) => mock.enqueue(...args),
     resumeAuthenticatedSave: (...args: unknown[]) => mock.resume(...args),
@@ -90,6 +95,8 @@ const runtime = {
       mock.resumePublication(...args),
     claimPublication: (...args: unknown[]) => mock.claimPublication(...args),
     settlePublication: (...args: unknown[]) => mock.settlePublication(...args),
+    renewExpiredPublication: (...args: unknown[]) =>
+      mock.renewPublication(...args),
     exportDraft: (...args: unknown[]) => mock.exportDraft(...args),
   },
   coordinator: {
@@ -210,6 +217,7 @@ beforeEach(() => {
   mock.drafts.mockResolvedValue([]);
   mock.pending.mockResolvedValue(null);
   mock.publication.mockResolvedValue(null);
+  mock.expiredPublication.mockResolvedValue(null);
   mock.preserve.mockResolvedValue({
     id: "01995100-0000-7000-8000-000000000008",
     localVersion: 1,
@@ -227,10 +235,19 @@ beforeEach(() => {
   mock.settle.mockResolvedValue(true);
   mock.enqueuePublication.mockResolvedValue(undefined);
   mock.resumePublication.mockResolvedValue(false);
-  mock.claimPublication.mockImplementation((_account, request) =>
-    Promise.resolve({ request, account, claimId: ids.claim }),
+  mock.claimPublication.mockImplementation((_account, binding) =>
+    Promise.resolve({ ...binding, account, claimId: ids.claim }),
   );
   mock.settlePublication.mockResolvedValue(true);
+  mock.renewPublication.mockImplementation((_account, binding) =>
+    Promise.resolve({
+      ...binding,
+      request: {
+        ...binding.request,
+        operationId: ids.renewedPublication,
+      },
+    }),
+  );
   mock.exportDraft.mockImplementation((_account, ritualId, draftId) => {
     const input = mock.preserve.mock.calls.at(-1)?.[0];
     return Promise.resolve(
@@ -459,12 +476,15 @@ it("publishes an acknowledged save with its original write identity without clai
     return Promise.resolve(
       write
         ? {
-            version: 1,
-            operationId: write.operationId,
-            expectedActorId: ids.owner,
-            ritualId: ids.ritualA,
-            expectedRevisionId: ids.nextRevision,
-            expectedVersion: 5,
+            parentWriteOperationId: write.operationId,
+            request: {
+              version: 1,
+              operationId: write.operationId,
+              expectedActorId: ids.owner,
+              ritualId: ids.ritualA,
+              expectedRevisionId: ids.nextRevision,
+              expectedVersion: 5,
+            },
           }
         : null,
     );
@@ -503,7 +523,7 @@ it("publishes an acknowledged save with its original write identity without clai
   expect(screen.queryByText(/offline ready/i)).toBeNull();
 });
 
-it("closes an expired publication retry and points to administrator recovery", async () => {
+it("offers explicit renewal only after an exact expired publication result", async () => {
   const request = {
     version: 1 as const,
     operationId: ids.createOperation,
@@ -512,7 +532,11 @@ it("closes an expired publication retry and points to administrator recovery", a
     expectedRevisionId: ids.revision,
     expectedVersion: 4,
   };
-  mock.publication.mockResolvedValue(request);
+  const publication = {
+    parentWriteOperationId: ids.createOperation,
+    request,
+  };
+  mock.publication.mockResolvedValue(publication);
   mock.sendPublication.mockResolvedValue({
     ok: false,
     code: "EXPIRED",
@@ -522,16 +546,67 @@ it("closes an expired publication retry and points to administrator recovery", a
   });
   render(<SqlDocEdit ritualId={ids.ritualA} />);
   expect(
-    await screen.findByText(
-      /ask an administrator to run publication recovery/i,
-    ),
+    await screen.findByText(/start a new attempt for this unchanged/i),
   ).toBeDefined();
   expect(
     screen.queryByRole("button", { name: "Retry publication" }),
   ).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Start new publication attempt" }),
+  ).toBeDefined();
   expect(mock.settlePublication).toHaveBeenCalledWith(
-    expect.objectContaining({ request }),
+    expect.objectContaining(publication),
     expect.objectContaining({ code: "EXPIRED", retryable: false }),
+  );
+});
+
+it("renews a persisted expired publication and sends the durable replacement identity", async () => {
+  const expired = {
+    parentWriteOperationId: ids.createOperation,
+    request: {
+      version: 1 as const,
+      operationId: ids.createOperation,
+      expectedActorId: ids.owner,
+      ritualId: ids.ritualA,
+      expectedRevisionId: ids.revision,
+      expectedVersion: 4,
+    },
+  };
+  const renewed = {
+    ...expired,
+    request: {
+      ...expired.request,
+      operationId: ids.renewedPublication,
+    },
+  };
+  mock.expiredPublication.mockResolvedValue(expired);
+  mock.renewPublication.mockResolvedValue(renewed);
+  mock.sendPublication.mockImplementation((request) =>
+    Promise.resolve({
+      ok: true,
+      state: "completed",
+      replayed: false,
+      receipt: {
+        operationId: request.operationId,
+        bundleId: ids.bundle,
+        ritualId: request.ritualId,
+        publishedAtMs: 1,
+      },
+    }),
+  );
+
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  fireEvent.click(
+    await screen.findByRole("button", {
+      name: "Start new publication attempt",
+    }),
+  );
+
+  await screen.findByText(/published for download/i);
+  expect(mock.renewPublication).toHaveBeenCalledWith(account, expired);
+  expect(mock.sendPublication).toHaveBeenCalledWith(
+    renewed.request,
+    expect.any(AbortSignal),
   );
 });
 
@@ -555,7 +630,10 @@ it("moves an acknowledged create handoff into the gated outbox before publicatio
   };
   const handoff = createCreationPublicationHandoff(write, result)!;
   retainCreationPublicationHandoff(localStorage, handoff);
-  mock.publication.mockResolvedValue(handoff.publication);
+  mock.publication.mockResolvedValue({
+    parentWriteOperationId: handoff.write.operationId,
+    request: handoff.publication,
+  });
   render(<SqlDocEdit ritualId={ids.ritualA} />);
   await screen.findByText("Protected A");
   await waitFor(() =>

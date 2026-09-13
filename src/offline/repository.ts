@@ -28,6 +28,8 @@ import type {
   DraftInput,
   OfflineDraft,
   OutboxRow,
+  PublicationAttemptRecord,
+  PublicationOutboxBinding,
   PublicationOutboxClaim,
   RitualBundle,
   RitualOfflineDatabase,
@@ -44,6 +46,7 @@ const hash = (value: unknown): value is string =>
 const routeAlias = (value: unknown): value is string =>
   typeof value === "string" && /^[a-f0-9]{24}$/.test(value);
 const CLAIM_MS = 60_000;
+const MAX_PUBLICATION_ATTEMPT_HISTORY = 64;
 
 /** Safe local errors carry no source, provider details or other-account data. */
 export class OfflineRepositoryError extends Error {
@@ -251,6 +254,121 @@ function storedPublication(row: OutboxRow): RitualPublicationRequestV1 | null {
     return null;
   }
 }
+function storedPublicationBinding(
+  row: OutboxRow,
+): PublicationOutboxBinding | null {
+  const request = storedPublication(row);
+  if (
+    !request ||
+    !id(row.operationId) ||
+    row.ownerId !== request.expectedActorId ||
+    row.ritualId !== request.ritualId
+  )
+    return null;
+  return { parentWriteOperationId: row.operationId, request };
+}
+function parsePublicationBinding(
+  value: PublicationOutboxBinding,
+  ownerId: string,
+): PublicationOutboxBinding | null {
+  const request = parseRitualPublicationRequest(value?.request);
+  return id(value?.parentWriteOperationId) &&
+    request?.expectedActorId === ownerId
+    ? { parentWriteOperationId: value.parentWriteOperationId, request }
+    : null;
+}
+function samePublicationBinding(
+  left: PublicationOutboxBinding | null,
+  right: PublicationOutboxBinding | null,
+) {
+  return (
+    !!left &&
+    !!right &&
+    left.parentWriteOperationId === right.parentWriteOperationId &&
+    JSON.stringify(left.request) === JSON.stringify(right.request)
+  );
+}
+function storedPublicationHistory(
+  row: OutboxRow,
+): PublicationAttemptRecord[] | null {
+  const stored = row.publicationAttemptHistory;
+  if (stored === undefined) return [];
+  if (!Array.isArray(stored) || stored.length > MAX_PUBLICATION_ATTEMPT_HISTORY)
+    return null;
+  const result: PublicationAttemptRecord[] = [];
+  const identities = new Set<string>();
+  for (const item of stored) {
+    if (
+      !item ||
+      typeof item !== "object" ||
+      Array.isArray(item) ||
+      Reflect.ownKeys(item).length !== 3 ||
+      typeof item.payloadJson !== "string" ||
+      !hash(item.payloadSha256)
+    )
+      return null;
+    let request: RitualPublicationRequestV1 | null = null;
+    try {
+      request = parseRitualPublicationRequest(JSON.parse(item.payloadJson));
+    } catch {
+      return null;
+    }
+    const settled = parseRitualPublicationResult(request, item.result);
+    if (
+      !request ||
+      !settled ||
+      settled.ok ||
+      settled.code !== "EXPIRED" ||
+      request.expectedActorId !== row.ownerId ||
+      request.ritualId !== row.ritualId ||
+      identities.has(request.operationId)
+    )
+      return null;
+    identities.add(request.operationId);
+    result.push({
+      payloadJson: item.payloadJson,
+      payloadSha256: item.payloadSha256,
+      result: settled,
+    });
+  }
+  return result;
+}
+function acknowledgedPublicationParent(
+  row: OutboxRow,
+  binding: PublicationOutboxBinding,
+) {
+  let write: SaveRequest | CreateRequest | null = null;
+  try {
+    const value: unknown = JSON.parse(row.payloadJson);
+    write = isSaveRequest(value, row.ownerId)
+      ? value
+      : isCreateRequest(value, row.ownerId)
+        ? value
+        : null;
+  } catch {
+    return false;
+  }
+  if (!write || write.operationId !== binding.parentWriteOperationId)
+    return false;
+  const result = parseSqlRitualWriteResult(write, row.result);
+  return (
+    row.status === "acknowledged" &&
+    result?.ok === true &&
+    result.ritualId === binding.request.ritualId &&
+    result.revisionId === binding.request.expectedRevisionId &&
+    result.version === binding.request.expectedVersion
+  );
+}
+function exactExpiredPublication(
+  row: OutboxRow,
+  binding: PublicationOutboxBinding,
+) {
+  const result = parseRitualPublicationResult(
+    binding.request,
+    row.publicationResult,
+  );
+  return result && !result.ok && result.code === "EXPIRED" ? result : null;
+}
 function validSourceSnapshot(
   value: SourceSnapshot,
   ownerId: string,
@@ -356,6 +474,31 @@ export class OfflineRitualRepository {
       await this.purgeResource(account.ownerId, ritualId);
     if (!result.sourceEdit) await this.purgeSource(account.ownerId, ritualId);
     return result;
+  }
+
+  private async publicationSourceCurrent(
+    account: OfflineAccount,
+    request: RitualPublicationRequestV1,
+  ) {
+    const check = await this.db.checks.get([account.ownerId, request.ritualId]);
+    const authorization = await this.db.authorizations.get([
+      account.ownerId,
+      request.ritualId,
+    ]);
+    const values = await this.db.sources
+      .where("[ownerId+ritualId]")
+      .equals([account.ownerId, request.ritualId])
+      .toArray();
+    if (values.length !== 1) return false;
+    const source = values[0];
+    return (
+      validSourceSnapshot(source, account.ownerId, request.ritualId) &&
+      source.revisionId === request.expectedRevisionId &&
+      source.parentVersion === request.expectedVersion &&
+      check?.sourceLeaseId === authorization?.grant?.leaseId &&
+      check?.sourceRevisionId === source.revisionId &&
+      check.sourceParentVersion === source.parentVersion
+    );
   }
 
   /** Account/lease checks bracket IDB reads; a final synchronous check also covers commit suspension. */
@@ -1454,7 +1597,7 @@ export class OfflineRitualRepository {
   async readRetriablePublication(
     account: OfflineAccount,
     ritualId: string,
-  ): Promise<RitualPublicationRequestV1 | null> {
+  ): Promise<PublicationOutboxBinding | null> {
     account = structuredClone(account);
     const snapshot = await this.deliver(account, ritualId, true, async () => {
       const rows = (
@@ -1473,15 +1616,17 @@ export class OfflineRitualRepository {
                 this.now() >= row.publicationClaimUntilMs))),
       );
       const row = rows[0];
+      const binding = row ? storedPublicationBinding(row) : null;
       if (
         rows.length !== 1 ||
+        !binding ||
         !row.publicationPayloadJson ||
-        !row.publicationPayloadSha256 ||
-        !storedPublication(row)
+        !row.publicationPayloadSha256
       )
         return null;
       return {
         value: {
+          parentWriteOperationId: binding.parentWriteOperationId,
           payloadJson: row.publicationPayloadJson,
           payloadSha256: row.publicationPayloadSha256,
         },
@@ -1500,6 +1645,7 @@ export class OfflineRitualRepository {
         .toArray();
       const matching = rows.filter(
         (row) =>
+          row.operationId === snapshot.parentWriteOperationId &&
           row.publicationPayloadJson === snapshot.payloadJson &&
           row.publicationPayloadSha256 === snapshot.payloadSha256 &&
           (row.publicationStatus === "queued" ||
@@ -1510,31 +1656,219 @@ export class OfflineRitualRepository {
                   row.publicationClaimUntilMs !== undefined &&
                   this.now() >= row.publicationClaimUntilMs)))),
       );
-      const request =
-        matching.length === 1 ? storedPublication(matching[0]) : null;
-      return request?.ritualId === ritualId ? { value: request } : null;
+      const binding =
+        matching.length === 1 ? storedPublicationBinding(matching[0]) : null;
+      return binding?.request.ritualId === ritualId ? { value: binding } : null;
+    });
+  }
+
+  /** Return only a definitively expired attempt for the currently installed source revision. */
+  async readExpiredPublication(
+    account: OfflineAccount,
+    ritualId: string,
+  ): Promise<PublicationOutboxBinding | null> {
+    account = structuredClone(account);
+    const snapshot = await this.deliver(account, ritualId, true, async () => {
+      const rows = await this.db.outbox
+        .where("[ownerId+ritualId]")
+        .equals([account.ownerId, ritualId])
+        .toArray();
+      const eligible: Array<{
+        row: OutboxRow;
+        binding: PublicationOutboxBinding;
+      }> = [];
+      for (const row of rows) {
+        const binding = storedPublicationBinding(row);
+        if (
+          binding &&
+          row.publicationStatus === "rejected" &&
+          exactExpiredPublication(row, binding) &&
+          acknowledgedPublicationParent(row, binding) &&
+          storedPublicationHistory(row) !== null &&
+          (await this.publicationSourceCurrent(account, binding.request))
+        )
+          eligible.push({ row, binding });
+      }
+      if (eligible.length !== 1) return null;
+      const { row, binding } = eligible[0];
+      if (!row.publicationPayloadJson || !row.publicationPayloadSha256)
+        return null;
+      return {
+        value: {
+          binding,
+          payloadJson: row.publicationPayloadJson,
+          payloadSha256: row.publicationPayloadSha256,
+        },
+      };
+    });
+    if (
+      !snapshot ||
+      !hash(snapshot.payloadSha256) ||
+      (await sha256(snapshot.payloadJson)) !== snapshot.payloadSha256
+    )
+      return null;
+    return this.deliver(account, ritualId, true, async () => {
+      const row = await this.db.outbox.get([
+        account.ownerId,
+        snapshot.binding.parentWriteOperationId,
+      ]);
+      const binding = row ? storedPublicationBinding(row) : null;
+      return row &&
+        samePublicationBinding(binding, snapshot.binding) &&
+        row.publicationStatus === "rejected" &&
+        row.publicationPayloadJson === snapshot.payloadJson &&
+        row.publicationPayloadSha256 === snapshot.payloadSha256 &&
+        exactExpiredPublication(row, snapshot.binding) &&
+        acknowledgedPublicationParent(row, snapshot.binding) &&
+        storedPublicationHistory(row) !== null &&
+        (await this.publicationSourceCurrent(account, snapshot.binding.request))
+        ? { value: snapshot.binding }
+        : null;
+    });
+  }
+
+  /**
+   * Replace one exact expired publication identity while retaining its evidence.
+   * Hashing stays outside IndexedDB; the final gated transaction rechecks every byte and CAS.
+   */
+  async renewExpiredPublication(
+    account: OfflineAccount,
+    bindingValue: PublicationOutboxBinding,
+  ): Promise<PublicationOutboxBinding | null> {
+    account = structuredClone(account);
+    const binding = parsePublicationBinding(bindingValue, account.ownerId);
+    requireValue(!!binding, "INVALID");
+    const snapshot = await this.deliver(
+      account,
+      binding.request.ritualId,
+      true,
+      async () => {
+        const row = await this.db.outbox.get([
+          account.ownerId,
+          binding.parentWriteOperationId,
+        ]);
+        const current = row ? storedPublicationBinding(row) : null;
+        const history = row ? storedPublicationHistory(row) : null;
+        const expired = row ? exactExpiredPublication(row, binding) : null;
+        if (
+          !row ||
+          !samePublicationBinding(current, binding) ||
+          row.publicationStatus !== "rejected" ||
+          !expired ||
+          !acknowledgedPublicationParent(row, binding) ||
+          !history ||
+          history.length >= MAX_PUBLICATION_ATTEMPT_HISTORY ||
+          history.some(
+            (attempt) =>
+              parseRitualPublicationRequest(JSON.parse(attempt.payloadJson))
+                ?.operationId === binding.request.operationId,
+          ) ||
+          !(await this.publicationSourceCurrent(account, binding.request))
+        )
+          return null;
+        return {
+          value: {
+            payloadJson: row.payloadJson,
+            payloadSha256: row.payloadSha256,
+            publicationPayloadJson: row.publicationPayloadJson,
+            publicationPayloadSha256: row.publicationPayloadSha256,
+            history,
+            historyJson: JSON.stringify(history),
+            expiredJson: JSON.stringify(expired),
+          },
+        };
+      },
+    );
+    if (
+      !snapshot ||
+      !hash(snapshot.payloadSha256) ||
+      (await sha256(snapshot.payloadJson)) !== snapshot.payloadSha256 ||
+      !snapshot.publicationPayloadJson ||
+      !hash(snapshot.publicationPayloadSha256) ||
+      (await sha256(snapshot.publicationPayloadJson)) !==
+        snapshot.publicationPayloadSha256
+    )
+      return null;
+    for (const attempt of snapshot.history)
+      if ((await sha256(attempt.payloadJson)) !== attempt.payloadSha256)
+        return null;
+    const previousPayloadJson = snapshot.publicationPayloadJson;
+    const previousPayloadSha256 = snapshot.publicationPayloadSha256;
+    const renewed: PublicationOutboxBinding = {
+      parentWriteOperationId: binding.parentWriteOperationId,
+      request: { ...binding.request, operationId: createUuidV7() },
+    };
+    const publicationPayloadJson = JSON.stringify(renewed.request);
+    const publicationPayloadSha256 = await sha256(publicationPayloadJson);
+    return this.deliver(account, binding.request.ritualId, true, async () => {
+      const row = await this.db.outbox.get([
+        account.ownerId,
+        binding.parentWriteOperationId,
+      ]);
+      const current = row ? storedPublicationBinding(row) : null;
+      const history = row ? storedPublicationHistory(row) : null;
+      const expired = row ? exactExpiredPublication(row, binding) : null;
+      if (
+        !row ||
+        !samePublicationBinding(current, binding) ||
+        row.publicationStatus !== "rejected" ||
+        !expired ||
+        !acknowledgedPublicationParent(row, binding) ||
+        !history ||
+        history.length >= MAX_PUBLICATION_ATTEMPT_HISTORY ||
+        history.some(
+          (attempt) =>
+            parseRitualPublicationRequest(JSON.parse(attempt.payloadJson))
+              ?.operationId === binding.request.operationId,
+        ) ||
+        row.payloadJson !== snapshot.payloadJson ||
+        row.payloadSha256 !== snapshot.payloadSha256 ||
+        row.publicationPayloadJson !== snapshot.publicationPayloadJson ||
+        row.publicationPayloadSha256 !== snapshot.publicationPayloadSha256 ||
+        JSON.stringify(history) !== snapshot.historyJson ||
+        JSON.stringify(expired) !== snapshot.expiredJson ||
+        !(await this.publicationSourceCurrent(account, binding.request))
+      )
+        return null;
+      await this.db.outbox.put({
+        ...row,
+        publicationPayloadJson,
+        publicationPayloadSha256,
+        publicationStatus: "queued",
+        publicationAttempts: 0,
+        publicationClaimId: null,
+        publicationClaimEpoch: null,
+        publicationClaimUntilMs: null,
+        publicationResult: null,
+        publicationAttemptHistory: [
+          ...history,
+          {
+            payloadJson: previousPayloadJson,
+            payloadSha256: previousPayloadSha256,
+            result: expired,
+          },
+        ],
+      });
+      return { value: renewed };
     });
   }
 
   async resumeAuthenticatedPublication(
     account: OfflineAccount,
-    request: RitualPublicationRequestV1,
+    bindingValue: PublicationOutboxBinding,
   ): Promise<boolean> {
     account = structuredClone(account);
-    const parsed = parseRitualPublicationRequest(request);
-    requireValue(
-      !!parsed && parsed.expectedActorId === account.ownerId,
-      "INVALID",
-    );
+    const binding = parsePublicationBinding(bindingValue, account.ownerId);
+    requireValue(!!binding, "INVALID");
     return (
-      (await this.deliver(account, parsed.ritualId, true, async () => {
+      (await this.deliver(account, binding.request.ritualId, true, async () => {
         const row = await this.db.outbox.get([
           account.ownerId,
-          parsed.operationId,
+          binding.parentWriteOperationId,
         ]);
         if (
           row?.publicationStatus !== "authentication-required" ||
-          JSON.stringify(storedPublication(row)) !== JSON.stringify(parsed)
+          !samePublicationBinding(storedPublicationBinding(row), binding)
         )
           return { value: false };
         await this.db.outbox.put({ ...row, publicationStatus: "queued" });
@@ -1545,28 +1879,28 @@ export class OfflineRitualRepository {
 
   async claimPublication(
     account: OfflineAccount,
-    request: RitualPublicationRequestV1,
+    bindingValue: PublicationOutboxBinding,
   ): Promise<PublicationOutboxClaim | null> {
     account = structuredClone(account);
-    const parsed = parseRitualPublicationRequest(request);
+    const binding = parsePublicationBinding(bindingValue, account.ownerId);
     if (
-      !parsed ||
-      parsed.expectedActorId !== account.ownerId ||
-      JSON.stringify(
-        await this.readRetriablePublication(account, parsed.ritualId),
-      ) !== JSON.stringify(parsed)
+      !binding ||
+      !samePublicationBinding(
+        await this.readRetriablePublication(account, binding.request.ritualId),
+        binding,
+      )
     )
       return null;
-    return this.deliver(account, parsed.ritualId, true, async () => {
+    return this.deliver(account, binding.request.ritualId, true, async () => {
       const row = await this.db.outbox.get([
         account.ownerId,
-        parsed.operationId,
+        binding.parentWriteOperationId,
       ]);
-      const current = row && storedPublication(row);
+      const current = row ? storedPublicationBinding(row) : null;
       const now = this.now();
       if (
         !row ||
-        JSON.stringify(current) !== JSON.stringify(parsed) ||
+        !samePublicationBinding(current, binding) ||
         (row.publicationStatus !== "queued" &&
           !(
             row.publicationStatus === "sending" &&
@@ -1586,7 +1920,7 @@ export class OfflineRitualRepository {
         publicationClaimEpoch: account.epoch,
         publicationClaimUntilMs: now + CLAIM_MS,
       });
-      return { value: { request: parsed, claimId, account } };
+      return { value: { ...binding, claimId, account } };
     });
   }
 
@@ -1607,7 +1941,7 @@ export class OfflineRitualRepository {
         return false;
       const row = await this.db.outbox.get([
         claim.account.ownerId,
-        claim.request.operationId,
+        claim.parentWriteOperationId,
       ]);
       if (
         !row ||
@@ -1615,7 +1949,7 @@ export class OfflineRitualRepository {
         row.publicationStatus !== "sending" ||
         row.publicationClaimId !== claim.claimId ||
         row.publicationClaimEpoch !== claim.account.epoch ||
-        JSON.stringify(storedPublication(row)) !== JSON.stringify(claim.request)
+        !samePublicationBinding(storedPublicationBinding(row), claim)
       )
         return false;
       await this.gate(claim.account, claim.request.ritualId);

@@ -33,10 +33,7 @@ import { parseRitualFileLocator } from "@/files/ritualFileLocator";
 import { createUuidV7 } from "@/lib/ids";
 import { getBrowserOfflineRuntime } from "@/offline/browserRuntime";
 import type { OfflineOperation } from "@/offline/lifecycle";
-import {
-  failedRitualPublication,
-  type RitualPublicationRequestV1,
-} from "@/offline/ritualPublicationContract";
+import { failedRitualPublication } from "@/offline/ritualPublicationContract";
 import {
   clearCreationPublicationHandoff,
   creationPublicationHandoffKey,
@@ -46,6 +43,7 @@ import { syncOfflineRitualSource } from "@/offline/ritualSourceSync";
 import type {
   DraftInput,
   OfflineDraft,
+  PublicationOutboxBinding,
   SourceSnapshot,
 } from "@/offline/storage";
 import type { DocNode } from "@/schemas";
@@ -94,6 +92,15 @@ function unavailableResult(): SqlRitualWriteResult {
     retryable: true,
   };
 }
+function samePublication(
+  left: PublicationOutboxBinding | null,
+  right: PublicationOutboxBinding,
+) {
+  return (
+    left?.parentWriteOperationId === right.parentWriteOperationId &&
+    left.request.operationId === right.request.operationId
+  );
+}
 
 export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
   const [display, setDisplay] = React.useState<Display>({
@@ -122,7 +129,11 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
     SqlRitualWriteRequest,
     { kind: "save" }
   > | null>(null);
-  const publicationRef = React.useRef<RitualPublicationRequestV1 | null>(null);
+  const publicationRef = React.useRef<PublicationOutboxBinding | null>(null);
+  const expiredPublicationRef = React.useRef<PublicationOutboxBinding | null>(
+    null,
+  );
+  const [renewalAvailable, setRenewalAvailable] = React.useState(false);
   const savingRef = React.useRef(false);
   const exportingRef = React.useRef(false);
   const publishingRef = React.useRef(false);
@@ -364,16 +375,19 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
           handoffWarning =
             "The acknowledged creation is saved, but its publication could not be moved into durable offline storage. Retry when browser storage is available.";
         }
-        const [storedDrafts, pending, publication] = await Promise.all([
-          runtime.repository.listDrafts(account, ritualId),
-          runtime.repository.readRetriableSave(account, ritualId),
-          runtime.repository.readRetriablePublication(account, ritualId),
-        ]);
+        const [storedDrafts, pending, publication, expiredPublication] =
+          await Promise.all([
+            runtime.repository.listDrafts(account, ritualId),
+            runtime.repository.readRetriableSave(account, ritualId),
+            runtime.repository.readRetriablePublication(account, ritualId),
+            runtime.repository.readExpiredPublication(account, ritualId),
+          ]);
         if (!storedDrafts || operation.signal.aborted) return;
         sourceRef.current = source;
         titleRef.current = source.title;
         pendingRef.current = pending;
         publicationRef.current = publication;
+        expiredPublicationRef.current = expiredPublication;
         const heldDraft = draftRef.current;
         let draft =
           (heldDraft?.ownerId === account.ownerId &&
@@ -463,8 +477,15 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
                   message:
                     "The saved version is queued for publication and can be retried with the same request ID.",
                 }
-              : null,
+              : expiredPublication
+                ? {
+                    kind: "error",
+                    message:
+                      "The previous publication attempt expired. Start a new attempt for this unchanged saved version.",
+                  }
+                : null,
           );
+          setRenewalAvailable(expiredPublication !== null);
           showScriptHandle(draft.source);
           queueMicrotask(() => {
             const currentView = viewRef.current;
@@ -564,6 +585,8 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
             draftRef.current = null;
             pendingRef.current = null;
             publicationRef.current = null;
+            expiredPublicationRef.current = null;
+            setRenewalAvailable(false);
           },
           available: () => {
             const operation = registration?.begin();
@@ -623,8 +646,10 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
     const runtime = runtimeRef.current;
     const registration = registrationRef.current;
     const account = runtime?.coordinator.state.account;
-    const request = publicationRef.current;
-    if (!runtime || !account || !request || publishingRef.current) return;
+    const binding = publicationRef.current;
+    const request = binding?.request;
+    if (!runtime || !account || !binding || !request || publishingRef.current)
+      return;
     if (
       request.expectedActorId !== account.ownerId ||
       request.ritualId !== ritualId
@@ -645,9 +670,9 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
       message: "Publishing the saved version for download...",
     });
     try {
-      await runtime.repository.resumeAuthenticatedPublication(account, request);
+      await runtime.repository.resumeAuthenticatedPublication(account, binding);
       if (operation.signal.aborted) return;
-      const claim = await runtime.repository.claimPublication(account, request);
+      const claim = await runtime.repository.claimPublication(account, binding);
       if (!claim)
         throw new Error(
           "The retained publication is currently unavailable. Reconnect and retry.",
@@ -662,8 +687,10 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
         );
       if (result.ok) {
         runtime.coordinator.commit(operation, () => {
-          if (publicationRef.current?.operationId === request.operationId) {
+          if (samePublication(publicationRef.current, binding)) {
             publicationRef.current = null;
+            expiredPublicationRef.current = null;
+            setRenewalAvailable(false);
             setPublicationNotice({
               kind: "completed",
               message:
@@ -678,20 +705,27 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
         result.code === "AUTH_REQUIRED" ||
         result.code === "ACTOR_CHANGED";
       runtime.coordinator.commit(operation, () => {
-        if (publicationRef.current?.operationId === request.operationId) {
+        if (samePublication(publicationRef.current, binding)) {
           if (!mayRetry) publicationRef.current = null;
+          if (result.code === "EXPIRED") {
+            expiredPublicationRef.current = binding;
+            setRenewalAvailable(true);
+          } else if (!mayRetry) {
+            expiredPublicationRef.current = null;
+            setRenewalAvailable(false);
+          }
           setPublicationNotice({
             kind: mayRetry ? "queued" : "error",
             message:
               result.code === "EXPIRED"
-                ? "This publication attempt expired. Ask an administrator to run publication recovery for this saved version."
+                ? "This publication attempt expired. Start a new attempt for this unchanged saved version."
                 : result.message,
           });
         }
       });
     } catch (failure) {
       runtime.coordinator.commit(operation, () => {
-        if (publicationRef.current?.operationId === request.operationId)
+        if (samePublication(publicationRef.current, binding))
           setPublicationNotice({
             kind: "error",
             message:
@@ -706,7 +740,7 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
       setPublishing(false);
       if (
         publicationRef.current &&
-        publicationRef.current.operationId !== request.operationId
+        !samePublication(publicationRef.current, binding)
       )
         queueMicrotask(() => {
           void publishRef.current();
@@ -714,6 +748,102 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
     }
   }, [ritualId]);
   publishRef.current = publish;
+
+  const renewPublication = React.useCallback(async () => {
+    const runtime = runtimeRef.current;
+    const registration = registrationRef.current;
+    const account = runtime?.coordinator.state.account;
+    const binding = expiredPublicationRef.current;
+    const source = sourceRef.current;
+    if (!runtime || !account || !binding || !source || publishingRef.current)
+      return;
+    const request = binding.request;
+    if (
+      request.expectedActorId !== account.ownerId ||
+      request.ritualId !== ritualId ||
+      source.ownerId !== account.ownerId ||
+      source.ritualId !== ritualId ||
+      source.revisionId !== request.expectedRevisionId ||
+      source.parentVersion !== request.expectedVersion
+    ) {
+      setPublicationNotice({
+        kind: "error",
+        message:
+          "This saved version is no longer current. Reload the source before starting another publication attempt.",
+      });
+      return;
+    }
+    const operation = registration?.begin();
+    if (!operation) {
+      setPublicationNotice({
+        kind: "error",
+        message:
+          "Ritual source is locked. Reconnect before starting another publication attempt.",
+      });
+      return;
+    }
+    publishingRef.current = true;
+    setPublishing(true);
+    setPublicationNotice({
+      kind: "queued",
+      message: "Preparing a new publication attempt...",
+    });
+    let publishRenewed = false;
+    try {
+      const renewed = await runtime.repository.renewExpiredPublication(
+        account,
+        binding,
+      );
+      if (operation.signal.aborted) return;
+      if (
+        !renewed ||
+        renewed.parentWriteOperationId !== binding.parentWriteOperationId ||
+        renewed.request.operationId === binding.request.operationId ||
+        renewed.request.expectedActorId !== request.expectedActorId ||
+        renewed.request.ritualId !== request.ritualId ||
+        renewed.request.expectedRevisionId !== request.expectedRevisionId ||
+        renewed.request.expectedVersion !== request.expectedVersion
+      )
+        throw new Error(
+          "The expired attempt could not be renewed for the current saved version. Refresh source access and retry, or ask an administrator to publish it.",
+        );
+      runtime.coordinator.commit(operation, () => {
+        if (
+          samePublication(expiredPublicationRef.current, binding) &&
+          publicationRef.current === null
+        ) {
+          expiredPublicationRef.current = null;
+          setRenewalAvailable(false);
+          publicationRef.current = renewed;
+          setPublicationNotice({
+            kind: "queued",
+            message:
+              "The new publication attempt is retained and ready to send.",
+          });
+          publishRenewed = true;
+        }
+      });
+    } catch (failure) {
+      runtime.coordinator.commit(operation, () => {
+        if (samePublication(expiredPublicationRef.current, binding))
+          setPublicationNotice({
+            kind: "error",
+            message:
+              failure instanceof Error
+                ? failure.message
+                : "The expired attempt could not be renewed. Refresh source access and retry, or ask an administrator to publish it.",
+          });
+      });
+    } finally {
+      runtime.coordinator.finish(operation);
+      publishingRef.current = false;
+      setPublishing(false);
+      if (publishRenewed)
+        queueMicrotask(() => {
+          void publishRef.current();
+        });
+    }
+  }, [ritualId]);
 
   const save = React.useCallback(async () => {
     const runtime = runtimeRef.current;
@@ -818,6 +948,8 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
       );
       runtime.coordinator.commit(operation, () => {
         publicationRef.current = publication;
+        expiredPublicationRef.current = null;
+        setRenewalAvailable(false);
         setPublicationNotice(
           publication
             ? {
@@ -996,6 +1128,16 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
       {publicationRef.current && (
         <Button onClick={() => void publish()} disabled={saving || publishing}>
           {publishing ? "Publishing saved version..." : "Retry publication"}
+        </Button>
+      )}
+      {renewalAvailable && (
+        <Button
+          onClick={() => void renewPublication()}
+          disabled={saving || publishing}
+        >
+          {publishing
+            ? "Preparing publication attempt..."
+            : "Start new publication attempt"}
         </Button>
       )}
       {pendingRef.current && (

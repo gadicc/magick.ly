@@ -2,7 +2,7 @@ import { isUuidV7 } from "../lib/ids";
 
 export interface RitualPublicationRequestV1 {
   version: 1;
-  /** Reuse the durable SQL write operation ID for post-save publication retries. */
+  /** Durable attempt identity; exact retries reuse it and expired attempts may renew it. */
   operationId: string;
   expectedActorId: string;
   ritualId: string;
