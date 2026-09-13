@@ -72,6 +72,7 @@ export default defineConfig({
         "src/app/chat/train/upload/route.ts",
         "src/lib/ids.ts",
         "src/api-lib/gongoHttpAuth.ts",
+        "src/auth/sqlAuth.ts",
         "src/db/legacyIds.ts",
         "src/migration/normalizeLegacyAuth.ts",
         "src/migration/classifyLegacyAuthSource.ts",

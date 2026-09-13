@@ -852,3 +852,18 @@ owned branch was removed; main still has its original catalog, two migration
 records and empty alias table. No private corpus or runtime was activated.
 Evidence: `/tmp/magickli-import-command-neon/README.md`. Provider/Preview gates,
 private storage, authentication/runtime integration and the final cutover remain.
+
+The [SQL authentication factory](013-sql-auth-runtime.md) now provides the actual
+Better Auth configuration and an uncached canonical-session adapter for domain
+services. Imported Google subjects keep their UUIDs; matching email cannot link
+an unrelated subject. Real handler tests cover cookies, callback state replay,
+token encryption, revoked-session denial of private ritual content and atomic
+new-user/account rollback. Review reproduced raw token parameters in the default
+auth error logger; the factory now emits fixed safe events instead.
+
+All 3,922 default tests (62 additional; 14 opt-in Mongo skipped), 86-module
+coverage gates, types, Biome and ordinary Loom check pass. The 70 scoped cases
+use synthetic provider responses and PGlite, with all fetch calls forbidden.
+Independent review is clean. Existing Auth.js/Gongo routes remain active, and
+real browser/OAuth/SQL transport activation is still pending. A separate shared
+Loom TLS fix is being prepared before use of its transaction-capable runtime.
