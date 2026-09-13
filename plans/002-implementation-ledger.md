@@ -698,3 +698,16 @@ fixed escaped-string budgeting and allocator-triggered source mutation. The
 record documents which independent reviews finished before review workers hit
 the account usage limit. The atomic SQL importer and owned backup loader remain
 next; no database, provider or runtime behavior changed.
+
+The [BSON source decoder](011-legacy-import-checkpoint.md) now preserves raw
+frame/type evidence before the native-number projection expected by existing
+planners. All 190 protected records pass byte-exact typed round trips and the
+combined preparation/checkpoint path. Local adversarial review covers duplicate
+fields, malformed array indices, unsafe int64 values, shared-memory spoofing and
+owned-buffer cleanup. File/manifest verification and bounded gzip capture remain
+the next source-loader layer; no database or provider was contacted.
+
+All 3,318 tests (30 new; 14 opt-in Mongo cases skipped), 78-module coverage gates,
+types, Biome, ordinary Loom check and production build pass. Coverage is 98.31%
+statements, 97.16% branches, 99.90% functions and 99.34% lines. Evidence:
+`/tmp/magickli-bson-decoder-{coverage,final-types,biome,loom,build}.log`.

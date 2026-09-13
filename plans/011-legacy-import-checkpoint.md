@@ -89,6 +89,33 @@ writes. Evidence: `/tmp/magickli-prepared-import-preflight/report.json`, SHA-256
 `/tmp/magickli-import-preparation-{coverage,types,biome,loom,build}.log`, and
 `/tmp/magickli-import-{plan,source,sql}-design.md`.
 
+## BSON source verification
+
+The first source-loader boundary, `decodeLegacyBson`, is now implemented. It
+captures an owned inflated collection using intrinsic typed-array bounds,
+rejects shared memory, validates complete BSON frames, and decodes original
+numeric wrappers before native-scalar projection. Exact typed reserialization
+must reproduce every frame byte, refusing duplicate fields and normalized array
+indices. Frame and type-profile hashes bind the original numeric representation;
+source names and values are absent from those evidence records. Unsupported BSON
+types and int64 values outside the JavaScript safe range stop decoding. Native
+Double values retain their exact meaning for subsequent domain validation.
+
+Bounds are 256 MiB per inflated collection, 16 MiB per frame, 100,000 rows, one
+million values and depth 256. These are capture/representation bounds, not a
+total process-memory claim. Temporary byte copies are wiped; immutable decoded
+strings are released normally. File provenance, gzip limits and source-wide
+budgets still belong to the pending file loader.
+
+All 190 production BSON frames pass exact typed round trips and then the actual
+decoder, combined builder and checkpoint round trip. Backup files and 12 module
+fingerprints remain unchanged. Evidence:
+`/tmp/magickli-bson-decoder-preflight/report.json`, SHA-256
+`f00b63bd5d06d873ea67a0ce37dcafc0b02a92a8b04da93643cdb08ab74b8a0a`.
+Thirty new tests cover wire/type preservation, ownership, malformed/duplicate
+fields, unsafe/unsupported values, depth/row limits and full-domain integration.
+The review was local and adversarial; independent workers remained unavailable.
+
 ## Next integration
 
 Use one protected singleton prepared run and one ordered atomic application

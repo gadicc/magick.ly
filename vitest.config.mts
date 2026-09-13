@@ -75,6 +75,7 @@ export default defineConfig({
         "src/db/legacyIds.ts",
         "src/migration/normalizeLegacyAuth.ts",
         "src/migration/classifyLegacyAuthSource.ts",
+        "src/migration/decodeLegacyBson.ts",
         "src/migration/prepareLegacyImport.ts",
         "src/migration/legacyImportValue.ts",
         "src/migration/legacyImportCheckpoint.ts",
