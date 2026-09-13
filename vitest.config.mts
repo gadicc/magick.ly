@@ -47,6 +47,8 @@ export default defineConfig({
         "src/files/sqlRitualUploads.ts",
         "src/files/r2RitualStorage.ts",
         "src/files/staticRitualImageCatalog.ts",
+        "src/files/legacyRitualImageCatalog.ts",
+        "src/files/ritualImageValidationIdentity.ts",
         "src/files/dataImage.ts",
         "src/files/validateRitualSvg.ts",
         "src/app/geomancy/tetragrams.ts",

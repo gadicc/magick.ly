@@ -5,6 +5,38 @@ evidence, not deployed fixes, durable asset receipts or complete download bundle
 See [the offline contract](006-private-offline.md) for the implemented static and
 inline resolution plan and the required permission/lifecycle integration.
 
+## Implemented legacy public-image reader
+
+`createLegacyRitualImageCatalog` accepts trusted current file/archive pairs and
+explicit R2 configuration. Before any GET, it bounds the entire input and
+reconstructs each import using the existing BSON/EJSON planner. Exact archive
+serialization, typed identity, file ID, digest, size, served MIME, location and
+public/null-owner/nondeleted state must agree. Batch collisions and sparse or
+malformed rows fail before I/O. Later descriptive metadata changes are allowed.
+
+The reader uses only recorded keys; it never infers a prefix from the bucket or
+endpoint. SDK retries/region redirects are disabled. Successful bodies and SDK
+error XML have bounded allocations, with per-request and whole-catalog deadlines,
+abort cleanup and late-body disposal. A failed request produces safe incomplete
+evidence. The default compressed budget is 64 MiB, with 128 inputs, 1 MiB of EJSON
+per input and 4 MiB total; limits can only tighten. Native raster and closed SVG
+validation retain their existing per-image bounds. These are capture limits, not
+a total process-memory or SVG-paint guarantee.
+
+Actual read-only acceptance passed all ten legacy objects: three JPEGs and seven
+SVGs, exactly 7,790,234 bytes. Captured sizes/digests and the historically served
+Mongo MIME values agree; storage MIME headers remain irrelevant to byte identity.
+Owned copies, disposal and metadata exclusion of archived source/provider
+locations were verified. All 21 backup fingerprints are unchanged. No object
+bytes, private references, credentials, durable aliases or database writes were
+retained. Evidence: `/tmp/magickli-legacy-catalog-acceptance.json`.
+
+The static and legacy catalogs now share the unchanged validation identity
+`cd11c8765f14de5253e312c69be35cf9a55193c237b4afc811a3d29044a0957c`.
+The reader alone does not wire legacy occurrences into a plan, replace the live
+file route or grant access to new private attachments. Durable manifests and
+authenticated bundle delivery remain required.
+
 ## Existing external images
 
 The four exact external references were extracted in memory from the verified

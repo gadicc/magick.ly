@@ -46,3 +46,5 @@ tsconfig.tsbuildinfo
 /public/swe-worker-*.js
 /public/swe-worker-*.js.map
 .loom/skills/
+# Migration skill under development; adopt into Loom only after modernization.
+/.loom/drafts/

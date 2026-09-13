@@ -4,6 +4,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
+| Legacy public-image reader | Complete locally; plan integration pending | Whole-batch archive/current-row checks, bounded SDK GET/error streams and validated owned snapshots; all ten actual objects pass with unchanged SHA, served MIME and backup fingerprints; no runtime activation |
 | Planning and backup protection | Complete | Production dump checksums, gzip, BSON and JSON verified; isolated Mongo restore validated all 190 documents, 10 collections and 20 indexes; dump directory ignored; London/London confirmed |
 | Runtime and tooling baseline | Complete | Node 24/pnpm 10.18; frozen install, Biome, typecheck, coverage and build pass; explicit CI and scripts; obsolete ESLint/Prettier removed; redundant Biome defaults removed |
 | Unused tRPC | Complete | Removed scaffold and both dependencies; lockfile update removes only tRPC; generated route types, full typecheck and 58-test suite pass |
@@ -537,3 +538,26 @@ The generated Tree of Life font probe works offline but exposes asynchronous fon
 settling after `image.decode()`. The original sources and runtime routes remain
 unchanged; durable acquisition and generated-image acceptance are still required.
 Browser artifacts now have a scoped Git ignore rule.
+
+The [legacy public-image reader](009-ritual-image-acquisition.md) now captures
+only verified import projections using exact recorded R2 keys. Independent
+adversarial review found and closed sparse-array validation before I/O. Synthetic
+tests exercise provenance mismatches, collisions, MIME/byte validation, failed
+and stalled SDK responses, cancellation and copy ownership. Actual acceptance
+passes all ten legacy objects without provider/database writes; the live file
+route and private reader remain unchanged. The validator identity extraction
+preserves existing static catalog semantics.
+
+This checkpoint passes 77 new cases and all 2,010 default tests (14 opt-in Mongo
+tests skipped). The expanded 57-module coverage gates pass at 98.18% statements,
+96.80% branches, 99.87% functions and 99.28% lines. Typecheck, Biome, ordinary
+Loom check and production build pass with existing warnings. Final review and
+provider acceptance used the same reader source hash; logs are
+`/tmp/magickli-legacy-catalog-{coverage,types,biome,loom,build}.log`.
+
+The reusable `modernize-app` skill is being developed in ignored
+`.loom/drafts/modernize-app/`, following the operator's instruction to keep it out
+of Loom until this modernization is complete. Conversation review, structural
+validation and an independent synthetic Gongo/internal-auth forward test are
+complete for the initial draft. Runtime migration and cutover lessons remain to
+be added; no shared skill has been committed, installed or published.
