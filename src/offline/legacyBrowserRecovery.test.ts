@@ -50,6 +50,24 @@ function populate(gongo: Database) {
 }
 
 describe("legacy browser recovery archive", () => {
+  it("reports an unreadable legacy database instead of treating it as empty", async () => {
+    const f = fixture();
+    let rejectPopulation!: (cause: Error) => void;
+    Object.assign(f.gongo, {
+      populationFailure: new Promise<never>((_resolve, reject) => {
+        rejectPopulation = reject;
+      }),
+    });
+    const archive = preserveLegacyBrowserRecovery(
+      f.gongo,
+      f.storage,
+      f.database,
+    );
+    rejectPopulation(new Error("Legacy IndexedDB cannot be read"));
+    await expect(archive).rejects.toThrow("Legacy IndexedDB cannot be read");
+    expect(await f.database.quarantine.count()).toBe(0);
+  });
+
   it("waits for Gongo population and preserves every pending form, corrupt recovery, and anonymous study row", async () => {
     const f = fixture();
     const archive = preserveLegacyBrowserRecovery(

@@ -15,6 +15,7 @@ import { useStudySet } from "@/study/client";
 import type { StudyMode } from "@/study/reviewContract";
 import { fetchDueCards, repetitionCards } from "@/study/scheduling";
 import getSet from "@/study/sets";
+import { useLegacyRecoveryGate } from "../../clientProviders";
 import StudyQuiz from "./StudyQuiz";
 
 export default function StudySetLoad(props: {
@@ -28,9 +29,11 @@ export default function StudySetLoad(props: {
   const mode: StudyMode =
     requestedMode === "repetition" ? "repetition" : "supermemo";
   const session = useSession();
-  const accountId = session.isPending
-    ? undefined
-    : (session.data?.user.id ?? null);
+  const recovery = useLegacyRecoveryGate();
+  const accountId =
+    session.isPending || recovery.state !== "ready"
+      ? undefined
+      : (session.data?.user.id ?? null);
   const set = React.useMemo(() => {
     try {
       return getSet(_id);
@@ -47,6 +50,12 @@ export default function StudySetLoad(props: {
   const setMode = (next: StudyMode) => setSearchParam("mode", next);
 
   if (!set) return <div>Unknown study set.</div>;
+  if (recovery.state === "failed")
+    return (
+      <div>
+        Study progress is locked until old browser storage recovery succeeds.
+      </div>
+    );
   if (runtime.error && !runtime.snapshot)
     return <div>Study progress could not be loaded: {runtime.error}</div>;
   if (runtime.loading || !runtime.snapshot)

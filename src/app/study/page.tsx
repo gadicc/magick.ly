@@ -28,15 +28,18 @@ import { useStudyList } from "@/study/client";
 import { materializeStudyCards } from "@/study/reviewContract";
 import { dueCount } from "@/study/scheduling";
 import { sets as allSets, tags as allTags } from "@/study/sets";
+import { useLegacyRecoveryGate } from "../clientProviders";
 
 function StudyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setSearchParam = useSetSearchParam();
   const session = useSession();
-  const accountId = session.isPending
-    ? undefined
-    : (session.data?.user.id ?? null);
+  const recovery = useLegacyRecoveryGate();
+  const accountId =
+    session.isPending || recovery.state !== "ready"
+      ? undefined
+      : (session.data?.user.id ?? null);
   const runtime = useStudyList(accountId);
   const selectedTags = searchParams?.get("tags");
   const tags = React.useMemo(
@@ -93,6 +96,12 @@ function StudyPage() {
   );
   const sortedTags = React.useMemo(() => [...allTags].sort(), []);
 
+  if (recovery.state === "failed")
+    return (
+      <div>
+        Study progress is locked until old browser storage recovery succeeds.
+      </div>
+    );
   if (runtime.error && !runtime.scope)
     return <div>Study progress could not be loaded: {runtime.error}</div>;
   if (runtime.loading) return <div>Initializing study progress…</div>;

@@ -32,15 +32,15 @@ import {
   Typography,
   useScrollTrigger,
 } from "@mui/material";
-import { useGongoOne, useGongoUserId } from "gongo-client-react";
 import Image from "next/image";
 import Link from "next/link";
 import NextLink from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { signIn, signOut } from "next-auth/react";
 import React from "react";
+import { sqlBrowserLifecycle } from "@/auth/browserLifecycle";
+import { useSession } from "@/auth/client";
 // import Link from "@/lib/link";
-import { enableNetwork } from "@/db";
+import { useLegacyRecoveryGate } from "./clientProviders";
 import pathnames, { PathnameValue } from "./pathnames";
 
 // import { SITE_TITLE } from "@/api-lib/consts";
@@ -49,9 +49,11 @@ const SITE_TITLE = "Magick.ly";
 function usePathnameInfo() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const query = searchParams?.toString();
+  const callbackURL = `${pathname ?? "/"}${query ? `?${query}` : ""}`;
 
   const navParts: { title: string; url: string }[] = [];
-  if (!pathname) return { title: SITE_TITLE, navParts };
+  if (!pathname) return { title: SITE_TITLE, navParts, callbackURL };
   // if (pathnames[pathname]) return { title: pathnames[pathname], navParts };
 
   let navPath = "";
@@ -73,7 +75,7 @@ function usePathnameInfo() {
   else if (value === undefined) value = SITE_TITLE;
   else if (typeof value === "object") value = value["/"];
 
-  return { navParts, title: value as unknown as string };
+  return { navParts, title: value as unknown as string, callbackURL };
 }
 
 function HideOnScroll({ children }) {
@@ -91,15 +93,13 @@ export function UserAvatar({
 }: {
   sx?: Parameters<typeof Avatar>[0]["sx"];
 }) {
-  const userId = useGongoUserId();
-  const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId }),
-  );
-  const avatarSrc = (user?.image as string) || user?.photos?.[0]?.value;
+  const session = useSession();
+  const user = session.data?.user;
+  const avatarSrc = user?.image;
 
   return avatarSrc ? (
     <Avatar
-      alt={typeof user?.displayName === "string" ? user.displayName : "avatar"}
+      alt={user?.name || "avatar"}
       src={avatarSrc}
       sx={sx}
       slotProps={{
@@ -204,17 +204,17 @@ function MenuDrawer({
 }
 
 export default function ButtonAppBar() {
-  const { title, navParts } = usePathnameInfo();
+  const { title, navParts, callbackURL } = usePathnameInfo();
   const [search, setSearch] = React.useState("");
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
-  const userId = useGongoUserId();
-  const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId }),
-  );
-  const avatarSrc = user?.image || user?.photos?.[0]?.value;
-  const network = useGongoOne((db) => db.gongoStore.find({ _id: "network" }));
+  const session = useSession();
+  const userId = session.data?.user.id ?? null;
+  const avatarSrc = session.data?.user.image;
+  const recovery = useLegacyRecoveryGate();
+  const [signOutPending, setSignOutPending] = React.useState(false);
+  const [signOutError, setSignOutError] = React.useState<string | null>(null);
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [navAnchorEl, setNavAnchorEl] = React.useState<null | HTMLElement>(
@@ -232,6 +232,21 @@ export default function ButtonAppBar() {
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
   };
+
+  async function handleSignOut() {
+    if (signOutPending) return;
+    setSignOutPending(true);
+    setSignOutError(null);
+    const result = await sqlBrowserLifecycle.signOut();
+    if (!result.ok) {
+      setSignOutError(
+        result.code === "LOCAL_CLEANUP_FAILED"
+          ? "Saved account data could not be locked. Retry sign-out."
+          : "The server could not sign out this session. Retry sign-out.",
+      );
+      setSignOutPending(false);
+    }
+  }
 
   // console.log(navParts);
 
@@ -451,23 +466,28 @@ export default function ButtonAppBar() {
                     open={Boolean(anchorEl)}
                     onClose={handleUserClose}
                   >
-                    <MenuItem
-                      onClick={() => {
-                        signOut();
-                        handleUserClose();
-                      }}
-                    >
-                      Logout
+                    <MenuItem disabled={signOutPending} onClick={handleSignOut}>
+                      {signOutPending ? "Signing out…" : "Logout"}
                     </MenuItem>
+                    {signOutError && (
+                      <Typography
+                        color="error"
+                        role="alert"
+                        sx={{ maxWidth: 260, px: 2, py: 1 }}
+                        variant="body2"
+                      >
+                        {signOutError}
+                      </Typography>
+                    )}
                   </Menu>
                 </span>
               ) : (
                 <IconButton
+                  aria-label="sign in"
+                  component={Link}
+                  disabled={session.isPending || recovery.state !== "ready"}
+                  href={`/signin?callbackURL=${encodeURIComponent(callbackURL)}`}
                   sx={{ color: "white" }}
-                  onClick={() => {
-                    if (!network) enableNetwork();
-                    signIn();
-                  }}
                 >
                   <Login />
                 </IconButton>

@@ -23,6 +23,8 @@ interface LegacyCollection {
 /** Narrow Gongo surface used before the legacy browser cache can be retired. */
 export interface LegacyBrowserCache {
   populated: boolean;
+  /** Rejects when the underlying Gongo IndexedDB population cannot be read. */
+  populationFailure?: Promise<never>;
   idb: {
     on(event: "collectionsPopulated", listener: () => void): void;
     off(event: "collectionsPopulated", listener: () => void): void;
@@ -194,15 +196,21 @@ export function waitForLegacyBrowserPopulation(
   cache: LegacyBrowserCache,
 ): Promise<void> {
   if (cache.populated) return Promise.resolve();
-  return new Promise((resolve) => {
-    const populated = () => {
-      cache.idb.off("collectionsPopulated", populated);
+  let onPopulated!: () => void;
+  const populated = new Promise<void>((resolve) => {
+    onPopulated = () => {
       resolve();
     };
-    cache.idb.on("collectionsPopulated", populated);
+    cache.idb.on("collectionsPopulated", onPopulated);
     // Close the listener-registration race without treating a session as authority.
-    if (cache.populated) populated();
+    if (cache.populated) onPopulated();
   });
+  const result = cache.populationFailure
+    ? Promise.race([populated, cache.populationFailure])
+    : populated;
+  return result.finally(() =>
+    cache.idb.off("collectionsPopulated", onPopulated),
+  );
 }
 
 /**

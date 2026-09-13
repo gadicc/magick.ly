@@ -3,12 +3,14 @@
 import { Alert, Button, Stack } from "@mui/material";
 import { useState } from "react";
 import { authClient } from "@/auth/client";
+import { useLegacyRecoveryGate } from "../clientProviders";
 
 export default function SignInButton({ callbackURL }: { callbackURL: string }) {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
+  const recovery = useLegacyRecoveryGate();
   async function signIn() {
-    if (pending) return;
+    if (pending || recovery.state !== "ready") return;
     setPending(true);
     setFailed(false);
     try {
@@ -29,7 +31,11 @@ export default function SignInButton({ callbackURL }: { callbackURL: string }) {
           We could not start sign-in. Check your connection and try again.
         </Alert>
       )}
-      <Button variant="contained" onClick={signIn} disabled={pending}>
+      <Button
+        variant="contained"
+        onClick={signIn}
+        disabled={pending || recovery.state !== "ready"}
+      >
         {pending ? "Opening Google…" : "Continue with Google"}
       </Button>
     </Stack>

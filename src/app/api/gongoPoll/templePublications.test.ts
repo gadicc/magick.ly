@@ -20,10 +20,8 @@ vi.mock("@/api-lib/db", async () => ({
       callback: PublicationFunction<MongoDatabaseAdapter>,
     ) => publications.set(name, callback),
     dba: null,
-    vercelEdgePost: () => () => new Response("synthetic handler"),
   },
 }));
-vi.mock("@/auth", () => ({ auth: (handler: unknown) => handler }));
 vi.mock("@/doc/publications", () => ({
   publishRitualCreationGroups: vi.fn(),
   publishRitualDoc: vi.fn(),
@@ -31,8 +29,8 @@ vi.mock("@/doc/publications", () => ({
   publishRitualRevisions: vi.fn(),
 }));
 
-// Register the actual route callbacks while mocking only its database/auth startup.
-await import("./route");
+// Register the retired callbacks without importing them into the live route.
+await import("@/api-lib/legacyGongoServer");
 
 type Row = Record<string, unknown>;
 const requireHere = createRequire(import.meta.url);

@@ -15,13 +15,16 @@ import React from "react";
 import { useSession } from "@/auth/client";
 import { useStudySet } from "@/study/client";
 import getSet from "@/study/sets";
+import { useLegacyRecoveryGate } from "../../../clientProviders";
 
 export default function StudyInfo(props: { params: Promise<{ _id: string }> }) {
   const { _id } = React.use(props.params);
   const session = useSession();
-  const accountId = session.isPending
-    ? undefined
-    : (session.data?.user.id ?? null);
+  const recovery = useLegacyRecoveryGate();
+  const accountId =
+    session.isPending || recovery.state !== "ready"
+      ? undefined
+      : (session.data?.user.id ?? null);
   const set = React.useMemo(() => {
     try {
       return getSet(_id);
@@ -36,6 +39,12 @@ export default function StudyInfo(props: { params: Promise<{ _id: string }> }) {
   const runtime = useStudySet(accountId, _id, cardIds);
 
   if (!set) return <div>Unknown study set.</div>;
+  if (recovery.state === "failed")
+    return (
+      <div>
+        Study progress is locked until old browser storage recovery succeeds.
+      </div>
+    );
   if (runtime.error && !runtime.snapshot)
     return <div>Study progress could not be loaded: {runtime.error}</div>;
   if (runtime.loading || !runtime.snapshot) return <div>Loading progress…</div>;

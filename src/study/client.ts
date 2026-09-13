@@ -8,9 +8,10 @@ import { StudyDatabase, StudyRepository, type StudyScope } from "./storage";
 import type { StudyRuntimeSetStats } from "./types";
 
 let singleton: StudyRepository | undefined;
-/** Undefined trusts the initial session; null is a sign-out fence; a UUID is an explicit activation. */
+/** Undefined has no fresh identity yet; null is a sign-out fence; a UUID is an explicit activation. */
 let accountActivation: string | null | undefined;
 let identityGeneration = 0;
+let identityTransition: Promise<void> = Promise.resolve();
 const activeRequests = new Set<{
   controller: AbortController;
   promise: Promise<void>;
@@ -21,6 +22,16 @@ const activeScopeResolutions = new Set<{
 }>();
 const controlListeners = new Set<() => void>();
 
+class StudyAccountActivationPending extends Error {}
+
+function accountScope(accountId: string): StudyScope {
+  return {
+    key: `account:${accountId}`,
+    kind: "account",
+    ownerId: accountId,
+  };
+}
+
 function notifyControlListeners() {
   for (const listener of controlListeners) listener();
 }
@@ -28,6 +39,12 @@ function notifyControlListeners() {
 function abortActiveWork() {
   for (const request of [...activeRequests, ...activeScopeResolutions])
     request.controller.abort();
+}
+
+function enqueueIdentityTransition(work: () => Promise<void>) {
+  const result = identityTransition.then(work, work);
+  identityTransition = result.catch(() => {});
+  return result;
 }
 
 function repository() {
@@ -66,7 +83,7 @@ export async function prepareStudySignOut() {
   const pending = [...activeRequests, ...activeScopeResolutions];
   await Promise.allSettled(pending.map((request) => request.promise));
   try {
-    await study.markSignedOut();
+    await enqueueIdentityTransition(() => study.markSignedOut());
   } catch (cause) {
     throw new Error("Study sign-out state could not be saved.", {
       cause,
@@ -80,11 +97,11 @@ export async function activateStudyAccount(accountId: string) {
     throw new Error("Study account identity must be a canonical UUIDv7.");
   const study = repository();
   accountActivation = null;
-  identityGeneration++;
+  const generation = ++identityGeneration;
   abortActiveWork();
   notifyControlListeners();
-  await study.markAccountActive(accountId);
-  study.announceAccount(accountId);
+  await enqueueIdentityTransition(() => study.markAccountActive(accountId));
+  if (generation === identityGeneration) study.announceAccount(accountId);
 }
 
 function assertCurrentIdentity(generation: number, signal: AbortSignal) {
@@ -99,15 +116,17 @@ async function resolveScope(
 ): Promise<StudyScope> {
   assertCurrentIdentity(generation, signal);
   if (accountId !== null) {
-    if (
-      accountActivation === undefined &&
-      (await repository().isExplicitlySignedOut())
-    )
-      throw new Error(
-        "Study account activation is required after explicit sign-out.",
-      );
+    if (accountActivation === accountId) return accountScope(accountId);
+    if (accountActivation !== undefined)
+      throw new StudyAccountActivationPending();
+
+    // A cached UI session may expose only the exact account that this device
+    // previously activated from a fresh no-store session check. It must not
+    // establish or replace durable ownership by itself.
+    const lastAccountId = await repository().lastLocalAccountId();
     assertCurrentIdentity(generation, signal);
-    return repository().scope(accountId);
+    if (lastAccountId === accountId) return accountScope(accountId);
+    throw new StudyAccountActivationPending();
   }
   if (accountActivation === null) return repository().scope(null);
   let response: Response;
@@ -194,7 +213,8 @@ function useScope(accountId: string | null | undefined) {
       .catch((cause) => {
         if (
           active &&
-          !(cause instanceof DOMException && cause.name === "AbortError")
+          !(cause instanceof DOMException && cause.name === "AbortError") &&
+          !(cause instanceof StudyAccountActivationPending)
         )
           setError(cause instanceof Error ? cause.message : "Storage failed.");
       })
@@ -232,9 +252,7 @@ function useAccountNetwork(scope: StudyScope | null, setId?: string) {
     if (
       !scope ||
       scope.kind !== "account" ||
-      accountActivation === null ||
-      (accountActivation !== undefined &&
-        accountActivation !== scope.ownerId) ||
+      accountActivation !== scope.ownerId ||
       !navigator.onLine
     )
       return;

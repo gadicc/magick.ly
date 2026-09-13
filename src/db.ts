@@ -2,15 +2,11 @@
 console.log("db.ts");
 
 import db, { Collection } from "gongo-client";
-import HTTPTransport from "gongo-client/lib/transports/http";
-import { getSession } from "next-auth/react";
-// import GongoAuth from "gongo-client/lib/auth";
 import { StudySetStats } from "@/app/study/[_id]/exports";
-import { clientRitualId, preservePendingRitualChanges } from "./doc/drafts";
+import { preservePendingRitualChanges } from "./doc/drafts";
 import {
   fenceLegacyBrowserRecoveryForSql,
   type LegacyRecoveryArchiveReport,
-  preserveLegacyBrowserRecovery,
 } from "./offline/legacyBrowserRecovery";
 import { RitualOfflineDatabase } from "./offline/storage";
 import type {
@@ -36,12 +32,147 @@ interface LegacySubscription {
   delete(): void;
 }
 
-const ritualSubscriptions = new Set(["doc", "docs", "docRevisions"]);
-let legacyNetworkFenced = false;
+interface LegacyIdbOpen {
+  open(): Promise<void>;
+  idbDbVersion?: number;
+  __magickliOriginalOpen?: () => Promise<void>;
+}
+
+function browserLegacyIdb(): LegacyIdbOpen | undefined {
+  if (typeof window === "undefined" || typeof indexedDB === "undefined")
+    return undefined;
+  return (db as unknown as { idb?: LegacyIdbOpen }).idb;
+}
+
 let recoveryDatabase: RitualOfflineDatabase | undefined;
 let fenceAttempt: Promise<LegacyRecoveryArchiveReport> | undefined;
 let completedFence: LegacyRecoveryArchiveReport | undefined;
 let pollRunningWhenFenced: Promise<void> | undefined;
+let populationAttempt: Promise<void> | undefined;
+let originalOpenDepth = 0;
+const legacyIdb = browserLegacyIdb();
+const openLegacyIdb = legacyIdb
+  ? (legacyIdb.__magickliOriginalOpen ?? legacyIdb.open.bind(legacyIdb))
+  : undefined;
+if (legacyIdb && openLegacyIdb)
+  Object.defineProperty(legacyIdb, "__magickliOriginalOpen", {
+    configurable: true,
+    value: openLegacyIdb,
+  });
+
+function inspectLegacyStoreInventory(): Promise<number> {
+  if (!legacyIdb || typeof indexedDB === "undefined")
+    return Promise.reject(
+      new Error("Legacy browser recovery requires browser storage."),
+    );
+  return new Promise((resolve, reject) => {
+    let request: IDBOpenDBRequest;
+    try {
+      // Opening without a version never upgrades an existing database. A new,
+      // empty database is safe for Gongo to initialize after this inspection.
+      request = indexedDB.open("gongo");
+    } catch (cause) {
+      reject(cause);
+      return;
+    }
+    request.onerror = () =>
+      reject(
+        request.error ?? new Error("Legacy browser storage could not open."),
+      );
+    request.onsuccess = () => {
+      const inspected = request.result;
+      try {
+        const unknown = [...inspected.objectStoreNames].filter(
+          (name) => !db.collections.has(name),
+        );
+        if (unknown.length)
+          throw new Error(
+            `Legacy browser storage has unrecognized object stores: ${unknown.join(
+              ", ",
+            )}`,
+          );
+        resolve(inspected.version);
+      } catch (cause) {
+        reject(cause);
+      } finally {
+        inspected.close();
+      }
+    };
+  });
+}
+
+function startPopulationAttempt(): Promise<void> {
+  if (db.populated) return Promise.resolve();
+  if (populationAttempt) return populationAttempt;
+  const attempt = openAfterInventory(false);
+  populationAttempt = attempt;
+  void attempt.then(
+    () => {
+      if (populationAttempt === attempt) populationAttempt = undefined;
+    },
+    () => {
+      if (populationAttempt === attempt) populationAttempt = undefined;
+    },
+  );
+  return attempt;
+}
+
+async function openAfterInventory(preserveRequestedVersion: boolean) {
+  if (!legacyIdb || !openLegacyIdb)
+    throw new Error("Legacy browser recovery requires browser storage.");
+  const requestedVersion = legacyIdb.idbDbVersion;
+  const inspectedVersion = await inspectLegacyStoreInventory();
+  if (preserveRequestedVersion && requestedVersion !== undefined) {
+    if (inspectedVersion > requestedVersion)
+      throw new Error("Legacy browser storage changed during population.");
+    // Gongo requested the next version to add known stores. Keep that request;
+    // opening at the inspected older version would only repeat the recursion.
+    legacyIdb.idbDbVersion = requestedVersion;
+  } else {
+    legacyIdb.idbDbVersion = inspectedVersion;
+  }
+  // The installed opener may recurse once it discovers missing known stores.
+  // Its call returns through our wrapper and receives another inventory check.
+  originalOpenDepth += 1;
+  try {
+    await openLegacyIdb();
+  } finally {
+    originalOpenDepth -= 1;
+  }
+}
+
+function waitForPopulationAttempt(): Promise<void> {
+  const attempt = startPopulationAttempt();
+  if (typeof window === "undefined") return attempt;
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(
+      () => reject(new Error("Legacy browser storage population timed out.")),
+      15_000,
+    );
+    void attempt.then(
+      () => {
+        window.clearTimeout(timeout);
+        resolve();
+      },
+      (cause) => {
+        window.clearTimeout(timeout);
+        reject(cause);
+      },
+    );
+  });
+}
+
+if (legacyIdb)
+  legacyIdb.open = () => {
+    // Gongo recursively reopens at the next version when known stores are
+    // missing. Inventory again before that open can enter its upgrade callback.
+    if (originalOpenDepth > 0) return openAfterInventory(true);
+    const attempt = startPopulationAttempt();
+    // Gongo schedules open() without awaiting it. Observe its failure here while
+    // retaining the rejecting promise for explicit recovery callers.
+    void attempt.catch(() => {});
+    return attempt;
+  };
 
 function transport(): LegacyTransport | undefined {
   return (db as unknown as { transport?: LegacyTransport }).transport;
@@ -51,16 +182,7 @@ function offlineRecoveryDatabase(): RitualOfflineDatabase {
   return (recoveryDatabase ??= new RitualOfflineDatabase());
 }
 
-async function archiveLegacyBrowser(): Promise<LegacyRecoveryArchiveReport> {
-  return preserveLegacyBrowserRecovery(
-    db,
-    window.localStorage,
-    offlineRecoveryDatabase(),
-  );
-}
-
 function blockLegacyNetwork(): void {
-  legacyNetworkFenced = true;
   const current = transport();
   if (!current) return;
   pollRunningWhenFenced ??= current._promise ?? undefined;
@@ -68,89 +190,13 @@ function blockLegacyNetwork(): void {
   current._poll = async () => {};
 }
 
-function defineTransport() {
-  if (legacyNetworkFenced) return;
-  // Manual enable before IndexedDB population and the startup event share one transport.
-  // @ts-expect-error: Gongo extensions are not declared on Database.
-  if (db.transport) return;
-  // remove old gongoStore auth (now we use next-auth)
-  db.gongoStore.remove({ _id: "auth" });
-
-  db.extend("transport", HTTPTransport, {
-    pollInterval: process.env.NODE_ENV === "development" ? 60 * 1000 : 3 * 1000,
-    // pollInterval: 60 * 1000,
-    // pollInterval: false,
-    pollWhenIdle: false,
-    idleTimeout: 60 * 1000,
-  });
-
-  /*
-   * A bit hacky (TODO, appropriate hook in Gongo)
-   * If we previously created studySets before ever enabling network,
-   * the documents won't have a userId.  So, before any poll, update
-   * any docs without a userId with our userId.
-   */
-  // @ts-expect-error: ok
-  const _origPoll = db.transport._poll.bind(db.transport);
-  // @ts-expect-error: ok
-  db.transport._poll = async function () {
-    // Installed HTTPTransport.poll() waits for db.populated before calling this wrapper.
-    await archiveLegacyBrowser();
-    if (legacyNetworkFenced) return;
-    await preservePendingRitualChanges(db, window.localStorage);
-    if (legacyNetworkFenced) return;
-    const session = await getSession();
-    if (legacyNetworkFenced) return;
-    // Legacy ObjectIDs retain the existing study sync. A SQL UUID can never
-    // adopt unattributed browser progress during the coordinated handoff.
-    const userId = clientRitualId(session?.user?.id);
-    if (userId) {
-      db.collection("studySet").update(
-        { userId: { $exists: false } },
-        { $set: { userId }, $push: { __ObjectIDs: "userId" } },
-      );
-      // console.log(result);
-    }
-    if (legacyNetworkFenced) return;
-    return await _origPoll();
-  };
-  // @ts-expect-error: ok
-  db.transport.poll();
-}
-
-function enableNetwork() {
-  if (legacyNetworkFenced) return;
-  // @ts-expect-error: ok
-  if (db.transport) {
-    console.warn("enableNetwork() called but transport already exists");
-    return;
-  }
-
-  const network = db.gongoStore.findOne("network");
-  if (network) db.gongoStore.update("network", { $set: { enabled: true } });
-  else db.gongoStore.insert({ _id: "network", enabled: true });
-
-  defineTransport();
-}
-
-if (typeof window !== "undefined")
-  setTimeout(() => {
-    db.idb.on("collectionsPopulated", () => {
-      const network = db.gongoStore.findOne("network");
-      if (network?.enabled) {
-        console.log("gongoStore.network.enabled is set");
-        defineTransport();
-      }
-    });
-  }, 10);
+// The legacy client is recovery-only after SQL cutover. Persist registrations
+// remain so Gongo cannot drop old IndexedDB stores before verified archival.
+blockLegacyNetwork();
 
 /*
  */
 
-db.subscribe("user", {
-  minInterval: 2000,
-  maxInterval: 5000,
-});
 db.collection("users").persist();
 db.collection("userGroups").persist();
 db.collection("docs").persist();
@@ -180,8 +226,6 @@ declare module "gongo-client" {
 // @ts-expect-error: i know
 if (typeof window !== "undefined") window.db = db;
 
-export { enableNetwork };
-
 /**
  * Fence the legacy transport for the coordinated SQL switch. The first line of
  * work blocks future polls; archival failures remain blocked and are retryable.
@@ -193,47 +237,50 @@ export function fenceLegacyNetworkForSql(): Promise<LegacyRecoveryArchiveReport>
   if (completedFence) return Promise.resolve(completedFence);
   if (fenceAttempt) return fenceAttempt;
 
-  fenceAttempt = fenceLegacyBrowserRecoveryForSql({
-    cache: db,
-    storage: window.localStorage,
-    database: offlineRecoveryDatabase(),
-    blockNetwork: blockLegacyNetwork,
-    settleNetwork: async () => {
-      try {
-        await pollRunningWhenFenced;
-      } catch {
-        // The old request outcome does not decide whether durable recovery can retry.
-      } finally {
-        pollRunningWhenFenced = undefined;
-      }
-    },
-    afterInitialArchive: async () => {
-      await preservePendingRitualChanges(db, window.localStorage);
-    },
-    finalizeFence: async () => {
-      for (const subscription of [
-        ...(db.subscriptions.values() as IterableIterator<LegacySubscription>),
-      ])
-        if (ritualSubscriptions.has(subscription.name)) {
-          subscription.stop();
-          subscription.delete();
-        }
-      const network = db.gongoStore.findOne("network");
-      if (network)
-        db.gongoStore.update("network", { $set: { enabled: false } });
-      await db.idb.putAll();
-    },
-  }).then(
-    (report) => {
-      completedFence = report;
-      fenceAttempt = undefined;
-      return report;
-    },
-    (error) => {
-      fenceAttempt = undefined;
-      throw error;
-    },
-  );
+  fenceAttempt = waitForPopulationAttempt()
+    .then(() =>
+      fenceLegacyBrowserRecoveryForSql({
+        cache: db,
+        storage: window.localStorage,
+        database: offlineRecoveryDatabase(),
+        blockNetwork: blockLegacyNetwork,
+        settleNetwork: async () => {
+          try {
+            await pollRunningWhenFenced;
+          } catch {
+            // The old request outcome does not decide whether durable recovery can retry.
+          } finally {
+            pollRunningWhenFenced = undefined;
+          }
+        },
+        afterInitialArchive: async () => {
+          await preservePendingRitualChanges(db, window.localStorage);
+        },
+        finalizeFence: async () => {
+          for (const subscription of [
+            ...(db.subscriptions.values() as IterableIterator<LegacySubscription>),
+          ]) {
+            subscription.stop();
+            subscription.delete();
+          }
+          const network = db.gongoStore.findOne("network");
+          if (network)
+            db.gongoStore.update("network", { $set: { enabled: false } });
+          await db.idb.putAll();
+        },
+      }),
+    )
+    .then(
+      (report) => {
+        completedFence = report;
+        fenceAttempt = undefined;
+        return report;
+      },
+      (error) => {
+        fenceAttempt = undefined;
+        throw error;
+      },
+    );
   return fenceAttempt;
 }
 

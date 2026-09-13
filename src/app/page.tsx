@@ -1,5 +1,5 @@
 import { AdminPanelSettingsTwoTone } from "@mui/icons-material";
-import { useGongoOne, useGongoUserId } from "gongo-client-react";
+import { getCurrentSqlViewer } from "@/auth/viewer";
 import Tiles from "@/components/Tiles";
 import GDLogoSquished from "@/goldendawn-logo-squished.svg";
 import AndroidMagician from "./img/android-magician.png";
@@ -83,13 +83,9 @@ const adminTile = {
   to: "/admin",
 };
 
-function Index() {
-  const userId = useGongoUserId();
-  const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId }),
-  );
-
-  const _tiles = user?.admin ? [adminTile, ...tiles] : tiles;
+async function Index() {
+  const viewer = await getCurrentSqlViewer().catch(() => null);
+  const _tiles = viewer?.admin ? [adminTile, ...tiles] : tiles;
 
   return <Tiles tiles={_tiles} />;
 }

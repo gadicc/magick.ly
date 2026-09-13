@@ -12,9 +12,7 @@ export default async function TrainingPage() {
       ) : (
         <p>
           Administrator sign-in is required.{" "}
-          <Link href="/api/auth/signin?callbackUrl=%2Fchat%2Ftrain">
-            Sign in
-          </Link>
+          <Link href="/signin?callbackURL=%2Fchat%2Ftrain">Sign in</Link>
         </p>
       )}
     </main>

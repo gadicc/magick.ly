@@ -14,6 +14,7 @@ import { fetchDueCards } from "./scheduling";
 import type { StudyCard, StudySet } from "./sets";
 
 const A = "01993000-0000-7000-8000-000000000001";
+const B = "01993000-0000-7000-8000-000000000002";
 const databaseHarness = vi.hoisted(() => ({
   factory: undefined as IDBFactory | undefined,
   name: "",
@@ -115,12 +116,89 @@ const set = {
 } as unknown as StudySet;
 
 describe("study client identity and continuity", () => {
+  it("keeps a first cached account pending until fresh activation", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+
+    function ScopeHarness() {
+      const runtime = studyClient.useStudyList(A);
+      return <div>{runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    render(<ScopeHarness />);
+    await screen.findByText("hidden");
+    expect(fetch).not.toHaveBeenCalled();
+    const before = new studyStorage.StudyDatabase("magickli-study");
+    expect(await before.device.get("active")).toBeUndefined();
+    before.close();
+
+    await act(async () => studyClient.activateStudyAccount(A));
+    await screen.findByText(`account:${A}`);
+    const after = new studyStorage.StudyDatabase("magickli-study");
+    expect(await after.device.get("active")).toMatchObject({
+      explicitlySignedOut: false,
+      lastAccountId: A,
+    });
+    after.close();
+  });
+
+  it("shows only a matching last verified account during an offline cold start", async () => {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+    vi.stubGlobal("fetch", vi.fn());
+    const seedDb = new studyStorage.StudyDatabase("magickli-study");
+    const seed = new studyStorage.StudyRepository(seedDb, {
+      broadcast: false,
+    });
+    await seed.markAccountActive(A);
+    seed.close();
+
+    function ScopeHarness({ accountId }: { accountId: string }) {
+      const runtime = studyClient.useStudyList(accountId);
+      return <div>{runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    const view = render(<ScopeHarness accountId={A} />);
+    await screen.findByText(`account:${A}`);
+    expect(fetch).not.toHaveBeenCalled();
+
+    view.rerender(<ScopeHarness accountId={B} />);
+    await screen.findByText("hidden");
+    const observer = new studyStorage.StudyDatabase("magickli-study");
+    expect(await observer.device.get("active")).toMatchObject({
+      explicitlySignedOut: false,
+      lastAccountId: A,
+    });
+    observer.close();
+  });
+
+  it("keeps a cached account fenced after explicit sign-out", async () => {
+    await studyClient.activateStudyAccount(A);
+    await studyClient.prepareStudySignOut();
+
+    function ScopeHarness() {
+      const runtime = studyClient.useStudyList(A);
+      return <div>{runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    render(<ScopeHarness />);
+    await screen.findByText("hidden");
+    const observer = new studyStorage.StudyDatabase("magickli-study");
+    expect(await observer.device.get("active")).toMatchObject({
+      explicitlySignedOut: true,
+      lastAccountId: A,
+    });
+    observer.close();
+  });
+
   it("keeps the live quiz mounted while a local review refreshes its snapshot", async () => {
     Object.defineProperty(window.navigator, "onLine", {
       configurable: true,
       value: false,
     });
     vi.spyOn(Math, "random").mockReturnValue(0);
+    await studyClient.activateStudyAccount(A);
 
     function StudyHarness() {
       const runtime = studyClient.useStudySet(A, "synthetic", ["one", "two"]);
@@ -230,5 +308,33 @@ describe("study client identity and continuity", () => {
     });
     await act(async () => studyClient.prepareStudySignOut());
     otherTab.close();
+  });
+
+  it("keeps a delayed activation behind a synchronous sign-out fence", async () => {
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = studyStorage.StudyRepository.prototype.markAccountActive;
+    vi.spyOn(
+      studyStorage.StudyRepository.prototype,
+      "markAccountActive",
+    ).mockImplementation(async function (accountId) {
+      await blocked;
+      return original.call(this, accountId);
+    });
+
+    const activation = studyClient.activateStudyAccount(A);
+    await Promise.resolve();
+    const signOut = studyClient.prepareStudySignOut();
+    release();
+    await Promise.all([activation, signOut]);
+
+    const observer = new studyStorage.StudyDatabase("magickli-study");
+    expect(await observer.device.get("active")).toMatchObject({
+      explicitlySignedOut: true,
+      lastAccountId: A,
+    });
+    observer.close();
   });
 });

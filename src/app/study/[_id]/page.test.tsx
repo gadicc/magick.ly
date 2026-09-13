@@ -16,6 +16,9 @@ vi.mock("@/lib/navigation", () => ({
   useSetSearchParam: vi.fn(),
 }));
 vi.mock("@/study/sets", () => ({ default: vi.fn() }));
+vi.mock("../../clientProviders", () => ({
+  useLegacyRecoveryGate: () => ({ state: "ready", retry: vi.fn() }),
+}));
 
 afterEach(() => {
   vi.useRealTimers();
