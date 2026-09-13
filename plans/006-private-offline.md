@@ -349,6 +349,56 @@ validation SHA is
 Inline, legacy upload, generated and external occurrence resolution, complete
 manifests and authenticated delivery remain required before private activation.
 
+## Implemented static and inline resolution plan
+
+The server-only `createRitualAssetPlan` verifies the supplied selected-content
+digest, inventories that exact JSON itself and resolves static snapshots and
+inline images. It accepts a trusted server-built static catalog, never a supplied
+occurrence list, manifest or generic fetch callback. SQL selection and permission
+checks remain the caller's responsibility. Even `resolutionComplete: true` is
+image-resolution evidence, not an authorized bundle or permission grant.
+
+The immutable plan binds content, inventory and validation profiles, static
+catalog identity, resource limits, each original child path and image reference,
+exact query spelling/order and display fragment. Identical network references
+share one capture; distinct queries keep separate identities. Fragments remain
+attached to each occurrence for the later Blob-URL projection. The archived JSON
+is never rewritten, and no source/history or title enters this metadata. Original
+image references can themselves contain private information or inline image
+bytes, so the metadata is not public and must not be logged indiscriminately.
+
+Each inline image passes the existing byte decoder and either full raster
+decoding with declared/detected MIME agreement or the closed SVG profile. Limits
+are 64 MiB of captured compressed data, 64 distinct inline attempts, 64 million
+inline decoded pixels and a 30-second cooperative deadline; overrides only
+tighten them. A failed native/SVG decode reserves the remaining pixel budget
+because partial work has no complete pixel receipt. Exhaustion prevents further
+inline decoding. Static and inline copy allocation, global abort/timeout and
+failure cleanup preserve ownership; catalog disposal cannot invalidate an already
+captured plan. Plan disposal clears its retained byte arrays, not copies or
+immutable metadata already held by its caller.
+
+Legacy file links, external images and generated Tree of Life images explicitly
+remain pending. Missing, invalid or unsupported references and unsupported JRT
+resource constructs keep the whole plan incomplete. Available partial evidence
+must not be published as a complete download. Persistent bundles still need
+UUIDv7 identities and binding to the authorized SQL render descriptor; transient
+plan array indices are not database IDs.
+
+All 25 new cases and 1,933 default tests pass (14 opt-in Mongo cases skipped).
+The 55-module coverage result is 98.25% statements, 96.96% branches, 100% functions
+and 99.28% lines. Types, Biome, ordinary Loom checks and production build pass with
+existing warnings.
+Read-only corpus acceptance resolves all six static/inline occurrences among the
+17 archived images, with six legacy-upload, four external and one generated-image
+gap. Two of five archived trees have complete image plans, including one with no
+images. The public neophyte and zelator trees resolve completely; theoricus still
+has two external-image gaps and its generated diagram. No readiness UI changed.
+All 21 backup fingerprints, 15 public image hashes and three builtin source files
+remain unchanged. No remote requests or durable image/source writes occurred.
+Evidence: `/tmp/magickli-asset-plan-acceptance.json` and
+`/tmp/magickli-asset-plan-{coverage,types,biome,loom,build}.log`.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.

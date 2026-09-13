@@ -521,3 +521,12 @@ distinct from raster pixel facts. All 1,908 tests, expanded coverage, types, Bio
 ordinary Loom checks and production build pass. Static SVG resolution is complete;
 the remaining asset sources, complete authorized manifests and private runtime
 activation are still pending. See the [offline record](006-private-offline.md).
+
+The static/inline resolution plan now binds exact selected-content bytes to all
+image occurrences, preserving query/fragment identity and reporting missing media
+explicitly. Two archived trees and two public builtin trees have complete image
+plans; the remaining source kinds are still pending. All 1,933 tests, expanded
+coverage, types, Biome, ordinary Loom checks and production build pass. The verified corpus and
+public files remain unchanged. This is server image evidence; authenticated
+bundle publication and private reader activation remain separate requirements.
+See the [offline record](006-private-offline.md).

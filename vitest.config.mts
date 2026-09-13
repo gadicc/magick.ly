@@ -39,6 +39,7 @@ export default defineConfig({
         "src/offline/lifecycle.ts",
         "src/offline/recovery.ts",
         "src/offline/ritualAssetInventory.ts",
+        "src/offline/ritualAssetPlan.ts",
         "src/files/ritualUploadProtocol.ts",
         "src/files/finalizeRitualUpload.ts",
         "src/files/validateRitualImage.ts",
