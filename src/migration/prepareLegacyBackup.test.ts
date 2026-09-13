@@ -1,8 +1,10 @@
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { writeFileSync } from "node:fs";
+import { constants, writeFileSync } from "node:fs";
 import {
   mkdir,
   mkdtemp,
+  open,
   readFile,
   rm,
   symlink,
@@ -405,4 +407,40 @@ describe("verified logical backup preparation", () => {
     );
     await rejected(load(f.options), "INVALID_BACKUP");
   });
+  it.each(["manifest.json", "synthetic/users.bson.gz"])(
+    "refuses a FIFO at %s without waiting for a writer",
+    async (relativePath) => {
+      const f = await fixture();
+      const path = join(f.directory, relativePath);
+      await unlink(path);
+      execFileSync("mkfifo", [path]);
+      const loading = load(f.options).then(
+        () => null,
+        (error: unknown) => error,
+      );
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const outcome = await Promise.race([
+          loading,
+          new Promise<"blocked">((resolve) => {
+            timer = setTimeout(() => resolve("blocked"), 500);
+          }),
+        ]);
+        expect(outcome).toBeInstanceOf(LegacyBackupError);
+        expect((outcome as LegacyBackupError).code).toBe("INVALID_BACKUP");
+      } finally {
+        clearTimeout(timer);
+        // Also release an old, blocking implementation when this test fails.
+        const writer = await open(
+          path,
+          constants.O_RDWR | constants.O_NONBLOCK,
+        );
+        try {
+          await loading;
+        } finally {
+          await writer.close();
+        }
+      }
+    },
+  );
 });

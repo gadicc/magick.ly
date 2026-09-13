@@ -151,6 +151,14 @@ Evidence: `/tmp/magickli-backup-loader-preflight/report.json`, SHA-256
 `49688313a0852c2cb8a1d806ec23f0b5ef34e2c05a44f2248c5d3129c09c81c6`.
 Final verification is recorded in the implementation ledger.
 
+The subsequent independent review of preparation through file capture found one
+maintenance failure: a FIFO could block the file open before the regular-file
+check. Opens now include `O_NONBLOCK` as well as `O_NOFOLLOW`, then verify the
+opened descriptor. Two real FIFO regressions cover the manifest and a listed
+gzip file; their cleanup also releases the old blocking implementation on failure.
+This closes the reproduced hang, without claiming all filesystem operations are
+interruptible. No other concrete finding remained in that independent review.
+
 ## Next integration
 
 Use one protected singleton prepared run and one ordered atomic application

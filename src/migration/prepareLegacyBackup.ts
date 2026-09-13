@@ -187,7 +187,9 @@ export async function prepareLegacyBackup(options: LegacyBackupOptions) {
       active();
       const handle = await open(
         path,
-        constants.O_RDONLY | constants.O_NOFOLLOW,
+        // A FIFO must reach fstat without waiting for a writer. Checking the
+        // path first cannot prevent it being swapped before this open.
+        constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
       );
       let bytes: Buffer | undefined;
       try {

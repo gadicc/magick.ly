@@ -725,3 +725,10 @@ types, Biome, ordinary Loom check and production build pass. Coverage is 98.28%
 statements, 97.14% branches, 99.90% functions and 99.33% lines. Review was local
 and adversarial, with independent workers still unavailable. Evidence:
 `/tmp/magickli-backup-loader-{coverage,final-types,biome,loom,build}.log`.
+
+The independent preparation/source review subsequently completed and found one
+FIFO-open hang before the descriptor check. The loader now opens nonblocking and
+still refuses nonregular descriptors. Both manifest and gzip FIFO regressions
+pass with the previous 49 loader tests; types and Loom checks pass. This isolated
+maintenance fix needs no runtime rebuild. Evidence:
+`/tmp/magickli-backup-fifo-{tests,types,loom}.log`.
