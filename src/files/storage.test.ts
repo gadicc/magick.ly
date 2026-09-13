@@ -53,6 +53,27 @@ afterEach(() => {
 });
 
 describe("managed ritual file R2 storage", () => {
+  it.each([
+    { FILES_S3_ENDPOINT: "https://example.com" },
+    { FILES_S3_ENDPOINT: endpoint.replace("https:", "http:") },
+    { FILES_S3_ENDPOINT: `${endpoint}/other-prefix` },
+    { FILES_S3_ENDPOINT: `${endpoint}?query=value` },
+    { FILES_S3_ENDPOINT: endpoint.replace("https://", "https://user:pass@") },
+    { FILES_S3_BUCKET: "private/other-bucket" },
+  ])(
+    "rejects invalid storage destinations before constructing a reader",
+    (override) => {
+      const handle = vi.fn();
+      expect(() =>
+        createRitualFileR2Storage(
+          { ...environment, ...override },
+          { requestHandler: { handle } as never },
+        ),
+      ).toThrow("Invalid R2 ritual storage configuration");
+      expect(handle).not.toHaveBeenCalled();
+    },
+  );
+
   it("reads only an exact canonical record through Loom's closed adapter", async () => {
     const handle = vi.fn(
       async (request: { method: string; hostname: string; path: string }) => ({

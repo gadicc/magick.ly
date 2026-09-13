@@ -7,6 +7,7 @@ import {
   createR2RitualStorage,
   type R2RitualStorage,
   type R2RitualStorageConfig,
+  validateR2RitualStorageConfig,
 } from "./r2RitualStorage";
 import {
   type RitualUploadCode,
@@ -50,7 +51,7 @@ export function readRitualUploadStorageConfig(
     required(env, "FILES_S3_FORCE_PATH_STYLE") !== "true"
   )
     throw new Error("Ritual upload storage is not configured");
-  return {
+  return validateR2RitualStorageConfig({
     kind: "r2",
     endpoint: required(env, "FILES_S3_ENDPOINT"),
     bucket: required(env, "FILES_S3_BUCKET"),
@@ -60,7 +61,7 @@ export function readRitualUploadStorageConfig(
     },
     stagingPrefix: "ritual-staging",
     canonicalPrefix: "ritual-files",
-  };
+  });
 }
 
 export interface RitualUploadRuntime {

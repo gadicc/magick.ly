@@ -80,7 +80,10 @@ const instant = (value: number) =>
   Number.isSafeInteger(value) && value >= 0 && value <= 8_640_000_000_000_000;
 const text = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0 && !value.includes("\0");
-function configured(input: R2RitualStorageConfig): R2RitualStorageConfig {
+/** Validate and snapshot the closed R2 origin before constructing any SDK client. */
+export function validateR2RitualStorageConfig(
+  input: R2RitualStorageConfig,
+): R2RitualStorageConfig {
   const namespace = /^[a-z0-9][a-z0-9_-]*(?:\/[a-z0-9][a-z0-9_-]*)*$/;
   if (
     !input ||
@@ -201,7 +204,7 @@ export function createR2RitualStorage(
     ioTimeoutMs?: number;
   } = {},
 ): R2RitualStorage {
-  const config = configured(input);
+  const config = validateR2RitualStorageConfig(input);
   const timeoutMs = options.ioTimeoutMs ?? 30_000;
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000)
     throw new Error("Invalid storage timeout");
