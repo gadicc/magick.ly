@@ -1,0 +1,147 @@
+{
+  "requirements": [
+    {
+      "name": "runtime database URL",
+      "keys": ["DATABASE_URL"],
+      "placeholder": {
+        "key": "DATABASE_URL",
+        "kind": "postgres-url"
+      }
+    },
+    {
+      "name": "transaction database URL",
+      "keys": ["DATABASE_URL_UNPOOLED"],
+      "placeholder": {
+        "key": "DATABASE_URL_UNPOOLED",
+        "kind": "postgres-url"
+      }
+    },
+    {
+      "name": "Better Auth origin",
+      "keys": ["BETTER_AUTH_URL"]
+    },
+    {
+      "name": "Better Auth signing secret",
+      "keys": ["BETTER_AUTH_SECRET"],
+      "placeholder": {
+        "key": "BETTER_AUTH_SECRET",
+        "kind": "secret"
+      },
+      "sensitive": true
+    },
+    {
+      "name": "Google OAuth client ID",
+      "keys": ["GOOGLE_CLIENT_ID"]
+    },
+    {
+      "name": "Google OAuth client secret",
+      "keys": ["GOOGLE_CLIENT_SECRET"],
+      "placeholder": {
+        "key": "GOOGLE_CLIENT_SECRET",
+        "kind": "secret"
+      }
+    },
+    {
+      "name": "ritual bundle publication policy",
+      "keys": ["MAGICKLI_RITUAL_BUNDLE_PUBLICATION_POLICY_IDS"]
+    },
+    {
+      "name": "private file storage provider",
+      "keys": ["FILES_STORAGE_PROVIDER"]
+    },
+    {
+      "name": "private file storage region",
+      "keys": ["FILES_S3_REGION"]
+    },
+    {
+      "name": "private file path-style policy",
+      "keys": ["FILES_S3_FORCE_PATH_STYLE"]
+    },
+    {
+      "name": "private file endpoint",
+      "keys": ["FILES_S3_ENDPOINT"]
+    },
+    {
+      "name": "private file bucket",
+      "keys": ["FILES_S3_BUCKET"]
+    },
+    {
+      "name": "private file access key",
+      "keys": ["FILES_S3_ACCESS_KEY_ID"],
+      "placeholder": {
+        "key": "FILES_S3_ACCESS_KEY_ID",
+        "kind": "secret"
+      },
+      "sensitive": true
+    },
+    {
+      "name": "private file secret key",
+      "keys": ["FILES_S3_SECRET_ACCESS_KEY"],
+      "placeholder": {
+        "key": "FILES_S3_SECRET_ACCESS_KEY",
+        "kind": "secret"
+      },
+      "sensitive": true
+    },
+    {
+      "name": "legacy public file endpoint",
+      "keys": ["AWS_S3_ENDPOINT_URL"]
+    },
+    {
+      "name": "legacy public file bucket",
+      "keys": ["AWS_S3_DEFAULT_BUCKET"]
+    },
+    {
+      "name": "legacy public file region",
+      "keys": ["AWS_REGION_APP", "AWS_REGION"]
+    },
+    {
+      "name": "legacy public file access key",
+      "keys": ["AWS_ACCESS_KEY_ID_APP", "AWS_ACCESS_KEY_ID"],
+      "placeholder": {
+        "key": "AWS_ACCESS_KEY_ID_APP",
+        "kind": "secret"
+      }
+    },
+    {
+      "name": "legacy public file secret key",
+      "keys": ["AWS_SECRET_ACCESS_KEY_APP", "AWS_SECRET_ACCESS_KEY"],
+      "placeholder": {
+        "key": "AWS_SECRET_ACCESS_KEY_APP",
+        "kind": "secret"
+      }
+    },
+    {
+      "name": "chat generation and embeddings",
+      "keys": ["OPENAI_API_KEY"],
+      "placeholder": {
+        "key": "OPENAI_API_KEY",
+        "kind": "secret"
+      }
+    },
+    {
+      "name": "Pinecone corpus access",
+      "keys": ["PINECONE_API_KEY"],
+      "placeholder": {
+        "key": "PINECONE_API_KEY",
+        "kind": "secret"
+      }
+    },
+    {
+      "name": "Pinecone corpus index",
+      "keys": ["PINECONE_INDEX_NAME"]
+    },
+    {
+      "name": "Pinecone corpus namespace",
+      "keys": ["PINECONE_NAME_SPACE"]
+    },
+    {
+      "name": "Discourse integration",
+      "keys": ["DISCOURSE_API_KEY"],
+      "placeholder": {
+        "key": "DISCOURSE_API_KEY",
+        "kind": "secret"
+      }
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+name: Production release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    if: github.ref == 'refs/heads/master'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: Production
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec loom init
+      - run: pnpm exec loom check --production
+
+      - name: Validate deployment configuration
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_ORG_ID"
+          test -n "$VERCEL_PROJECT_ID"
+
+      - name: Refuse an unresolved previous promotion
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: node scripts/release-checks.mjs preflight
+
+      - name: Pull production settings and preserve migration environment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          umask 077
+          pnpm dlx vercel@59.13.1 pull --yes --environment=production --scope "$VERCEL_ORG_ID"
+          cp .vercel/.env.production.local "$RUNNER_TEMP/vercel-production.env"
+          chmod 600 "$RUNNER_TEMP/vercel-production.env"
+
+      - name: Mask pulled secret values
+        run: |
+          node - .vercel/.env.production.local <<'NODE'
+          const { readFileSync } = require('node:fs');
+          const { parseEnv } = require('node:util');
+          const values = parseEnv(readFileSync(process.argv[2], 'utf8'));
+          for (const [key, value] of Object.entries(values)) {
+            if (!value || key.startsWith('NEXT_PUBLIC_')) continue;
+            const escaped = value.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+            process.stdout.write(`::add-mask::${escaped}\n`);
+          }
+          NODE
+
+      - name: Read production environment metadata
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          umask 077
+          pnpm dlx vercel@59.13.1 env ls production --format=json --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-production-env.json"
+
+      - name: Prepare metadata-backed build placeholders
+        run: |
+          pnpm exec loom db release prepare-build-env \
+            .vercel/.env.production.local \
+            "$RUNNER_TEMP/vercel-production-env.json" \
+            .github/vercel-production-env.json \
+            "$RUNNER_TEMP/vercel-build-placeholders.json"
+
+      - name: Verify migration connection
+        env:
+          MIGRATION_DATABASE_URL_UNPOOLED: ${{ secrets.MIGRATION_DATABASE_URL_UNPOOLED }}
+          LOOM_MIGRATION_DATABASE_ROLE: ${{ vars.LOOM_MIGRATION_DATABASE_ROLE }}
+        run: |
+          pnpm exec loom db migrations verify-env --connect \
+            --env-file "$RUNNER_TEMP/vercel-production.env"
+
+      - name: Build production artifact
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@59.13.1 build --prod --scope "$VERCEL_ORG_ID"
+
+      - name: Reject placeholder leakage
+        run: |
+          pnpm exec loom db release verify-build-env \
+            .vercel/output "$RUNNER_TEMP/vercel-build-placeholders.json"
+
+      - name: Stage production deployment
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          deployment_url="$(pnpm dlx vercel@59.13.1 deploy --prebuilt --prod --skip-domain --yes --scope "$VERCEL_ORG_ID")"
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Apply compatible Drizzle migrations
+        env:
+          MIGRATION_DATABASE_URL_UNPOOLED: ${{ secrets.MIGRATION_DATABASE_URL_UNPOOLED }}
+        run: |
+          cp "$RUNNER_TEMP/vercel-production.env" .vercel/.env.production.local
+          chmod 600 .vercel/.env.production.local
+          node --env-file=.vercel/.env.production.local - <<'NODE'
+          const { spawnSync } = require('node:child_process');
+          const result = spawnSync('pnpm', ['run', 'db:migrate'], { stdio: 'inherit' });
+          if (result.error) throw result.error;
+          process.exit(result.status ?? 1);
+          NODE
+
+      - name: Verify staged application and completed import gate
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: node scripts/release-checks.mjs staged
+
+      - name: Recheck promotion fence immediately before moving aliases
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: node scripts/release-checks.mjs preflight
+
+      - name: Promote the verified artifact
+        id: promote
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: pnpm dlx vercel@59.13.1 promote "$DEPLOYMENT_URL" --yes --timeout=5m --scope "$VERCEL_ORG_ID"
+
+      # A CLI timeout does not cancel promotion. Resolve the provider's actual
+      # state even after a failed command; never treat its exit code as rollback.
+      - name: Resolve promotion and verify production alias
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: node scripts/release-checks.mjs promoted
