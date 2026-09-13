@@ -29,6 +29,12 @@ describe.each([
   ["client", templeMembershipClientSchema, client],
   ["server", templeMembershipServerSchema, server],
 ] as const)("%s membership date validation", (_name, schema, fields) => {
+  it("normalizes a numeric grade from a recovered form and rejects invalid grades", () => {
+    const accepted = safeParse(schema, { ...fields, grade: "3" });
+    expect(accepted.success && accepted.output.grade).toBe(3);
+    for (const grade of ["-1", "1.5", "not a grade", -1, 1.5])
+      expect(safeParse(schema, { ...fields, grade }).success).toBe(false);
+  });
   it.each([undefined, null, new Date("2024-01-01"), dayjs("2024-01-01")])(
     "accepts an optional or valid memberSince %s",
     (memberSince) => {
