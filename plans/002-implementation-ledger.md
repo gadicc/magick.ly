@@ -623,3 +623,17 @@ preserves every backup and source/image hash and matches the built-route generat
 image digest. Durable authorized publication and private runtime activation
 remain pending. See the [acquisition record](009-ritual-image-acquisition.md#generated-capture-and-complete-image-plans)
 and `/tmp/magickli-generated-{coverage,types,biome,loom,build}.log`.
+
+The [prepared bundle contract](010-durable-ritual-bundles.md) now assigns stable
+UUIDv7 bundle/asset identities, verifies copied plan bytes and preserves every
+rendered occurrence. Its portable strict manifest parser validates exact hashes,
+descriptor binding and full JRT coverage. The shared render descriptor helper
+preserves the existing permission response and digest. Independent adversarial
+review and actual corpus preparation pass for all five archived and three builtin
+trees, with unchanged backup/source fingerprints. No durable publication or
+permission/readiness claim is made by preparation.
+All 2,442 default tests, 66-module coverage gates, types, Biome, ordinary Loom
+check and production build pass. Twelve independent Chromium parser scenarios
+pass with native cryptography and no non-fixture I/O. Provider/database writes,
+durable manifests, authenticated delivery and private reader activation remain
+pending. Evidence is linked in the bundle record.

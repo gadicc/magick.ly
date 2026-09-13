@@ -1,12 +1,7 @@
 import "server-only";
-import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { rituals } from "../db/schema/rituals";
 import { getRitualAccess, parseRitualScope } from "../doc/access";
-import {
-  RITUAL_OUTPUT_FORMAT,
-  RITUAL_OUTPUT_FORMAT_VERSION,
-} from "../doc/compileContract";
 import {
   loadSqlRitualPrincipal,
   sqlRitualParentFields,
@@ -20,6 +15,7 @@ import {
   parseRitualPermissionRequest,
   type RitualPermissionResponseV1,
 } from "./permissionContract";
+import { createRitualRenderDescriptor } from "./ritualRenderDescriptor";
 
 const instant = (value: unknown): value is number =>
   typeof value === "number" &&
@@ -93,27 +89,7 @@ export function createSqlRitualPermissionChecker(
           >["rendered"] = selected
             ? {
                 kind: "available",
-                descriptor: {
-                  // An internal identity digest, not a bundle ID. Revision tokens remain editor-only.
-                  descriptorSha256: createHash("sha256")
-                    .update(
-                      JSON.stringify([
-                        "magickli-ritual-render-descriptor-v1",
-                        row.id,
-                        row.currentRevisionId,
-                        row.version,
-                        row.currentCompiledArtifactId,
-                        selected.contentSha256,
-                        RITUAL_OUTPUT_FORMAT,
-                        RITUAL_OUTPUT_FORMAT_VERSION,
-                      ]),
-                      "utf8",
-                    )
-                    .digest("hex"),
-                  contentSha256: selected.contentSha256,
-                  outputFormat: RITUAL_OUTPUT_FORMAT,
-                  outputFormatVersion: RITUAL_OUTPUT_FORMAT_VERSION,
-                },
+                descriptor: createRitualRenderDescriptor(row, selected),
               }
             : { kind: "temporarily-unavailable" };
           return {
