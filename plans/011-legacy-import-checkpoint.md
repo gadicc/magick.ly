@@ -359,3 +359,22 @@ artifacts. The current Neon API exposes the required read-only
 [branch](https://api-docs.neon.tech/reference/getprojectbranch) and
 [project](https://api-docs.neon.tech/reference/getproject) metadata calls; their
 availability is not evidence that this task has authenticated access to them.
+
+The subsequent [authenticated provisioning check](004-neon-provisioning.md)
+establishes access through the operator's `magickli` Neon CLI profile and matches
+the exact Vercel Production direct URL to fresh project/branch/endpoint metadata.
+The real maintenance client authenticates with certificate/hostname verification,
+and a read-only transaction confirms the expected empty foundation and exact two
+migration records. This is live connection evidence, not a finished maintenance
+launcher: refreshed checks on each invocation, protected reviewed artifacts and a
+matching separately reviewed PostgreSQL 18 catalog remain necessary. Preview
+branching/readiness settings and effective deployment overrides remain unverified.
+
+The subsequent [disposable Neon 18 rehearsal](004-neon-provisioning.md) passes
+all 14 migrations, synthetic durable import with complete SQL reconciliation,
+uncertain first-commit acknowledgement, exact receipt timestamps and fresh-process
+completed replay after an unchanged migration rerun. Its 75 source hashes are
+unchanged, and the owned branch is removed. Main remains at the two original
+migrations with no imported rows. The engine-specific catalog is captured as
+review evidence; this does not finish the trusted launcher, final target role
+policy, Preview isolation or production import.

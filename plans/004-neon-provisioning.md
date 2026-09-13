@@ -52,9 +52,9 @@ skill setup remains authoritative.
 - Vercel still reports compute region `cdg1`, dashboard Node `22.x`, and
   production branch `master`. Configure `lhr1` and reconcile Node 24 during the
   release work; provisioning did not change them.
-- Fix Loom's hard-coded `main` assumptions, then wire and verify the migration
-  workflow and deployment fencing for `master`. The production Loom check
-  remains a release gate.
+- Loom 1.24.0 now supports the configured `master` branch. Wire and verify the
+  migration workflow and deployment fencing against the actual Vercel settings;
+  the production Loom check remains a release gate.
 - Verify native Preview branching and resource readiness blocking. Merely
   connecting Preview-scoped variables does not prove database isolation.
 - Use a sanitized or schema-only preview dataset before importing private
@@ -71,3 +71,107 @@ possible without enabling it as part of this foundation.
 Provider references: [Neon regions](https://neon.com/docs/introduction/regions),
 [Vercel native integration](https://neon.com/docs/guides/vercel-native-integration),
 [extension matrix](https://neon.com/docs/extensions/pg-extensions).
+
+## Authenticated identity check, 13 September 2026
+
+The operator completed browser authentication with official Neon CLI 4.17.3,
+installed in the existing user-owned Node 25 prefix. Profile `magickli` has
+owner-only credential/profile files under `~/.config/neon`. No manually created
+API key, app environment file, Neon link/init operation or onboarding feature
+was needed. Use `neon ... --profile magickli` for this existing login; it is not
+the default profile. Account OAuth permissions are broader than the read-only
+operations performed here.
+
+Fresh authenticated Neon metadata identifies:
+
+| Setting | Observed value |
+| --- | --- |
+| Neon organization | `org-shiny-haze-86859918` |
+| Project | `red-fire-54607378`, `magickli-db` |
+| Region / engine | `aws-eu-west-2`, PostgreSQL 18 |
+| Only branch | `br-empty-rice-zafjq6hv`, `main`, ready/default, not protected |
+| Only endpoint | `ep-cold-waterfall-zagugviy`, read/write, enabled |
+| Direct hostname | `ep-cold-waterfall-zagugviy.c-2.eu-west-2.aws.neon.tech` |
+| Database / role | `neondb` / `neondb_owner` |
+| Vercel connection | `spc_0nuxJnHVTNY0bJXS`, Production and Preview |
+
+Vercel's standard environment-pull API returns usable URLs through the existing
+authenticated CLI. Ordinary environment/resource metadata omits their values.
+The Production direct URL was captured once in process memory, matched against
+Neon's authenticated endpoint, and passed to the actual certificate-validating
+maintenance client. Fresh control-plane reads before and after SQL confirmed the
+same project, branch and endpoint. The SQL transaction was read-only and verified
+PostgreSQL `18.6 (2078fcb)`, exact current/session role, schema USAGE/CREATE,
+both original migration hashes/timestamps, only the empty `legacy_id_aliases`
+application table, and `pg_uuidv7` 1.6. Connecting woke the idle compute; no schema,
+row, role, environment or deployment configuration changed.
+
+Credential-free evidence: `/tmp/magickli-neon-identity/result.json`, SHA-256
+`1c1be3f778131ffb604c7fbc35e03239afe328ce2c34a97537553a42b1999f26`.
+
+The current Production and Preview **base** URLs both select this main endpoint.
+That does not establish the destination of a Preview deployment: the native
+integration can inject branch-specific overrides only at deployment time. Store,
+connection, project, installation and product metadata do not expose the saved
+branching/readiness action settings. Independent read-only investigation could
+not access a working dashboard browser. Required → Preview and Resource must be
+active before deployment therefore remain unverified; neither the existing
+ready status nor the base variables prove those gates. Evidence:
+`/tmp/magickli-preview-settings/report.json`, SHA-256
+`233a12337acc012147814727405ebe145aa5c93a3c68f89c4658a1b49260eed0`.
+
+The [current native-integration documentation](https://neon.com/docs/guides/vercel-managed-integration)
+describes these deployment overrides and copy-on-write branches. Even correctly
+isolated branches can inherit private parent data. Establish schema-only or
+sanitized Preview ancestry before the production import, and verify the effective
+deployment connection. A plain environment pull cannot prove that final mapping.
+
+## Disposable Neon 18 rehearsal, 13 September 2026
+
+The reviewed launcher created one temporary branch in the same approved London
+project, requested `init_source: schema-only` and fixed 0.25 CU, and left the
+Vercel connection and plan unchanged. Neon reported `init_source: parent-schema`;
+the SQL verifier independently proved the inherited alias table and Drizzle
+journal contained no rows. The result does not establish independent-root
+ancestry or any future Preview branch policy.
+
+On that owned branch only, the verifier removed the empty inherited foundation,
+then the unchanged Loom-aware `pnpm db:migrate` task applied all 14 migrations.
+The actual maintenance connection verified certificates and hostnames. Invented
+fixtures passed durable preparation, atomic import, complete 33-table SQL
+reconciliation and completed retry. A deliberately lost acknowledgement after
+the first real import commit resolved against the saved receipt and rows. A
+one-microsecond receipt mutation was refused and rolled back. An unchanged
+migration rerun and a fresh process replayed the saved run without importing
+fixtures or allocating new IDs.
+
+All 75 copied source/artifact fingerprints remained unchanged. Read-only probes
+before and after verified the same main public catalog, original two migration
+records and zero aliases. The temporary branch `br-misty-math-zax90ooz` was
+removed, with absence checked. No private backup data entered Neon, and no
+production migration, app activation or deployment occurred.
+
+Evidence: `/tmp/magickli-neon-rehearsal-fixed/result.json`, SHA-256
+`7836553959e000ec4a5f20bd90cb7ab2e422625c6b8b6d847f0fd50c636b7208`.
+The captured PostgreSQL 18 catalog has identity
+`47b66502b42f7fe8b9794283bc34da5977f278d5ddbf9bca66f23cb5444b7724`;
+its JSON file SHA-256 is
+`7b7629695640a95fcf5016770f8968594261854bc1c88c70549e28aa7b5c411c`.
+This is a rehearsal baseline; final target permissions, catalog approval and
+fresh control-plane checks still belong to the trusted maintenance launcher.
+
+Independent review recomputed the catalog/history identities and matched the
+actual schema to final Drizzle snapshot 0013. All 34 tables, 303 table columns,
+explicit constraints/indexes and enum labels match; all actual indexes and
+constraints are valid. A separate authenticated listing confirms only main
+remains. No actionable finding remains in the evidence or checkpoint docs.
+Review: `/tmp/magickli-neon-rehearsal-fixed/independent-review.md`.
+
+The first attempt and two diagnostic attempts stopped locally: Neon CLI 4.17.3
+rejects its advertised `--data -` syntax as `Unknown command: -` before any
+request. Full-entrypoint reproduction with synthetic credentials and network
+blocked verifies `--data=-` on Node 24 and 25, preserving the exact JSON body.
+No provider plan or permission rejection was established. The original failed
+records remain under `/tmp/magickli-neon-rehearsal`; CLI evidence is
+`/tmp/magickli-neon-cli-stdin-probe/final-report.json`, SHA-256
+`770f1f0dad3accf179f93c6c14939bc9657ce11b2b4d24443e39e2235adf211b`.

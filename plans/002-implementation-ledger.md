@@ -813,3 +813,24 @@ Evidence: `/tmp/magickli-import-connection-tls/README.md` and
 `/tmp/magickli-import-connection-{coverage,types,biome,loom}.log`.
 Fresh provider identity, reviewed artifacts and the maintenance commands remain
 next. No live target or environment variables were changed.
+
+The operator completed Neon CLI browser authentication. The
+[read-only live identity check](004-neon-provisioning.md) now matches the actual
+Vercel Production direct URL to fresh Neon project/branch/endpoint metadata and
+uses the dedicated maintenance client with certificate/hostname verification.
+PostgreSQL 18.6, the expected database/session/current role, both original
+migration records and zero imported aliases are verified. No API key was manually
+created and no database, environment or deployment configuration changed.
+
+Production/Preview base variables share the main endpoint, while native deployment
+overrides may differ. Independent API investigation did not expose the saved
+Preview branching/readiness settings, and browser access was unavailable. Those
+gates remain unverified rather than inferred from current ready status. The
+[disposable Neon 18 rehearsal](004-neon-provisioning.md) now passes all 14
+migrations, synthetic atomic import and complete SQL reconciliation, lost first-
+commit acknowledgement recovery, unchanged migration rerun and fresh-process
+saved-run replay. All 75 source hashes remain unchanged; the owned branch was
+removed and main's catalog, original journal and empty alias table match before
+and after. Production still has only migrations 0000–0001 and no private import.
+The initial failure was a locally reproduced Neon CLI stdin-argument bug,
+resolved with `--data=-`; no plan or permission rejection was established.
