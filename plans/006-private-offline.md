@@ -399,6 +399,11 @@ remain unchanged. No remote requests or durable image/source writes occurred.
 Evidence: `/tmp/magickli-asset-plan-acceptance.json` and
 `/tmp/magickli-asset-plan-{coverage,types,biome,loom,build}.log`.
 
+The [remaining acquisition record](009-ritual-image-acquisition.md) now documents
+successful reads of three existing external images, the verified Wikimedia
+standard-size replacement, and the generated SVG embedded-font experiment. These
+findings do not install durable assets or activate their resolvers.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.

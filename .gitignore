@@ -7,6 +7,7 @@
 
 # testing
 /coverage
+/output/playwright/
 
 # next.js
 /.next/

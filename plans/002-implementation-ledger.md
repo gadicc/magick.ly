@@ -530,3 +530,10 @@ coverage, types, Biome, ordinary Loom checks and production build pass. The veri
 public files remain unchanged. This is server image evidence; authenticated
 bundle publication and private reader activation remain separate requirements.
 See the [offline record](006-private-offline.md).
+
+Read-only [image acquisition findings](009-ritual-image-acquisition.md) verify
+three external originals and a same-file standard-size Wikimedia replacement.
+The generated Tree of Life font probe works offline but exposes asynchronous font
+settling after `image.decode()`. The original sources and runtime routes remain
+unchanged; durable acquisition and generated-image acceptance are still required.
+Browser artifacts now have a scoped Git ignore rule.
