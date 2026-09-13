@@ -653,3 +653,18 @@ including real locks, revocation, lost acknowledgements and clock regressions.
 All temporary databases are removed. Private storage, authenticated delivery,
 SQL/auth import and browser activation remain pending; the current runtime is
 unchanged. Full evidence and fingerprints are linked in the bundle record.
+
+The [private bundle storage and byte reader](010-durable-ritual-bundles.md) now
+verify exact account-bound object destinations and immutable provenance, use
+conditional Loom writes, recover uncertain writes and enforce bounded stream
+ownership. Delivery rechecks the entire current SQL binding after provider I/O
+and wipes bytes when authorization or selection changes. Independent review
+found and fixed SDK-decorated error diagnostics escaping the safe-error contract.
+
+All 2,926 default tests (179 new; 14 opt-in Mongo cases skipped), 72-module
+coverage gates, types, Biome, ordinary Loom check and final production build
+pass. The integrated prepared-image/PGlite/real-SDK test verifies publication,
+exact delivery and revocation during GET using only synthetic HTTP. No real
+provider writes, new dependencies, schema changes or runtime activation occurred.
+Actual private bucket setup/acceptance and HTTP/browser integration remain
+pending. Evidence and source fingerprints are linked in the bundle record.

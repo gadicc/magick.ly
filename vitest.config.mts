@@ -47,6 +47,8 @@ export default defineConfig({
         "src/offline/ritualBundleRecords.ts",
         "src/offline/sqlRitualBundlePublications.ts",
         "src/offline/sqlRitualBundleReads.ts",
+        "src/offline/r2RitualBundleStorage.ts",
+        "src/offline/readRitualBundleAsset.ts",
         "src/files/ritualUploadProtocol.ts",
         "src/files/finalizeRitualUpload.ts",
         "src/files/validateRitualImage.ts",

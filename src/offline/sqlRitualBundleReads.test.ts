@@ -373,6 +373,7 @@ describe("completed bundle current-access reads", () => {
     const result = await reader().getAsset(assetInput());
     expect(result).toMatchObject({
       expectedActorId: fixture.actors.creator,
+      operationId: saved.intent.operationId,
       ritualId: fixture.parent.id,
       bundleId: saved.intent.bundleId,
       assetKey: saved.rows[0].key,

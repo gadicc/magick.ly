@@ -49,6 +49,8 @@ export interface SqlRitualBundleManifest {
  */
 export interface SqlRitualBundleAsset {
   expectedActorId: string;
+  /** Immutable object provenance, needed by the private storage verifier. */
+  operationId: string;
   ritualId: string;
   bundleId: string;
   assetKey: string;
@@ -274,6 +276,7 @@ export function createSqlRitualBundleReader(
       if (!row || !entry || row.receiptSha256 === null) return null;
       return {
         expectedActorId: found.bound.expectedActorId,
+        operationId: found.intent.operationId,
         ritualId: found.bound.ritualId,
         bundleId: found.manifest.bundleId,
         assetKey: row.key,

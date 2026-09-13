@@ -2,8 +2,9 @@
 
 The image plan now resolves every image in the verified corpus. A prepared bundle
 binds that evidence to exact selected ritual content. SQL publication and the
-current-access reader now preserve that binding durably. Private object storage,
-authenticated delivery and browser activation remain the next integration steps.
+current-access reader preserve that binding durably. The private R2 adapter and
+authorized byte reader are implemented independently of HTTP/runtime activation.
+Provider configuration, runtime composition and browser delivery remain pending.
 Neither preparation nor publication grants an offline lease.
 
 ## Implemented preparation and wire format
@@ -113,7 +114,8 @@ operational results are not authoritative offline revocation responses.
 
 The manifest projection excludes private plan/provenance and provider locations.
 The asset projection is an internal server descriptor, not a browser capability.
-Its future transport must verify current session/policy and
+It includes the immutable operation ID for object provenance verification. Its
+transport must verify current session/policy and
 exact bundle/asset membership, read bounded stored bytes outside SQL, then recheck
 access before exposing them. Knowing a UUID or holding an offline lease never
 authorizes a server download. Future protected attachments additionally require a
@@ -124,9 +126,57 @@ manifest identity. Extend Dexie storage to retain occurrence mapping and verify
 that same-bundle renewal only renews the same manifest. A changed bundle that
 fails to download cannot extend old bytes. Source/edit grants remain independent.
 
-Private R2 configuration, the exact-byte storage adapter, SQL/auth import and
-runtime activation remain pending. No HTTP endpoint, public caching rule or
-active reader changed in this unit.
+Private R2 configuration, SQL/auth import and runtime activation remain pending.
+No HTTP endpoint, public caching rule or active reader changed in these units.
+
+## Private object storage and authorized bytes
+
+`createR2RitualBundleStorage` consumes explicit account origin, bucket, credentials,
+bundle namespace and other reserved namespaces. It performs no environment
+discovery, provisioning or public URL generation. A provider identity derived
+from the exact R2 account origin prevents a configuration change from silently
+reinterpreting an old bucket/key. Locations are derived from the dedicated prefix,
+bundle UUID and asset UUID; each operation validates its persisted destination.
+Namespace validation is a local configuration check, not proof of bucket privacy.
+
+`ensureAsset` accepts a persisted SQL worker claim and optional owned prepared
+bytes. It first GETs the exact destination. Existing objects must match immutable
+operation, ritual, bundle, asset and manifest provenance, MIME, size and actual
+byte SHA. A genuine missing object requires bytes matching the reserved size/hash.
+The conditional PUT uses the published Loom S3 adapter with no-overwrite semantics
+and an explicit checksum, then GETs and verifies the stored bytes even after a
+successful write. Conditional conflicts also require exact GET verification.
+Unknown writes remain resumable under the same operation/key; there is no delete,
+copy, presign or public fallback method. Claim IDs stay out of immutable metadata
+so replacement workers can reverify an earlier object's bytes and issue a fresh
+claim-bound receipt.
+
+Each operation is bounded to at most 30 seconds and credential expiry; writes also
+obey the worker claim/intent expiry. SDK error XML is capped at 4 KiB before
+parsing. Successful streams use one bounded allocation and enforce length, MIME,
+encoding and digest.
+Late bodies are closed and owned verification buffers are wiped. Four active or
+unsettled operations are allowed per adapter instance; retained PUT snapshots are
+at most 80 MiB, in addition to GET/preparation/SDK memory. Cancellation does not
+permit wiping a buffer still owned by an unfinished PUT: cleanup and the slot
+remain attached to actual transport settlement. This is not a total process or
+fleet memory bound.
+
+`readAsset` verifies the same exact object without a worker claim and transfers
+ownership of the bytes to its server caller. It grants no permission by itself.
+`readRitualBundleAsset` first calls the current SQL reader, performs that bounded
+object read, then calls the SQL reader again and compares the complete binding.
+Revocation, account or output changes, cancellation, timeout, wrong bytes and
+operational failure discard owned bytes. Late storage completion is also wiped.
+Successful output contains only owned bytes and MIME/size/hash, with no provider
+location, source history or offline lease. A later route must supply the uncached
+same-origin transport and private response/cache policy.
+
+The adapter accepts approved raster and SVG snapshots; it does not loosen the
+raster-only policy for new user uploads. Image parsing remains the trusted
+acquisition/preparation boundary. Actual provider privacy and object acceptance
+must be verified before activating this path; synthetic transport tests do not
+establish either property.
 
 ## Verification
 
@@ -193,3 +243,33 @@ and `/tmp/magickli-bundle-final-{coverage,types,loom}.log`. A preliminary harnes
 attempt exposed a tsx CommonJS namespace/default import mismatch; correcting that
 test harness required no application change. These checks prove SQL behavior, not
 private provider configuration or actual object persistence.
+
+### Private storage and byte delivery checkpoint
+
+The unit adds 179 tests: 119 independent real-SDK transport cases and 60 authorized
+byte-reader cases. Adversarial testing found that Smithy decorates errors thrown
+by the bounded collector with raw provider diagnostics. Public adapter boundaries
+now recreate code-only errors; oversized error-body regressions check that no raw
+response/message survives. No further actionable review finding remains.
+
+The integrated test prepares actual PNG/SVG bytes, reserves and claims through
+the SQL publisher, conditionally writes through Loom/the R2 adapter with synthetic
+HTTP, verifies real storage receipts and publishes through PGlite. The SQL reader
+and byte reader return exact owned bytes. Removing the member's group grant
+during the object GET makes the second SQL authorization fail and wipes the
+downloaded buffer; subsequent denied calls perform no storage I/O. Independent
+stored fixture objects remain unchanged. This uses actual application modules and
+SDK serialization, with no external requests or provider/database production I/O.
+
+All 2,926 default tests pass (14 opt-in Mongo cases skipped). The 72-module
+coverage gates pass at 98.25% statements, 97.12% branches, 99.89% functions and
+99.31% lines. Types, Biome, ordinary Loom check and the final production build
+pass. An earlier build caught unfinished integration-test type annotations;
+the corrected, frozen test file is included in the final successful checks.
+
+Evidence: `/tmp/magickli-r2-bundle-storage/tests-{coverage,types,biome}.log`,
+`/tmp/magickli-asset-read-tests/result.json` and
+`/tmp/magickli-bundle-storage-{coverage,final-types,biome,loom,final-build}.log`.
+Adapter SHA `1ae27518c9967cc0810516a6d7492f8e7a2a5a0590c5b84c605b8b6a41ad7cbd`;
+byte reader SHA `fe0860a84c5a3f17ef2e5f73c0b161c39aec364bdeef58a599486cb1fb42d26f`.
+Provider privacy, real R2 acceptance and HTTP/browser activation are still pending.
