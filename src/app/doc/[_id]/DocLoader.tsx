@@ -10,29 +10,32 @@ import _zelator from "!!raw-loader!@/doc/1=10.jade";
 // import _chesedTalisman from "!!raw-loader!../../src/doc/chesed-talisman.jade";
 // @ts-expect-error: ok
 import _theoricus from "!!raw-loader!@/doc/2=9.jade";
-import { useGongoOne, useGongoSub } from "gongo-client-react";
 import { prepare } from "@/doc/prepare";
+import type { DocNode } from "@/schemas";
 import DocRender from "./DocRender";
 
+function prepareBuiltin(source: string): DocNode {
+  // The established compiler emits a type-less document root and may retain
+  // type-less grouping nodes. JRT has always accepted that shape, while the
+  // newer shared DocNode interface requires `type`; bridge the types without
+  // rewriting or rejecting the compiled tree.
+  return prepare(source) as unknown as DocNode;
+}
+
 const docs = {
-  neophyte: prepare(_neophyte),
-  zelator: prepare(_zelator),
-  theoricus: prepare(_theoricus),
+  neophyte: prepareBuiltin(_neophyte),
+  zelator: prepareBuiltin(_zelator),
+  theoricus: prepareBuiltin(_theoricus),
   // neophyteM: prepare(_neophyteM),
   // healing: prepare(_healing),
   // "chesed-talisman": prepare(_chesedTalisman),
-};
+} satisfies Record<string, DocNode>;
 
-function DocLoader({ id: _id }: { id: string }) {
-  const builtinDoc = Object.hasOwn(docs, _id) ? docs[_id] : undefined;
-  useGongoSub(!builtinDoc && "doc", { _id });
-  const dbDoc = useGongoOne(
-    (db) => !builtinDoc && db.collection("docs").find({ _id }),
-  );
-
-  const doc = builtinDoc || (dbDoc && dbDoc.doc);
-
-  if (!doc) return <div>Loading or not found...</div>;
+function DocLoader({ id }: { id: string }) {
+  const doc = Object.hasOwn(docs, id)
+    ? docs[id as keyof typeof docs]
+    : undefined;
+  if (!doc) return <div>Ritual not found.</div>;
 
   return <DocRender doc={doc} />;
 }

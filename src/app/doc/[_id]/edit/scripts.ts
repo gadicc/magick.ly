@@ -1,4 +1,4 @@
-import type { ScriptProps } from "./DocEdit";
+import type { ScriptProps } from "./scriptTypes";
 
 const caps = (s: string) =>
   s
