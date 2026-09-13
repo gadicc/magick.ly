@@ -11,6 +11,7 @@ import {
   type PendingPermissionCheck,
   type PermissionReply,
 } from "./lease";
+import { inventoryRitualAssetJson } from "./ritualAssetInventory";
 import type {
   OfflineClockObservation,
   OfflineResourceState,
@@ -32,6 +33,8 @@ const instant = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 const hash = (value: unknown): value is string =>
   typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+const routeAlias = (value: unknown): value is string =>
+  typeof value === "string" && /^[a-f0-9]{24}$/.test(value);
 const CLAIM_MS = 60_000;
 
 /** Safe local errors carry no source, provider details or other-account data. */
@@ -64,6 +67,77 @@ async function sha256(value: string | Blob): Promise<string> {
     new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
     (byte) => byte.toString(16).padStart(2, "0"),
   ).join("");
+}
+
+function validBundleMetadata(bundle: RitualBundle): boolean {
+  try {
+    if (
+      bundle.version !== 1 ||
+      !id(bundle.ownerId) ||
+      !id(bundle.ritualId) ||
+      !id(bundle.bundleId) ||
+      !hash(bundle.manifestSha256) ||
+      bundle.rendererFormat !== "jrt-v1" ||
+      typeof bundle.title !== "string" ||
+      typeof bundle.renderedJson !== "string" ||
+      !hash(bundle.renderedSha256) ||
+      !Array.isArray(bundle.assets) ||
+      !Array.isArray(bundle.occurrences) ||
+      (bundle.routeAliases !== undefined &&
+        (!Array.isArray(bundle.routeAliases) ||
+          bundle.routeAliases.length > 8 ||
+          bundle.routeAliases.some((alias) => !routeAlias(alias)) ||
+          new Set(bundle.routeAliases).size !== bundle.routeAliases.length))
+    )
+      return false;
+    const staticPaths = bundle.assets.flatMap((asset) =>
+      asset.reference.startsWith("/") && !asset.reference.startsWith("//")
+        ? [asset.reference.split("?", 1)[0]]
+        : [],
+    );
+    const inventory = inventoryRitualAssetJson(bundle.renderedJson, {
+      knownAppOrigins: [],
+      staticPaths,
+    });
+    if (
+      !inventory.enumerationComplete ||
+      inventory.issues.length !== 0 ||
+      inventory.occurrences.length !== bundle.occurrences.length
+    )
+      return false;
+    const observed = new Map(
+      inventory.occurrences.map((row) => [JSON.stringify(row.path), row]),
+    );
+    const readAssets = bundle.assets.filter(
+      (asset) => asset.purpose === "read",
+    );
+    const assetsByKey = new Map(readAssets.map((asset) => [asset.key, asset]));
+    const usedAssets = new Set<string>();
+    for (const occurrence of bundle.occurrences) {
+      const path = JSON.stringify(occurrence.path);
+      const actual = observed.get(path);
+      const asset = assetsByKey.get(occurrence.assetKey);
+      if (
+        !Array.isArray(occurrence.path) ||
+        !occurrence.path.every(
+          (index) => Number.isSafeInteger(index) && index >= 0,
+        ) ||
+        typeof occurrence.src !== "string" ||
+        typeof occurrence.displayFragment !== "string" ||
+        !actual ||
+        !asset ||
+        actual.src !== occurrence.src ||
+        actual.displayFragment !== occurrence.displayFragment ||
+        actual.networkReference !== asset.reference
+      )
+        return false;
+      observed.delete(path);
+      usedAssets.add(occurrence.assetKey);
+    }
+    return observed.size === 0 && usedAssets.size === readAssets.length;
+  } catch {
+    return false;
+  }
 }
 
 type SaveRequest = Extract<SqlRitualWriteRequest, { kind: "save" }>;
@@ -102,6 +176,13 @@ export interface OutboxClaim {
   claimId: string;
   account: OfflineAccount;
   payloadJson: string;
+}
+
+/** Strict manifest identity accepted alongside a fresh permission reply. */
+export interface AcceptedBundleBinding {
+  bundleId: string;
+  manifestSha256: string;
+  routeAlias?: string;
 }
 
 /**
@@ -305,16 +386,18 @@ export class OfflineRitualRepository {
   /**
    * Accept only a schema-validated reply from the current uncached server permission check.
    * Apply revocation/edit downgrade immediately, before fetching any replacement assets.
-   * An omitted bundleId renews permission/source only. It cannot renew old bundle
-   * bytes or authorize installation; supply an ID only for a complete server manifest.
+   * An omitted bundle binding renews permission/source only. It cannot renew old
+   * bundle bytes or authorize installation; supply the ID and manifest digest only
+   * for a complete server manifest.
    */
   acceptPermission(
     pending: PendingPermissionCheck,
     reply: PermissionReply,
-    bundleId?: string,
+    bundle?: AcceptedBundleBinding,
   ) {
     pending = structuredClone(pending);
     reply = structuredClone(reply);
+    bundle = bundle ? structuredClone(bundle) : undefined;
     return this.transaction(async () => {
       const state = await this.db.device.get("active");
       const current = state?.cleanupOwnerId ? null : (state?.account ?? null);
@@ -332,9 +415,14 @@ export class OfflineRitualRepository {
       if (
         reply.kind === "granted" &&
         result.authorization.grant &&
-        bundleId !== undefined
+        bundle !== undefined
       )
-        requireValue(id(bundleId), "INVALID");
+        requireValue(
+          id(bundle.bundleId) &&
+            hash(bundle.manifestSha256) &&
+            (bundle.routeAlias === undefined || routeAlias(bundle.routeAlias)),
+          "INVALID",
+        );
       await this.db.authorizations.put(result.authorization);
       if (result.purgeDownloads) await this.purgeResource(...key);
       else if (result.purgeSourceSnapshots) await this.purgeSource(...key);
@@ -342,7 +430,13 @@ export class OfflineRitualRepository {
         await this.db.checks.put({
           ...pending,
           acceptedLeaseId: result.authorization.grant.leaseId,
-          ...(bundleId === undefined ? {} : { bundleId }),
+          ...(bundle === undefined
+            ? {}
+            : {
+                bundleId: bundle.bundleId,
+                manifestSha256: bundle.manifestSha256,
+                ...(bundle.routeAlias ? { routeAlias: bundle.routeAlias } : {}),
+              }),
         });
         if (result.authorization.grant.sourceEdit) {
           await this.db.outbox
@@ -353,14 +447,26 @@ export class OfflineRitualRepository {
         }
         const previous = await this.db.bundles.get(key);
         if (
-          bundleId !== undefined &&
+          bundle !== undefined &&
           previous &&
-          previous.bundleId === bundleId
-        )
+          previous.bundleId === bundle.bundleId &&
+          previous.manifestSha256 === bundle.manifestSha256
+        ) {
+          const routeAliases = bundle.routeAlias
+            ? [
+                ...new Set([
+                  ...(previous.routeAliases ?? []),
+                  bundle.routeAlias,
+                ]),
+              ]
+            : previous.routeAliases;
+          requireValue((routeAliases?.length ?? 0) <= 8, "INVALID");
           await this.db.bundles.put({
             ...previous,
             authorization: result.authorization,
+            routeAliases,
           });
+        }
       } else await this.db.checks.delete(key);
       return result.outcome;
     });
@@ -377,16 +483,26 @@ export class OfflineRitualRepository {
     const assets = structuredClone(inputAssets);
     requireValue(
       bundle.version === 1 &&
+        id(bundle.ownerId) &&
+        id(bundle.ritualId) &&
+        id(bundle.bundleId) &&
+        hash(bundle.manifestSha256) &&
         bundle.ownerId === pending.ownerId &&
         bundle.ritualId === pending.ritualId &&
-        id(bundle.bundleId) &&
         bundle.rendererFormat === "jrt-v1" &&
         typeof bundle.title === "string" &&
         typeof bundle.renderedJson === "string" &&
         hash(bundle.renderedSha256) &&
-        Array.isArray(bundle.assets),
+        Array.isArray(bundle.assets) &&
+        Array.isArray(bundle.occurrences) &&
+        (bundle.routeAliases === undefined ||
+          (Array.isArray(bundle.routeAliases) &&
+            bundle.routeAliases.length <= 8 &&
+            bundle.routeAliases.every(routeAlias) &&
+            new Set(bundle.routeAliases).size === bundle.routeAliases.length)),
       "INVALID",
     );
+    requireValue(validBundleMetadata(bundle), "INCOMPLETE");
     requireValue(
       (await sha256(bundle.renderedJson)) === bundle.renderedSha256,
       "INCOMPLETE",
@@ -431,11 +547,24 @@ export class OfflineRitualRepository {
         state?.account?.ownerId !== pending.ownerId ||
         state.account.epoch !== pending.accountEpoch ||
         check?.requestId !== pending.requestId ||
-        check.bundleId !== bundle.bundleId
+        check.bundleId !== bundle.bundleId ||
+        check.manifestSha256 !== bundle.manifestSha256
       )
         return false;
       const gate = await this.gate(state.account, pending.ritualId);
       if (!gate.read || !gate.authorization) return false;
+      const previous = await this.db.bundles.get([
+        pending.ownerId,
+        pending.ritualId,
+      ]);
+      const permittedAliases = new Set(previous?.routeAliases ?? []);
+      if (check.routeAlias) permittedAliases.add(check.routeAlias);
+      if (
+        (check.routeAlias &&
+          !bundle.routeAliases?.includes(check.routeAlias)) ||
+        bundle.routeAliases?.some((alias) => !permittedAliases.has(alias))
+      )
+        return false;
       requireValue(
         gate.sourceEdit ||
           bundle.assets.every((asset) => asset.purpose === "read"),
@@ -499,11 +628,19 @@ export class OfflineRitualRepository {
     const bundle = await this.db.bundles.get([account.ownerId, ritualId]);
     if (
       !bundle ||
-      bundle.version !== 1 ||
       bundle.ownerId !== account.ownerId ||
-      bundle.ritualId !== ritualId
-    )
+      bundle.ritualId !== ritualId ||
+      !validBundleMetadata(bundle)
+    ) {
+      if (bundle) {
+        await this.db.bundles.delete([account.ownerId, ritualId]);
+        await this.db.assets
+          .where("[ownerId+ritualId]")
+          .equals([account.ownerId, ritualId])
+          .delete();
+      }
       return null;
+    }
     const decision = inspectOfflineAuthorization(
       bundle.authorization,
       account,
@@ -565,6 +702,51 @@ export class OfflineRitualRepository {
           }
         : null;
     });
+  }
+
+  /** Candidate identities only; callers must register views and perform gated reads before display. */
+  async listDownloadedRitualIds(account: OfflineAccount): Promise<string[]> {
+    account = structuredClone(account);
+    return this.transaction(async () => {
+      await this.account(account);
+      return [
+        ...new Set(
+          (
+            await this.db.bundles
+              .where("ownerId")
+              .equals(account.ownerId)
+              .toArray()
+          )
+            .filter(validBundleMetadata)
+            .map((bundle) => bundle.ritualId),
+        ),
+      ].sort();
+    });
+  }
+
+  /** Resolve an old URL only through a complete bundle saved after a verified alias delivery. */
+  async resolveDownloadedRitualAlias(
+    account: OfflineAccount,
+    alias: string,
+  ): Promise<string | null> {
+    account = structuredClone(account);
+    if (!routeAlias(alias)) return null;
+    const candidates = await this.transaction(async () => {
+      await this.account(account);
+      return (
+        await this.db.bundles.where("ownerId").equals(account.ownerId).toArray()
+      )
+        .filter(
+          (bundle) =>
+            validBundleMetadata(bundle) &&
+            bundle.routeAliases?.includes(alias) === true,
+        )
+        .map((bundle) => bundle.ritualId);
+    });
+    if (new Set(candidates).size !== 1) return null;
+    const ritualId = candidates[0];
+    const bundle = await this.readBundle(account, ritualId);
+    return bundle?.routeAliases?.includes(alias) ? ritualId : null;
   }
   readSource(
     account: OfflineAccount,

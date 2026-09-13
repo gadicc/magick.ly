@@ -2,6 +2,10 @@ import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist } from "serwist";
 import { createPublicRitualShells } from "../doc/publicShells";
+import {
+  clearLegacyPrivateResponses,
+  privateRuntimeCaching,
+} from "../offline/privateRequests";
 
 // This declares the value of `injectionPoint` to TypeScript.
 // `injectionPoint` is the string that will be replaced by the
@@ -28,14 +32,27 @@ const serwist = new Serwist({
   skipWaiting: false,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: [...publicRituals.runtimeCaching, ...defaultCache],
+  runtimeCaching: [
+    ...privateRuntimeCaching(
+      self.location.origin,
+      publicRituals.privateReaderShell,
+    ),
+    ...publicRituals.runtimeCaching,
+    ...defaultCache,
+  ],
 });
 
 serwist.addEventListeners();
 
 self.addEventListener("install", (event) =>
-  event.waitUntil(publicRituals.warm()),
+  event.waitUntil(
+    Promise.all([publicRituals.warm(), publicRituals.warmPrivateReaderShell()]),
+  ),
 );
 self.addEventListener("activate", (event) =>
-  event.waitUntil(publicRituals.clearObsolete()),
+  event.waitUntil(
+    clearLegacyPrivateResponses(caches, self.location.origin).then(() =>
+      publicRituals.clearObsolete(),
+    ),
+  ),
 );

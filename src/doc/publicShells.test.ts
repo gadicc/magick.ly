@@ -125,6 +125,72 @@ function setup(entries = manifest(), deploymentId?: string) {
   return { ...shells, dispatch };
 }
 
+it("warms the private reader's fixed anonymous shell with the same build and cache checks", async () => {
+  const shells = setup();
+  await shells.warmPrivateReaderShell();
+  const sent = network.mock.calls[0][0] as Request;
+  expect(sent.url).toBe(`${origin}/offline/ritual`);
+  expect(sent.credentials).toBe("omit");
+  expect(sent.cache).toBe("no-store");
+  expect([...sent.headers]).toEqual([["accept", "text/html"]]);
+  network.mockRejectedValue(new Error("offline"));
+  expect(await (await shells.privateReaderShell()).text()).toBe(html());
+  expect(network).toHaveBeenCalledTimes(1);
+});
+
+it("installed Serwist uses the anonymous reader fallback only after an eligible private HTML navigation fails", async () => {
+  const { privateRuntimeCaching } = await import("../offline/privateRequests");
+  const shells = setup();
+  await shells.warmPrivateReaderShell();
+  const fallback = vi.fn(shells.privateReaderShell);
+  const sw = new Serwist({
+    runtimeCaching: [
+      ...privateRuntimeCaching(origin, fallback),
+      {
+        matcher: () => true,
+        handler: async () => new Response("UNSAFE GENERIC CACHE"),
+      },
+    ],
+  });
+  const dispatch = (value: Request) =>
+    sw.handleRequest({
+      request: value,
+      event: new FixtureFetchEvent(value) as unknown as FetchEvent,
+    })!;
+  network.mockRejectedValue(new Error("offline"));
+  const privatePath = "/doc/01993000-0000-7000-8000-000000000001";
+  expect(await (await dispatch(request(privatePath))).text()).toBe(html());
+  expect(fallback).toHaveBeenCalledTimes(1);
+  for (const denied of [
+    request(privatePath, { headers: { RSC: "1" } }),
+    request(privatePath, { headers: { "Next-Router-Prefetch": "1" } }),
+    request(privatePath + "/edit"),
+    request("/api/session"),
+    request("/temples/admin"),
+  ])
+    await expect(dispatch(denied)).rejects.toThrow();
+  expect(fallback).toHaveBeenCalledTimes(1);
+  expect(
+    [...cacheMap.values()].flatMap((cache) => [...cache.entries.keys()]),
+  ).toEqual([`${origin}/offline/ritual`]);
+});
+
+it("opens the downloaded library offline before its first direct visit", async () => {
+  const shells = setup();
+  await shells.warmPrivateReaderShell();
+  network.mockRejectedValue(new Error("offline"));
+  expect(await (await shells.dispatch(request("/offline/ritual"))).text()).toBe(
+    html(),
+  );
+  for (const excluded of [
+    request("/offline/ritual?account=other"),
+    request("/offline/ritual", { headers: { RSC: "1" } }),
+    request("/offline/ritual", { headers: { Authorization: "synthetic" } }),
+  ])
+    expect(await (await shells.dispatch(excluded)).text()).toBe("OTHER ROUTE");
+  expect(network).toHaveBeenCalledTimes(1);
+});
+
 describe("anonymous public ritual shell route through installed Serwist", () => {
   it("warms exactly three query-free anonymous shells and serves a first new query offline", async () => {
     const route = setup();

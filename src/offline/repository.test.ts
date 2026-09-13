@@ -19,6 +19,7 @@ import {
   type RitualBundle,
   RitualOfflineDatabase,
   type StoredAsset,
+  type StoredBundle,
 } from "./storage";
 
 const A = "01993000-0000-7000-8000-000000000001";
@@ -88,10 +89,14 @@ async function downloaded(
   sourceAsset = false,
 ) {
   const bundleId = createUuidV7();
+  const renderedJson = JSON.stringify({
+    type: "root",
+    children: [{ type: "img", src: "/protected/image?a=1#crop" }],
+  });
   const entries: AssetManifestEntry[] = [
     {
       key: "image",
-      reference: "/protected/image?a=1#crop",
+      reference: "/protected/image?a=1",
       sha256: await digest("read-image"),
       mime: "image/png",
       bytes: 10,
@@ -112,11 +117,20 @@ async function downloaded(
     ownerId: account.ownerId,
     ritualId,
     bundleId,
+    manifestSha256: await digest(`manifest:${bundleId}`),
     title: "Synthetic ritual",
-    renderedJson: '["p",{},"Rendered only"]',
-    renderedSha256: await digest('["p",{},"Rendered only"]'),
+    renderedJson,
+    renderedSha256: await digest(renderedJson),
     rendererFormat: "jrt-v1",
     assets: entries,
+    occurrences: [
+      {
+        path: [0],
+        src: "/protected/image?a=1#crop",
+        displayFragment: "#crop",
+        assetKey: "image",
+      },
+    ],
   };
   const assets: StoredAsset[] = entries.map((entry) => ({
     ...entry,
@@ -129,6 +143,10 @@ async function downloaded(
   }));
   return { bundle, assets };
 }
+const binding = (bundle: RitualBundle) => ({
+  bundleId: bundle.bundleId,
+  manifestSha256: bundle.manifestSha256,
+});
 async function ready(f: Fixture, sourceEdit = true, sourceAsset = false) {
   const account = await f.repo.activateAccount(A);
   const pending = await f.repo.beginCheck(account, R);
@@ -136,7 +154,7 @@ async function ready(f: Fixture, sourceEdit = true, sourceAsset = false) {
   await f.repo.acceptPermission(
     pending,
     allowed(pending, sourceEdit),
-    data.bundle.bundleId,
+    binding(data.bundle),
   );
   expect(await f.repo.installBundle(pending, data.bundle, data.assets)).toBe(
     true,
@@ -221,6 +239,18 @@ describe("real Dexie account/resource transactions", () => {
     });
     expect(await f.repo.readSource(r.account, R2, REV)).toBeNull();
   });
+  it("purges a pre-occurrence stored bundle instead of inferring its image bindings", async () => {
+    const f = fixture();
+    const r = await ready(f);
+    const stored = await f.db.bundles.get([A, R]);
+    expect(stored).toBeDefined();
+    const legacy = { ...stored } as Partial<StoredBundle>;
+    delete legacy.occurrences;
+    await f.db.bundles.put(legacy as StoredBundle);
+    expect(await f.repo.readBundle(r.account, R)).toBeNull();
+    expect(await f.db.bundles.count()).toBe(0);
+    expect(await f.db.assets.count()).toBe(0);
+  });
   it("enforces read-only grants on source/draft/export/queue access", async () => {
     const f = fixture();
     const r = await ready(f, false);
@@ -260,7 +290,7 @@ describe("real Dexie account/resource transactions", () => {
     await f.repo.acceptPermission(
       pending,
       allowed(pending, false),
-      r.bundle.bundleId,
+      binding(r.bundle),
     );
     expect(await f.db.sources.count()).toBe(0);
     expect(await f.db.assets.count()).toBe(1);
@@ -272,7 +302,7 @@ describe("real Dexie account/resource transactions", () => {
     await f.repo.acceptPermission(
       restored,
       allowed(restored),
-      r.bundle.bundleId,
+      binding(r.bundle),
     );
     expect(await f.repo.exportDraft(r.account, R, d.id)).toMatchObject(d);
   });
@@ -285,7 +315,7 @@ describe("real Dexie account/resource transactions", () => {
     await f.repo.enqueueSave(r.account, cmd);
     const other = await downloaded(r.account, R2);
     const p2 = await f.repo.beginCheck(r.account, R2);
-    await f.repo.acceptPermission(p2, allowed(p2), other.bundle.bundleId);
+    await f.repo.acceptPermission(p2, allowed(p2), binding(other.bundle));
     await f.repo.installBundle(p2, other.bundle, other.assets);
     const pending = await f.repo.beginCheck(r.account, R);
     await f.repo.acceptPermission(pending, { ...pending, kind: "denied" });
@@ -420,7 +450,7 @@ describe("real Dexie account/resource transactions", () => {
       { ...pending, kind: "denied" } as const,
     ])
       expect(
-        await f.repo.acceptPermission(pending, reply, bytes.bundle.bundleId),
+        await f.repo.acceptPermission(pending, reply, binding(bytes.bundle)),
       ).toBe("ignored");
     expect(
       await f.repo.installBundle(pending, bytes.bundle, bytes.assets),
@@ -444,7 +474,7 @@ describe("real Dexie account/resource transactions", () => {
     const newer = await f.repo.beginCheck(r.account, R);
     await f.repo.acceptPermission(newer, { ...newer, kind: "denied" });
     expect(
-      await f.repo.acceptPermission(older, allowed(older), r.bundle.bundleId),
+      await f.repo.acceptPermission(older, allowed(older), binding(r.bundle)),
     ).toBe("ignored");
     expect(await f.repo.installBundle(older, r.bundle, r.assets)).toBe(false);
     expect(await f.repo.readBundle(r.account, R)).toBeNull();
@@ -460,7 +490,7 @@ describe("real Dexie account/resource transactions", () => {
     await f.repo.acceptPermission(
       pending,
       allowed(pending),
-      next.bundle.bundleId,
+      binding(next.bundle),
     );
     expect(
       (await f.db.bundles.get([A, R]))?.authorization.localDeadlineMs,
@@ -477,6 +507,20 @@ describe("real Dexie account/resource transactions", () => {
       bundleId: next.bundle.bundleId,
     });
   });
+  it("does not renew a reused bundle ID whose strict manifest digest changed", async () => {
+    const f = fixture();
+    const r = await ready(f);
+    const before = await f.db.bundles.get([A, R]);
+    f.now += 1000;
+    const pending = await f.repo.beginCheck(r.account, R);
+    await f.repo.acceptPermission(pending, allowed(pending), {
+      bundleId: r.bundle.bundleId,
+      manifestSha256: await digest("changed strict manifest"),
+    });
+    expect((await f.db.bundles.get([A, R]))?.authorization).toEqual(
+      before?.authorization,
+    );
+  });
   it.each(["missing", "digest", "mime", "owner", "duplicate"])(
     "refuses an incomplete %s asset bundle",
     async (fault) => {
@@ -487,7 +531,7 @@ describe("real Dexie account/resource transactions", () => {
       await f.repo.acceptPermission(
         pending,
         allowed(pending),
-        data.bundle.bundleId,
+        binding(data.bundle),
       );
       if (fault === "missing") data.assets = [];
       if (fault === "digest")
@@ -520,7 +564,7 @@ describe("real Dexie account/resource transactions", () => {
     await f.repo.acceptPermission(
       pending,
       allowed(pending),
-      next.bundle.bundleId,
+      binding(next.bundle),
     );
     const fail = () => {
       throw new DOMException("Synthetic full store", "QuotaExceededError");
@@ -545,7 +589,7 @@ describe("real Dexie account/resource transactions", () => {
     await f.repo.acceptPermission(
       pending,
       allowed(pending, false),
-      data.bundle.bundleId,
+      binding(data.bundle),
     );
     await expect(
       f.repo.installBundle(pending, data.bundle, data.assets),
@@ -665,7 +709,7 @@ describe("immutable SQL-v2 save outbox", () => {
     await f.repo.activateAccount(A);
     expect(await f.repo.claimSave(r.account, R, cmd.operationId)).toBeNull();
     const pending = await f.repo.beginCheck(r.account, R);
-    await f.repo.acceptPermission(pending, allowed(pending), r.bundle.bundleId);
+    await f.repo.acceptPermission(pending, allowed(pending), binding(r.bundle));
     expect(Boolean(await f.repo.claimSave(r.account, R, cmd.operationId))).toBe(
       code === "NOT_AUTHENTICATED" || code === "ACCOUNT_CHANGED",
     );
@@ -710,7 +754,7 @@ describe("immutable SQL-v2 save outbox", () => {
     const a2 = await f.repo.activateAccount(A);
     expect(await f.repo.claimSave(a2, R, cmd.operationId)).toBeNull();
     const pending = await f.repo.beginCheck(a2, R);
-    await f.repo.acceptPermission(pending, allowed(pending), r.bundle.bundleId);
+    await f.repo.acceptPermission(pending, allowed(pending), binding(r.bundle));
     expect((await f.repo.claimSave(a2, R, cmd.operationId))?.payloadJson).toBe(
       JSON.stringify(cmd),
     );
@@ -780,7 +824,7 @@ describe("snapshot and suspension boundaries", () => {
     await f.repo.acceptPermission(
       pending,
       allowed(pending),
-      data.bundle.bundleId,
+      binding(data.bundle),
     );
     const originalJson = data.bundle.renderedJson;
     const install = f.repo.installBundle(pending, data.bundle, data.assets);
@@ -916,7 +960,10 @@ it("also checks the older downloaded bundle's deadline after commit", async () =
   const r = await ready(f);
   f.now = START + 1000;
   const pending = await f.repo.beginCheck(r.account, R);
-  await f.repo.acceptPermission(pending, allowed(pending), createUuidV7());
+  await f.repo.acceptPermission(pending, allowed(pending), {
+    bundleId: createUuidV7(),
+    manifestSha256: await digest("new manifest"),
+  });
   const suspend = (value: unknown) => {
     Dexie.currentTransaction?.on("complete", () => {
       f.now = START + WINDOW;
@@ -990,7 +1037,7 @@ it("purges a download which finishes writing only after its permission deadline"
   await f.repo.acceptPermission(
     pending,
     allowed(pending),
-    data.bundle.bundleId,
+    binding(data.bundle),
   );
   const suspend = () => {
     f.now = START + WINDOW;
@@ -1195,7 +1242,10 @@ describe("check-only permissions without complete rendered output", () => {
       account = await f.repo.activateAccount(A),
       pending = await f.repo.beginCheck(account, R);
     await expect(
-      f.repo.acceptPermission(pending, allowed(pending), "not-a-bundle-id"),
+      f.repo.acceptPermission(pending, allowed(pending), {
+        bundleId: "not-a-bundle-id",
+        manifestSha256: await digest("manifest"),
+      }),
     ).rejects.toMatchObject({ code: "INVALID" });
     expect(await f.db.authorizations.count()).toBe(0);
     expect(await f.db.checks.get([A, R])).toEqual(pending);

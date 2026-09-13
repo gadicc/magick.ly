@@ -80,14 +80,20 @@ async function install(
   duration = 1000,
 ) {
   const check = await f.repo.beginCheck(account, ritualId);
+  const renderedJson = JSON.stringify({
+    type: "root",
+    children: [{ type: "img", src: "/protected/synthetic" }],
+  });
+  const bundleId = createUuidV7();
   const bundle: RitualBundle = {
     version: 1,
     ownerId: A,
     ritualId,
-    bundleId: createUuidV7(),
+    bundleId,
+    manifestSha256: await hash(`manifest:${bundleId}`),
     title: "Synthetic private title",
-    renderedJson: '["p",{},"synthetic"]',
-    renderedSha256: await hash('["p",{},"synthetic"]'),
+    renderedJson,
+    renderedSha256: await hash(renderedJson),
     rendererFormat: "jrt-v1",
     assets: [
       {
@@ -99,6 +105,14 @@ async function install(
         purpose: "read",
       },
     ],
+    occurrences: [
+      {
+        path: [0],
+        src: "/protected/synthetic",
+        displayFragment: "",
+        assetKey: "image",
+      },
+    ],
   };
   const assets: StoredAsset[] = bundle.assets.map((entry) => ({
     ...entry,
@@ -108,7 +122,10 @@ async function install(
     blob: new Blob(["image"], { type: "image/png" }),
   }));
   const reply = grant(check, duration);
-  await f.repo.acceptPermission(check, reply, bundle.bundleId);
+  await f.repo.acceptPermission(check, reply, {
+    bundleId: bundle.bundleId,
+    manifestSha256: bundle.manifestSha256,
+  });
   expect(await f.repo.installBundle(check, bundle, assets)).toBe(true);
   return { bundle, assets, check, reply };
 }

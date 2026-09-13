@@ -4,6 +4,8 @@ Current infrastructure boundary: the new London Neon database is connected and h
 
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
+| SQL ritual reader and offline navigation | Complete locally; publication/runtime cutover pending | Guarded private Dexie reads, SQL public/catalog projection, scoped old-link aliases, downloaded catalog and anonymous service-worker fallback; see [reader contract](017-sql-ritual-reader.md) |
+| SQL upload routes and legacy public URLs | Complete locally; source insertion/publication pending | Authorized selected-ritual uploads, retained retry UUIDs and protected legacy snapshot reads; 251 focused tests, isolated types/build, Biome and Loom check pass; [upload boundary](016-sql-upload-runtime.md) |
 | Study review receipt schema and import boundary | Complete locally; live migration pending | Additive migration 0014; immutable UUIDv7 review receipts; all 34 application tables and required migration artifacts checked; 313 scoped tests, isolated types and Biome pass |
 | Private R2 buckets | Provisioned; application credentials/configuration pending | Verified existing account; separate Production/Preview WEUR buckets, public access disabled, exact Production upload CORS checked; legacy bucket and public links untouched; see [runtime provisioning](014-private-r2-runtime.md) |
 | SQL administration, temples and Discourse | Complete locally; global login switch pending | Request-time pages and current SQL grants; atomic creation/join/member edits; verified forum identity reconciliation and complete pagination; 71 scoped tests, isolated types/build and Biome pass; no live forum calls |
@@ -884,3 +886,11 @@ check and production build. No provider object writes or deployment occurred.
 Source image insertion, bundle publication, global authentication activation and
 final cutover remain pending; this is a completed upload boundary, not an active
 end-to-end image workflow.
+
+The [SQL ritual reader](017-sql-ritual-reader.md) and anonymous offline navigation
+now connect the reviewed SQL permission/bundle services to guarded browser views.
+The unit passes 180 focused tests, isolated types/build, Biome and ordinary Loom
+check. Root review corrected stale private route state, delayed sign-out identity
+responses, a revoked permission during manifest assembly, missing first-visit
+offline-library routing and compressed asset decoding. Publication markers and
+the coordinated runtime cutover remain pending; incomplete bundles fail closed.

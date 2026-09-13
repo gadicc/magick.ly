@@ -17,6 +17,10 @@ export interface StoredCheck extends PendingPermissionCheck {
   acceptedLeaseId?: string;
   /** Set only after accepting the current validated permission reply. */
   bundleId?: string;
+  /** Exact strict manifest identity paired with bundleId. */
+  manifestSha256?: string;
+  /** Exact normalized legacy route resolved by the server for this check. */
+  routeAlias?: string;
 }
 /** Manifest entries come from the authorized server projection, never a URL-derived ACL. */
 export interface AssetManifestEntry {
@@ -27,17 +31,29 @@ export interface AssetManifestEntry {
   bytes: number;
   purpose: "read" | "source";
 }
+/** Exact rendered-source occurrence bound to one bundle asset. */
+export interface RitualBundleOccurrence {
+  path: number[];
+  src: string;
+  displayFragment: string;
+  assetKey: string;
+}
 /** Downloaded data only. Source/history live in a separate capability-gated store. */
 export interface RitualBundle {
   version: 1;
   ownerId: string;
   ritualId: string;
   bundleId: string;
+  /** Identity of the strict server manifest accepted with the permission reply. */
+  manifestSha256: string;
   title: string;
   renderedJson: string;
   renderedSha256: string;
   rendererFormat: "jrt-v1";
   assets: AssetManifestEntry[];
+  occurrences: RitualBundleOccurrence[];
+  /** Verified Mongo docs/ObjectId routes retained for this canonical ritual. */
+  routeAliases?: string[];
 }
 export interface StoredBundle extends RitualBundle {
   /** An unrelated/new bundle check must not extend these previously downloaded bytes. */

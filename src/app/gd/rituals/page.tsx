@@ -1,4 +1,3 @@
-"use client";
 import { Edit } from "@mui/icons-material";
 import {
   Box,
@@ -12,97 +11,41 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { useGongoLive, useGongoSub, useGongoUserId } from "gongo-client-react";
-import React from "react";
-
-import { ritualListSubscriptionArgs } from "@/doc/drafts";
+import { connection } from "next/server";
+import { sqlRitualReader } from "@/doc/sqlRuntime";
 import Link from "@/lib/link";
-import {
-  Doc,
-  Temple,
-  TempleMembershipClient as TempleMembership,
-} from "@/schemas";
 import DocAdmin from "./DocAdmin";
 
 const builtInDocs = [
   {
-    _id: "neophyte",
+    id: "neophyte",
     title: "0=0 Grade of the Neophyte (Regardie, S.M.)",
+    canEdit: false,
   },
   {
-    _id: "zelator",
+    id: "zelator",
     title: "1=10 Grade of the Zelator (Regardie, S.M.)",
+    canEdit: false,
   },
   {
-    _id: "theoricus",
+    id: "theoricus",
     title: "2=9 Grade of the Theoricus (Regardie, S.M.)",
+    canEdit: false,
   },
 ];
 
-export default function Rituals() {
-  const userId = useGongoUserId() as string;
-  /*
-  const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: userId }),
-  );
-  */
-
-  useGongoSub("userTemplesAndMemberships");
-  const _templeMemberships = useGongoLive((db) =>
-    db.collection("templeMemberships").find({ userId }),
-  );
-  const templeMemberships = React.useMemo(
-    () => Object.fromEntries(_templeMemberships.map((tm) => [tm.templeId, tm])),
-    [_templeMemberships],
-  );
-
-  const _temples = useGongoLive((db) => db.collection("temples").find());
-  const temples = React.useMemo(
-    () => Object.fromEntries(_temples.map((t) => [t._id, t])),
-    [_temples],
-  );
-  // console.log("temples", temples);
-
-  useGongoSub("docs", ritualListSubscriptionArgs);
-  const dbDocs = useGongoLive((db) => db.collection("docs").find());
-  const _docs = React.useMemo(
-    () =>
-      [
-        ...builtInDocs,
-        ...dbDocs.filter((doc) => !doc.__pendingSince),
-      ] as unknown as typeof dbDocs,
-    [dbDocs],
-  );
-
-  type AggregatedDoc = Doc & {
-    canEdit?: boolean;
-    temple?: Temple;
-    membership?: TempleMembership;
-  };
-  const docs: AggregatedDoc[] = React.useMemo(
-    () =>
-      _docs
-        .map((doc) =>
-          doc.templeId
-            ? {
-                ...doc,
-                temple: temples[doc.templeId],
-                membership: templeMemberships[doc.templeId],
-              }
-            : doc,
-        )
-        .filter((doc: AggregatedDoc) => {
-          if (doc.canEdit === true || !doc.templeId) return true;
-          // TODO, re should also remove the doc in this case XXX
-          if (!doc.membership) return false;
-          return (
-            !doc.minGrade ||
-            doc.membership.admin ||
-            doc.minGrade <= doc.membership.grade
-          );
-        }),
-    [_docs, temples, templeMemberships],
-  );
+export default async function Rituals() {
+  // Session and SQL grants are request-scoped; private catalog rows are never prerendered.
+  await connection();
+  const privateDocs = await sqlRitualReader.listMetadata().catch(() => []);
+  const docs = [
+    ...builtInDocs,
+    ...privateDocs.map((ritual) => ({
+      id: ritual.id,
+      title: ritual.title,
+      canEdit: ritual.canEdit,
+    })),
+  ];
 
   return (
     <Container maxWidth="sm">
@@ -114,33 +57,23 @@ export default function Rituals() {
           <a href="https://www.youtube.com/watch?v=iEFiXtxPxu0">short demo</a>.
         </p>
         <TableContainer component={Paper}>
-          <Table aria-label="simple table">
+          <Table aria-label="Rituals">
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
-              {docs.map((doc) => (
-                <TableRow key={doc._id}>
+              {docs.map((ritual) => (
+                <TableRow key={ritual.id}>
                   <TableCell scope="row">
-                    <Link href={"/doc/" + doc._id}>{doc.title}</Link>
-                    {doc.temple ? (
-                      <span
-                        style={{
-                          fontSize: "80%",
-                          margin: "0 5px 0 5px",
-                          padding: "2px 5px 2px 5px",
-                          background: "#dfdfdf",
-                          borderRadius: 5,
-                        }}
+                    <Link href={`/doc/${ritual.id}`}>{ritual.title}</Link>{" "}
+                    {ritual.canEdit && (
+                      <IconButton
+                        size="small"
+                        href={`/doc/${ritual.id}/edit`}
+                        aria-label={`Edit ${ritual.title}`}
                       >
-                        {doc.temple.slug}
-                      </span>
-                    ) : null}{" "}
-                    {doc.canEdit === true && (
-                      <IconButton size="small" href={`/doc/${doc._id}/edit`}>
                         <Edit />
                       </IconButton>
                     )}
@@ -150,6 +83,9 @@ export default function Rituals() {
             </TableBody>
           </Table>
         </TableContainer>
+        <p>
+          <Link href="/offline/ritual">Open downloaded rituals</Link>
+        </p>
         <DocAdmin />
         <br />
         <p>

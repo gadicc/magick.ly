@@ -46,6 +46,30 @@ export function publicRitualShellPath(
   return url.pathname;
 }
 
+/** Direct offline-library navigation uses the same warmed anonymous document. */
+function offlineLibraryShellPath(
+  request: Request,
+  origin: string,
+): string | null {
+  const url = new URL(request.url);
+  if (
+    url.origin !== origin ||
+    url.pathname !== "/offline/ritual" ||
+    url.search !== "" ||
+    request.method !== "GET" ||
+    request.mode !== "navigate" ||
+    excludedHeaders.some((name) => request.headers.has(name)) ||
+    /prefetch/i.test(
+      `${request.headers.get("purpose")} ${request.headers.get("sec-purpose")}`,
+    )
+  )
+    return null;
+  const accept = request.headers.get("accept");
+  return !accept || accept.includes("text/html") || accept === "*/*"
+    ? url.pathname
+    : null;
+}
+
 /** Dedicated immutable shells are fetched anonymously and bound to this precache build. */
 export function createPublicRitualShells(
   manifest: readonly (PrecacheEntry | string)[],
@@ -202,11 +226,14 @@ export function createPublicRitualShells(
     return (await work).clone();
   }
 
+  const shellPath = (request: Request) =>
+    publicRitualShellPath(request, origin) ??
+    offlineLibraryShellPath(request, origin);
   const runtimeCaching: RuntimeCaching[] = [
     {
-      matcher: ({ request }) => publicRitualShellPath(request, origin) !== null,
+      matcher: ({ request }) => shellPath(request) !== null,
       handler: async ({ request }) => {
-        const path = publicRitualShellPath(request, origin);
+        const path = shellPath(request);
         if (!path) throw new Error("Not a public ritual shell request.");
         return await load(path);
       },
@@ -216,6 +243,9 @@ export function createPublicRitualShells(
     cacheName,
     precacheOptions,
     runtimeCaching,
+    /** A fixed anonymous shell only; never fetch/cache a credentialed private route as fallback. */
+    privateReaderShell: () => load("/offline/ritual"),
+    warmPrivateReaderShell: () => load("/offline/ritual", true),
     /** Installation requires all three shells; a failed refresh leaves the previous worker active. */
     warm: () =>
       Promise.all(
