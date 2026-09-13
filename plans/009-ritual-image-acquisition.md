@@ -83,6 +83,46 @@ acquisition needs an overall deadline, approved exact references, durable
 byte/digest/provenance records and current authorization. Do not turn these four
 hostnames into a generic URL proxy or promise their future availability.
 
+### Implemented fixed-reference external reader
+
+`createExternalRitualImageCatalog` now captures the four reviewed originals by
+exact reference fingerprint and pinned acquired size/SHA/MIME. Unknown hashes
+never trigger DNS or HTTP. It does not accept caller-defined policies, transport
+callbacks or replacement URLs. Only the pinned Wikimedia original permits the
+verified 800px-to-960px same-file transformation; metadata binds both original
+and acquired reference fingerprints and explicitly names the representation.
+Raw references are not stored in catalog metadata, and archived JSON is unchanged.
+
+Acquisition uses a private DNS resolver with explicit timeout/tries and an overall
+request deadline that includes DNS. Every returned A address must pass IPv4 syntax
+and conservative public-address checks; one checked IP is pinned for a fresh
+HTTPS connection while hostname/SNI and certificate verification are preserved.
+No redirects, cookies, credentials, referrers or connection pool are used. The
+honest User-Agent above remains unchanged. Header size is capped at 16 KiB;
+non-200 bodies are destroyed without collection. Successful bodies use one
+pre-budgeted exact allocation, check Content-Length when supplied, and must match
+the expected actual size/SHA before native
+full-frame validation and expected-MIME agreement. The 64-reference/16 KiB-input,
+1 MiB-capture, 20-second-request and 90-second-catalog maxima can only tighten.
+Late DNS answers, response callbacks and data cannot populate a finished capture.
+
+The network design follows the [OWASP SSRF guidance](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html)
+on strict destinations and address validation. The default
+[Node HTTPS agent](https://nodejs.org/api/https.html#httpsglobalagent) has pooling;
+an independent Node 24.19.0 no-network probe verified that `agent: false` creates
+a separate connection without inheriting ambient proxy configuration. The owned
+[DNS resolver](https://nodejs.org/api/dns.html#class-dnspromisesresolver) is canceled
+with the request rather than left running after a timed-out promise.
+
+Actual read-only acceptance captures all four expected raster representations,
+331,535 bytes total, with their pinned hashes and MIME values. Copy ownership,
+disposal and all 21 unchanged backup fingerprints pass. No image bytes or raw
+references were retained. Evidence: `/tmp/magickli-external-catalog-acceptance.json`.
+Catalog SHA: `31884a5183b0c6425e272eb43ea8d45adabc3207f577b26cb170ba550b433944`;
+policy SHA: `e223e1728f39f4598a890154bb19fdca6301c76d1dcc94728abf4b2a942f1a17`.
+The shared validator identity remains unchanged. Plan integration, durable
+publication and private offline activation remain separate gates.
+
 ## Generated Tree of Life fonts
 
 The current route emits SVG with external Noto font declarations. A probe used

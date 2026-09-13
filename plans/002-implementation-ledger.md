@@ -5,6 +5,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
 | Legacy public-image reader | Complete locally; integrated into plan v2 | Whole-batch archive/current-row checks, bounded SDK GET/error streams and validated owned snapshots; all ten actual objects pass with unchanged SHA, served MIME and backup fingerprints; all six archived legacy occurrences resolve; no runtime activation |
+| Fixed-reference external-image reader | Complete locally; plan integration pending | Exact reference/byte pins, bounded DNS/HTTPS with checked IP/TLS and no redirects; all four actual representations pass, including explicitly recorded Wikimedia replacement; no runtime activation |
 | Planning and backup protection | Complete | Production dump checksums, gzip, BSON and JSON verified; isolated Mongo restore validated all 190 documents, 10 collections and 20 indexes; dump directory ignored; London/London confirmed |
 | Runtime and tooling baseline | Complete | Node 24/pnpm 10.18; frozen install, Biome, typecheck, coverage and build pass; explicit CI and scripts; obsolete ESLint/Prettier removed; redundant Biome defaults removed |
 | Unused tRPC | Complete | Removed scaffold and both dependencies; lockfile update removes only tRPC; generated route types, full typecheck and 58-test suite pass |
@@ -572,3 +573,15 @@ catalog identity and copied bytes while retaining exact source/query/fragment
 identity. No runtime route, cache readiness or private-file grant changed.
 Evidence: `/tmp/magickli-legacy-plan-acceptance.json` and
 `/tmp/magickli-legacy-plan-{coverage,types,biome,loom,build}.log`.
+
+The external image reader uses a closed four-reference policy with pinned acquired
+bytes rather than permitting arbitrary host/path requests. Native acquisition
+validates three unchanged originals and the same-file Wikimedia standard-size
+replacement, 331,535 bytes total. Unknown references produce no DNS/HTTP call.
+The default suite passes 2,101 tests (79 new; 14 opt-in Mongo cases skipped).
+All 58-module coverage gates pass: 98.19% statements, 96.78% branches, 99.87%
+functions and 99.31% lines. Types, Biome, ordinary Loom check and production build
+pass. The reader has independent design/code review, including Node 24 connection
+and proxy behavior. No provider/database writes, raw reference/image retention or
+runtime route changes occurred. See the [acquisition record](009-ritual-image-acquisition.md)
+and `/tmp/magickli-external-catalog-{acceptance.json,coverage.log,types.log,biome.log,loom.log,build.log}`.

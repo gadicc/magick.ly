@@ -48,6 +48,7 @@ export default defineConfig({
         "src/files/r2RitualStorage.ts",
         "src/files/staticRitualImageCatalog.ts",
         "src/files/legacyRitualImageCatalog.ts",
+        "src/files/externalRitualImageCatalog.ts",
         "src/files/ritualImageValidationIdentity.ts",
         "src/files/dataImage.ts",
         "src/files/validateRitualSvg.ts",
