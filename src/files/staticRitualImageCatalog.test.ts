@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import fs from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { setImmediate as yieldTask } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,10 +14,13 @@ import {
   createStaticRitualImageCatalog,
   STATIC_RASTER_CATALOG_LIMITS,
   STATIC_RASTER_VALIDATION_COMPONENTS,
+  STATIC_SVG_VALIDATION_COMPONENTS,
   type StaticRitualImageCatalog,
 } from "./staticRitualImageCatalog";
 
 vi.mock("server-only", () => ({}));
+
+import * as svgModule from "./validateRitualSvg";
 
 const hash = (bytes: Uint8Array | string) =>
   createHash("sha256").update(bytes).digest("hex");
@@ -73,6 +78,7 @@ describe("captured static raster evidence", () => {
       expect(result.metadata.entries).toEqual([
         {
           kind: "available",
+          validationKind: "raster",
           pathname,
           canonicalPathname: pathname,
           sha256: hash(bytes),
@@ -116,10 +122,10 @@ describe("captured static raster evidence", () => {
       (await catalog(["/pics/not-a-png.png"])).metadata.entries[0],
     ).toMatchObject({ kind: "available", mime: "image/jpeg" });
   });
-  it("keeps SVG, unknown bytes and damaged framing explicitly unresolved", async () => {
+  it("keeps unsupported SVG, unknown bytes and damaged framing explicitly unresolved", async () => {
     await write(
       "/pics/vector.svg",
-      '<svg xmlns="http://www.w3.org/2000/svg"/>',
+      '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://untrusted.invalid/x"/></svg>',
     );
     await write("/pics/not-an-image.png", "not an image");
     const gif = await raster("gif");
@@ -559,7 +565,35 @@ it("pins actual validator/framing/policy sources and decoder dependencies, inclu
       ),
     ).version,
   ).toBe(components["file-type"]);
+  const svgComponents = STATIC_SVG_VALIDATION_COMPONENTS;
+  for (const [file, expected] of [
+    ["validateRitualSvg.ts", svgComponents.validateRitualSvgSha256],
+    ["dataImage.ts", svgComponents.dataImageSha256],
+  ])
+    expect(hash(readFileSync(path.join(here, file)))).toBe(expected);
+  for (const name of ["css-tree", "saxes", "xmlchars"] as const)
+    expect(
+      JSON.parse(
+        readFileSync(
+          path.join(here, "../../node_modules", name, "package.json"),
+          "utf8",
+        ),
+      ).version,
+    ).toBe(svgComponents[name]);
+  const parserRequire = createRequire(
+    path.join(here, "../../node_modules/css-tree/package.json"),
+  );
+  for (const name of ["mdn-data", "source-map-js"] as const)
+    expect(
+      JSON.parse(
+        readFileSync(parserRequire.resolve(name + "/package.json"), "utf8"),
+      ).version,
+    ).toBe(svgComponents[name]);
   const result = await catalog([]);
+  expect(result.metadata.profile).toBe("magickli-static-image-catalog-v2");
+  expect(result.metadata.validationProfile).toBe(
+    "magickli-static-image-validation-v2",
+  );
   expect(result.metadata.validationSha256).toMatch(/^[a-f0-9]{64}$/);
   expect(sharp.versions.vips).toBeTruthy();
   const original = sharp.versions.vips;
@@ -573,4 +607,317 @@ it("pins actual validator/framing/policy sources and decoder dependencies, inclu
   } finally {
     sharp.versions.vips = original;
   }
+});
+
+const svg = (body = "", attrs = "") =>
+  `<svg xmlns="http://www.w3.org/2000/svg" ${attrs}>${body}</svg>`;
+describe("static SVG compatibility catalog v2", () => {
+  it("retains exact BOM/CRLF/Unicode bytes and discriminated dependency facts without outer pixel claims", async () => {
+    const source =
+      '\uFEFF<?xml version="1.0" encoding="UTF-8"?>\r\n' +
+      svg(
+        '<defs><path id="é" d="M0 0L1 1"/></defs><use href="#é"/><!--keep--><title>א &amp; ä</title>',
+        'width="1000000" height="2000000"',
+      );
+    const bytes = Buffer.from(source);
+    await write("/pics/diagram.svg", bytes);
+    const result = await catalog(["/pics/diagram.svg"]);
+    const entry = result.metadata.entries[0];
+    expect(entry).toMatchObject({
+      kind: "available",
+      validationKind: "svg",
+      mime: "image/svg+xml",
+      svgProfile: svgModule.RITUAL_SVG_PROFILE,
+      localReferences: 1,
+      sha256: hash(bytes),
+      bytes: bytes.length,
+      embeddedRasters: [],
+    });
+    for (const key of [
+      "width",
+      "height",
+      "frameHeight",
+      "frames",
+      "decodedPixels",
+    ])
+      expect(Object.hasOwn(entry, key)).toBe(false);
+    expect(result.copyBytes("/pics/diagram.svg")).toEqual(
+      new Uint8Array(bytes),
+    );
+  });
+  it("freezes embedded raster facts separately and retains bytes across caller mutation and disk replacement", async () => {
+    const png = await raster();
+    const bytes = Buffer.from(
+      svg(
+        `<image href="data:image/png;base64,${png.toString("base64")}" width="3" height="2"/>`,
+      ),
+    );
+    const file = await write("/pics/embedded.svg", bytes);
+    const result = await catalog(["/pics/embedded.svg"]);
+    const entry = result.metadata.entries[0];
+    if (entry.kind !== "available" || entry.validationKind !== "svg")
+      throw Error("Expected SVG");
+    expect(entry.embeddedRasters).toEqual([
+      {
+        contentType: "image/png",
+        width: 3,
+        frameHeight: 2,
+        frames: 1,
+        decodedPixels: 6,
+        sha256: hash(png),
+        byteSize: png.length,
+      },
+    ]);
+    expect(() => {
+      Object.assign(entry.embeddedRasters[0], { sha256: "changed" });
+    }).toThrow();
+    expect(Object.isFrozen(entry.embeddedRasters)).toBe(true);
+    result.copyBytes("/pics/embedded.svg")!.fill(0);
+    await fs.writeFile(file, svg());
+    expect(result.copyBytes("/pics/embedded.svg")).toEqual(
+      new Uint8Array(bytes),
+    );
+    const rebuilt = await catalog(["/pics/embedded.svg"]);
+    expect(rebuilt.metadata.sha256).not.toBe(result.metadata.sha256);
+    expect(rebuilt.metadata.validationSha256).toBe(
+      result.metadata.validationSha256,
+    );
+    result.dispose();
+    expect(result.copyBytes("/pics/embedded.svg")).toBeNull();
+  });
+  it.each([
+    ["syntax", "<not-closed", "invalid-svg"],
+    [
+      "active",
+      svg("<script>private diagnostic sentinel</script>"),
+      "invalid-svg",
+    ],
+    [
+      "external",
+      svg('<image href="https://untrusted.invalid/private-sentinel"/>'),
+      "unsupported-svg",
+    ],
+    [
+      "css",
+      svg(
+        "<style>@font-face{font-family:x;src:url(https://untrusted.invalid/font)}</style>",
+      ),
+      "unsupported-svg",
+    ],
+    ["unknown", svg("<meshgradient/>"), "unsupported-svg"],
+    ["missing fragment", svg('<use href="#missing"/>'), "invalid-svg"],
+  ])(
+    "reports %s as a safe typed unresolved result",
+    async (_name, source, reason) => {
+      await write("/pics/bad.svg", source);
+      const result = await catalog(["/pics/bad.svg"]);
+      expect(result.metadata.entries).toEqual([
+        {
+          kind: "unresolved",
+          pathname: "/pics/bad.svg",
+          canonicalPathname: "/pics/bad.svg",
+          reason,
+        },
+      ]);
+      expect(JSON.stringify(result.metadata)).not.toContain("private-sentinel");
+      expect(JSON.stringify(result.metadata)).not.toContain(
+        "diagnostic sentinel",
+      );
+      expect(result.metadata.availablePaths).toEqual([]);
+      expect(result.copyBytes("/pics/bad.svg")).toBeNull();
+    },
+  );
+  it("bounds SVG capture at 4MiB before opening or allocating it", async () => {
+    const file = await write("/pics/large.svg", svg());
+    await fs.truncate(file, svgModule.RITUAL_SVG_LIMITS.bytes + 1);
+    const open = vi.spyOn(fs, "open");
+    expect(
+      (await catalog(["/pics/large.svg"])).metadata.entries[0],
+    ).toMatchObject({ kind: "unresolved", reason: "too-large" });
+    expect(open).not.toHaveBeenCalled();
+  });
+  it("charges SVG capture against the same aggregate budget as raster bytes", async () => {
+    const png = await raster();
+    await write("/pics/a.png", png);
+    await write("/pics/b.svg", svg());
+    const open = vi.spyOn(fs, "open");
+    await expect(
+      catalog(["/pics/a.png", "/pics/b.svg"], {
+        limits: { capturedBytes: png.length },
+      }),
+    ).rejects.toMatchObject({ code: "CAPTURE_LIMIT" });
+    expect(open).toHaveBeenCalledTimes(1);
+  });
+  it("clears a previously captured SVG when the next read would exceed the aggregate bound", async () => {
+    const bytes = Buffer.from(svg("<path/>"));
+    await write("/pics/a.svg", bytes);
+    await write("/pics/b.svg", bytes);
+    const original = svgModule.createRitualSvgValidator;
+    const results: Uint8Array[] = [];
+    vi.spyOn(svgModule, "createRitualSvgValidator").mockImplementation(() => {
+      const validator = original();
+      return {
+        validate: async (...args) => {
+          const result = await validator.validate(...args);
+          if (result.status === "validated") results.push(result.bytes);
+          return result;
+        },
+      };
+    });
+    await expect(
+      catalog(["/pics/a.svg", "/pics/b.svg"], {
+        limits: { capturedBytes: bytes.length },
+      }),
+    ).rejects.toMatchObject({ code: "CAPTURE_LIMIT" });
+    expect(results).toHaveLength(1);
+    expect(results[0].every((byte) => byte === 0)).toBe(true);
+  });
+  it("rejects excessive SVG expansion using the actual closed validator", async () => {
+    const chain = Array.from(
+      { length: 18 },
+      (_, i) =>
+        `<g id="n${i}">${i ? `<use href="#n${i - 1}"/><use href="#n${i - 1}"/>` : "<path/>"}</g>`,
+    ).join("");
+    await write(
+      "/pics/expansion.svg",
+      svg(`<defs>${chain}</defs><use href="#n17"/>`),
+    );
+    expect(
+      (await catalog(["/pics/expansion.svg"])).metadata.entries[0],
+    ).toMatchObject({ kind: "unresolved", reason: "svg-limit" });
+  });
+  it("aborts during actual chunked SVG validation and exposes no partial catalog", async () => {
+    await write("/pics/a.png", await raster());
+    await write("/pics/b.svg", svg("<path/>".repeat(10_000)));
+    const controller = new AbortController();
+    const original = svgModule.createRitualSvgValidator;
+    vi.spyOn(svgModule, "createRitualSvgValidator").mockImplementation(() => {
+      const validator = original();
+      return {
+        validate: async (...args) => {
+          const pending = validator.validate(...args);
+          await yieldTask();
+          controller.abort();
+          return pending;
+        },
+      };
+    });
+    await expect(
+      catalog(["/pics/a.png", "/pics/b.svg"], { signal: controller.signal }),
+    ).rejects.toMatchObject({ code: "ABORTED" });
+  });
+  it("clears the validator-owned SVG snapshot when cancellation races its successful return", async () => {
+    await write("/pics/late.svg", svg());
+    const controller = new AbortController();
+    const original = svgModule.createRitualSvgValidator;
+    const captured: Uint8Array[] = [];
+    vi.spyOn(svgModule, "createRitualSvgValidator").mockImplementation(() => {
+      const validator = original();
+      return {
+        validate: async (...args) => {
+          const result = await validator.validate(...args);
+          if (result.status === "validated") captured.push(result.bytes);
+          controller.abort();
+          return result;
+        },
+      };
+    });
+    await expect(
+      catalog(["/pics/late.svg"], { signal: controller.signal }),
+    ).rejects.toMatchObject({ code: "ABORTED" });
+    expect(captured).toHaveLength(1);
+    expect(captured[0].every((byte) => byte === 0)).toBe(true);
+  });
+  it("retains a safe unresolved timeout with the actual parser and a tightened test deadline", async () => {
+    await write("/pics/time.svg", svg("<path/>".repeat(15_000)));
+    const original = svgModule.createRitualSvgValidator;
+    vi.spyOn(svgModule, "createRitualSvgValidator").mockImplementation(() =>
+      original({ timeoutMs: 1 }),
+    );
+    expect(
+      (await catalog(["/pics/time.svg"])).metadata.entries[0],
+    ).toMatchObject({ kind: "unresolved", reason: "validation-timeout" });
+  });
+  it("rejects a changed validator snapshot instead of publishing mismatched byte facts", async () => {
+    await write("/pics/changed.svg", svg());
+    const original = svgModule.createRitualSvgValidator;
+    const seen: Uint8Array[] = [];
+    vi.spyOn(svgModule, "createRitualSvgValidator").mockImplementation(() => {
+      const validator = original();
+      return {
+        validate: async (...args) => {
+          const result = await validator.validate(...args);
+          if (result.status === "validated") {
+            result.bytes[0] ^= 1;
+            seen.push(result.bytes);
+          }
+          return result;
+        },
+      };
+    });
+    expect(
+      (await catalog(["/pics/changed.svg"])).metadata.entries[0],
+    ).toMatchObject({ kind: "unresolved", reason: "source-changed" });
+    expect(seen[0].every((byte) => byte === 0)).toBe(true);
+  });
+  it("validates all15 actual public images plus2 exact aliases without changing any source bytes", async () => {
+    const publicDirectory = await fs.realpath(path.join(here, "../../public"));
+    const names = [
+      "30aethyrs.jpg",
+      "Anxfisa_Golden_Dawn_Robes.jpg",
+      "SevenBranchedCandleStick-magickly-export.png",
+      "TableOfShewbread-magickly-export.png",
+      "about.png",
+      "candidate-hexagram.jpg",
+      "candidate-hexagram.svg",
+      "mercury.webp",
+      "neophyte.svg",
+      "planets2013.jpg",
+      "theoricus1.svg",
+      "theoricus2.svg",
+      "treeOfLife.jpg",
+      "zelator1.svg",
+      "zelator2.svg",
+    ];
+    const paths = names.map((name) => `/pics/${name}`);
+    const before = await Promise.all(
+      paths.map(async (name) =>
+        hash(await fs.readFile(path.join(publicDirectory, name.slice(1)))),
+      ),
+    );
+    const result = await catalog(paths, { publicDirectory });
+    expect(result.metadata.availablePaths).toHaveLength(17);
+    const images = result.metadata.entries.filter(
+      (entry) => entry.kind === "available",
+    );
+    expect(
+      images.filter((entry) => entry.validationKind === "svg"),
+    ).toHaveLength(6);
+    expect(
+      images.filter((entry) => entry.validationKind === "raster"),
+    ).toHaveLength(11);
+    for (const entry of images) {
+      const bytes = result.copyBytes(entry.pathname)!;
+      expect(hash(bytes)).toBe(entry.sha256);
+      expect(bytes.length).toBe(entry.bytes);
+      if (entry.validationKind === "svg") {
+        expect(entry.embeddedRasters).toHaveLength(
+          entry.pathname.includes("theoricus1")
+            ? 1
+            : entry.pathname.includes("theoricus2")
+              ? 3
+              : 0,
+        );
+      }
+    }
+    const after = await Promise.all(
+      paths.map(async (name) =>
+        hash(await fs.readFile(path.join(publicDirectory, name.slice(1)))),
+      ),
+    );
+    expect(after).toEqual(before);
+    expect(
+      (await catalog([...paths].reverse(), { publicDirectory })).metadata,
+    ).toEqual(result.metadata);
+  });
 });

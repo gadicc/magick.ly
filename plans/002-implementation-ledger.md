@@ -513,3 +513,11 @@ types, Biome, ordinary Loom checks and production build pass. Actual public-file
 acceptance preserves all 15 source hashes. The [offline record](006-private-offline.md)
 tracks resource bounds, the TypeScript target correction and remaining SVG,
 inline/generated/external resolution and complete-bundle integration.
+
+The static catalog now incorporates the verified SVG profile. All 15 canonical
+public images and both exact aliases are available, retaining original bytes;
+four embedded rasters also pass full decoding. SVG dependency evidence remains
+distinct from raster pixel facts. All 1,908 tests, expanded coverage, types, Biome,
+ordinary Loom checks and production build pass. Static SVG resolution is complete;
+the remaining asset sources, complete authorized manifests and private runtime
+activation are still pending. See the [offline record](006-private-offline.md).

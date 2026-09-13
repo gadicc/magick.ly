@@ -312,7 +312,42 @@ reader's lifecycle integration. Public screenshot and safe reports:
 `/tmp/magickli-legacy-svg-preflight.json`, `/tmp/magickli-inline-svg-acceptance.json`.
 The staged source manifest is `/tmp/magickli-svg-validator/manifest.json`; full
 root checks are `/tmp/magickli-svg-{coverage,types,biome,loom,build}.log`.
-Static catalog and complete asset-plan integration remain separate units.
+The static catalog integration is recorded below; complete asset-plan and runtime
+integration remain separate units.
+
+## Implemented static SVG catalog
+
+The existing captured-byte catalog now includes both raster and SVG evidence under
+`magickli-static-image-catalog-v2`. Each available entry distinguishes full raster
+decoding from the SVG dependency profile. Embedded raster facts are deeply frozen;
+the outer SVG has no invented pixel or dimension guarantee. Catalog identity binds
+the validators, source hashes, parser versions and actual native decoder versions.
+
+All 15 configured public files validate: nine rasters and six SVGs, plus the two
+exact legacy pathname aliases. The six SVGs contain four validated embedded PNGs.
+The catalog retains 2,942,290 canonical compressed bytes, with no unresolved files
+and no source changes. This completes static-file compatibility only; it is not an
+authorized download manifest or a private reader readiness result.
+
+SVG capture is bounded at 4 MiB before allocation; both formats consume the
+existing 64 MiB aggregate capture budget. The catalog retains the validator's own
+snapshot after checking its length, digest and exact bytes. Cancellation, mismatch
+and whole-catalog failure clear owned allocations. Returned copies cannot mutate
+retained bytes, and later filesystem changes require a new catalog. Filesystem
+checks assume a trusted, quiescent build directory.
+
+All 63 catalog cases and 1,908 default tests pass (14 opt-in Mongo cases skipped).
+The 54-module coverage result is 98.21% statements, 96.92% branches, 100% functions
+and 99.25% lines. Types, Biome, ordinary Loom checks and production build pass;
+the existing 46 Biome warnings and Loom release-workflow advisory remain.
+Evidence: `/tmp/magickli-static-svg-catalog/manifest.json`, its public catalog
+report, and `/tmp/magickli-svg-catalog-root-{coverage,types,biome,loom,build}.log`.
+The catalog SHA is
+`7b021dc2f57daa0c9e79daef7ea2ba57950141d1d544ba762bad27de963bed00`;
+validation SHA is
+`cd11c8765f14de5253e312c69be35cf9a55193c237b4afc811a3d29044a0957c`.
+Inline, legacy upload, generated and external occurrence resolution, complete
+manifests and authenticated delivery remain required before private activation.
 
 ## Lifecycle, timing and draft locks
 

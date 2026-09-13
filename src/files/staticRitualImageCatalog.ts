@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { sha256Hex } from "@gadicc/loom/files/hash";
 import sharp from "sharp";
+import { DATA_IMAGE_LIMITS } from "./dataImage";
 import { legacyStaticImageAliases } from "./legacyStaticImages";
 import {
   RITUAL_IMAGE_LIMITS,
@@ -13,8 +14,15 @@ import {
 import type {
   StaticRitualImageCatalogMetadata,
   StaticRitualImageEntry,
+  StaticRitualRasterFacts,
+  StaticRitualSvgFacts,
 } from "./staticRitualImageCatalogTypes";
 import { createSharpRitualImageValidator } from "./validateRitualImage";
+import {
+  createRitualSvgValidator,
+  RITUAL_SVG_LIMITS,
+  RITUAL_SVG_PROFILE,
+} from "./validateRitualSvg";
 
 /** Changes require a new validation identity; regression tests bind the actual installed implementation. */
 export const STATIC_RASTER_VALIDATION_COMPONENTS = Object.freeze({
@@ -27,6 +35,19 @@ export const STATIC_RASTER_VALIDATION_COMPONENTS = Object.freeze({
   sharp: "0.35.4",
   "file-type": "19.0.0",
 });
+/** Added SVG/parser semantics are independently pinned alongside the unchanged raster contract. */
+export const STATIC_SVG_VALIDATION_COMPONENTS = Object.freeze({
+  validateRitualSvgSha256:
+    "4ebcd8a6648145b2d9098c626d2abe23fd027099a00ec4cb578f6d2ddb01989f",
+  dataImageSha256:
+    "1d8273b4d29bb8e00c8a5c716f7fd2759ed938082231f3eddba66c98f65a1e60",
+  "css-tree": "3.2.1",
+  "mdn-data": "2.27.1",
+  "source-map-js": "1.2.1",
+  saxes: "6.0.0",
+  xmlchars: "2.2.0",
+});
+/** Retained export name for existing callers; the aggregate bound covers raster and SVG captures. */
 export const STATIC_RASTER_CATALOG_LIMITS = Object.freeze({
   paths: 128,
   capturedBytes: 64 * 1024 * 1024,
@@ -126,7 +147,8 @@ function reason(error: unknown): Reason {
 
 /**
  * Captures and validates compressed bytes sequentially, then publishes an immutable
- * catalog. SVG is explicitly unresolved. Aggregate reads are bounded before buffer
+ * catalog. SVG uses its closed dependency profile, not a raster-decode promise.
+ * Aggregate reads are bounded before buffer
  * allocation, including invalid files. A single open file handle, identity/change
  * checks and O_NOFOLLOW reject symlinks/replacements; this is not a sandbox against
  * an attacker concurrently modifying the trusted build filesystem. Build from a
@@ -169,6 +191,7 @@ export async function createStaticRitualImageCatalog(
   const captured = new Map<string, Uint8Array>();
   const entries: StaticRitualImageEntry[] = [];
   const validator = createSharpRitualImageValidator();
+  const svgValidator = createRitualSvgValidator();
   let capturedBytes = 0;
   const dispose = () => {
     for (const bytes of captured.values()) bytes.fill(0);
@@ -181,6 +204,7 @@ export async function createStaticRitualImageCatalog(
       const file = path.join(publicDirectory, pathname.slice(1));
       const parent = path.dirname(file);
       let bytes: Uint8Array | undefined;
+      let svgBytes: Uint8Array | undefined;
       try {
         await directories(parent);
         abort(signal);
@@ -188,12 +212,13 @@ export async function createStaticRitualImageCatalog(
         abort(signal);
         if (before.isSymbolicLink() || !before.isFile())
           throw new SourceError("unsafe-file");
-        // No SVG parsing or decoder invocation: its dependency profile is separate.
-        if (pathname.toLowerCase().endsWith(".svg"))
-          throw new SourceError("unsupported-svg");
+        // The explicit .svg catalog path chooses the closed XML validator; bytes
+        // must still validate as SVG. Other configured files retain raster detection.
+        const isSvg = pathname.toLowerCase().endsWith(".svg");
         if (
           before.size < BigInt(1) ||
-          before.size > BigInt(RITUAL_UPLOAD_MAX_BYTES)
+          before.size >
+            BigInt(isSvg ? RITUAL_SVG_LIMITS.bytes : RITUAL_UPLOAD_MAX_BYTES)
         )
           throw new SourceError("too-large");
         const size = Number(before.size);
@@ -230,9 +255,63 @@ export async function createStaticRitualImageCatalog(
         if (!sameFile(before, await fs.lstat(file, { bigint: true })))
           throw new SourceError("source-changed");
         abort(signal);
-        const image = await validator.validate(bytes, signal);
-        abort(signal);
-        const sha256 = await sha256Hex(bytes);
+        let facts: StaticRitualRasterFacts | StaticRitualSvgFacts;
+        let sha256: string;
+        if (isSvg) {
+          const svg = await svgValidator.validate(bytes, signal);
+          // Own a successful returned snapshot before checking a racing abort so
+          // the failure cleanup also clears this validator-created allocation.
+          if (svg.status === "validated") svgBytes = svg.bytes;
+          abort(signal);
+          if (svg.status !== "validated") {
+            throw new SourceError(
+              svg.code === "TIMEOUT"
+                ? "validation-timeout"
+                : svg.code === "LIMIT"
+                  ? "svg-limit"
+                  : svg.status === "incomplete"
+                    ? "unsupported-svg"
+                    : "invalid-svg",
+            );
+          }
+          svgBytes = svg.bytes;
+          sha256 = await sha256Hex(bytes);
+          abort(signal);
+          if (
+            svg.sha256 !== sha256 ||
+            svg.byteSize !== bytes.byteLength ||
+            svgBytes.byteLength !== bytes.byteLength ||
+            !bytes.every((byte, index) => byte === svgBytes![index])
+          )
+            throw new SourceError("source-changed");
+          facts = {
+            validationKind: "svg",
+            mime: svg.contentType,
+            svgProfile: svg.profile,
+            elements: svg.elements,
+            localReferences: svg.localReferences,
+            expandedElements: svg.expandedElements,
+            embeddedRasters: Object.freeze(
+              svg.embeddedRasters.map((raster) => Object.freeze({ ...raster })),
+            ),
+          };
+          // Retain exactly the validator-owned bytes whose facts were checked.
+          bytes.fill(0);
+          bytes = svgBytes;
+          svgBytes = undefined;
+        } else {
+          const image = await validator.validate(bytes, signal);
+          abort(signal);
+          sha256 = await sha256Hex(bytes);
+          facts = {
+            validationKind: "raster",
+            mime: image.contentType,
+            width: image.width,
+            frameHeight: image.frameHeight,
+            frames: image.frames,
+            decodedPixels: image.decodedPixels,
+          };
+        }
         abort(signal);
         captured.set(pathname, bytes);
         entries.push(
@@ -242,11 +321,7 @@ export async function createStaticRitualImageCatalog(
             canonicalPathname: pathname,
             sha256,
             bytes: bytes.byteLength,
-            mime: image.contentType,
-            width: image.width,
-            frameHeight: image.frameHeight,
-            frames: image.frames,
-            decodedPixels: image.decodedPixels,
+            ...facts,
           }),
         );
         bytes = undefined;
@@ -263,6 +338,7 @@ export async function createStaticRitualImageCatalog(
         );
       } finally {
         bytes?.fill(0);
+        svgBytes?.fill(0);
       }
     }
     for (const [pathname, canonicalPathname] of aliasPairs) {
@@ -279,6 +355,10 @@ export async function createStaticRitualImageCatalog(
       new TextEncoder().encode(
         JSON.stringify([
           STATIC_RASTER_VALIDATION_COMPONENTS,
+          STATIC_SVG_VALIDATION_COMPONENTS,
+          RITUAL_SVG_PROFILE,
+          RITUAL_SVG_LIMITS,
+          DATA_IMAGE_LIMITS,
           RITUAL_IMAGE_LIMITS,
           RITUAL_UPLOAD_MAX_BYTES,
           Object.entries(sharp.versions).sort(([a], [b]) =>
@@ -288,8 +368,8 @@ export async function createStaticRitualImageCatalog(
       ),
     );
     const identity = {
-      profile: "magickli-static-raster-catalog-v1" as const,
-      validationProfile: "magickli-static-raster-validation-v1" as const,
+      profile: "magickli-static-image-catalog-v2" as const,
+      validationProfile: "magickli-static-image-validation-v2" as const,
       validationSha256,
       aliases: aliasPairs,
       entries,
