@@ -5,6 +5,14 @@ import {
   PHASE_PRODUCTION_BUILD,
 } from "next/constants";
 import { legacyStaticImageAliases } from "./src/files/legacyStaticImages";
+import { RITUAL_PUBLICATION_STATIC_PATHS } from "./src/files/ritualPublicationStaticPaths";
+
+const ritualPublicationTraceFiles = [
+  // Next 16 resolves include values from the project root and route keys with picomatch.
+  ...RITUAL_PUBLICATION_STATIC_PATHS.map((pathname) => `./public${pathname}`),
+  "./public/fonts/*.ttf",
+  "./node_modules/@resvg/resvg-wasm/index_bg.wasm",
+];
 
 export default async function (phase: string): Promise<NextConfig> {
   const nextConfig: NextConfig = {
@@ -26,6 +34,8 @@ export default async function (phase: string): Promise<NextConfig> {
         "./public/fonts/*.ttf",
         "./node_modules/@resvg/resvg-wasm/index_bg.wasm",
       ],
+      "/api/rituals/publication": [...ritualPublicationTraceFiles],
+      "/api/rituals/publication/backfill": [...ritualPublicationTraceFiles],
     },
     experimental: {},
     webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
