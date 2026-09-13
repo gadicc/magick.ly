@@ -80,6 +80,27 @@ There are 667 card-state entries. All have typed due dates and SuperMemo state; 
 
 **Authorization remains a separate acceptance contract.** All five production rituals are temple-restricted, with minimum grades between zero and two. There is one global admin, two temple-admin memberships, two group-membership links and one group-administration link. All observed group admins are also group members. Membership grades are valid nonnegative integers; there are no duplicate user/temple pairs or unresolved membership references. Seven distinct Discourse IDs are attached to users.
 
+**Discourse identity preservation.** Auth-specific normalization deliberately does
+not carry application integration fields. `planLegacyDiscourseImport` now maps a
+narrow `{source, discourseId?}` projection for every canonical imported user into
+the app-owned `discourseUserLinks` table. External IDs remain exact positive safe
+integers, scoped to the explicitly reviewed source origin
+`https://forums.magick.ly`; they are not local UUIDs or email-based identities.
+The local user/origin pair is unique, and a forum account can belong to only one
+canonical user at that origin. Future runtime lookups and writes must use the
+configured exact origin as well as the canonical user, with the same origin
+validation as the planner. Changing forum configuration must not reinterpret old
+numeric IDs.
+
+Missing and explicit-null links have separate protected dispositions; malformed
+IDs, unknown fields, missing aliases, duplicate ownership and incomplete user
+coverage stop planning. `createdAt` is explicit local import bookkeeping, not a
+fabricated historical link date. No whole user snapshot, provider token or
+session credential enters this projection. The protected backup preflight
+reconciles all twelve users: seven exact links, five missing and no null values,
+with identical repeat planning and unchanged backup fingerprints. The live
+Discourse actions remain on Mongo until canonical-auth/runtime cutover.
+
 The operator has now confirmed the shared policy in `src/doc/access.ts`: creators, global admins and matching group/temple admins can read, edit and access source history; ordinary group members can read, and ordinary temple members must meet the minimum grade. Anonymous users can read public rituals. Global admins can create in any scope and publish publicly; matching group/temple admins can create within their own scope. New scopes are exclusive, and malformed legacy combined scopes fail closed pending repair. A nullable historical creator grants nobody invented ownership and retains valid scope/admin access. Ordinary content saves cannot change creator, scope or minimum grade. Ownership transfers, other scope changes and deletion remain distinct decisions/commands.
 
 List, detail, revision history, editor saves and offline downloads must use this same server policy. The Gongo publications and versioned ritual write command now share it; private offline reconciliation remains separate work. Preserve grade zero as valid. Default absent admin flags to false; do not promote users while normalizing profiles. Invite codes and auth/provider material must not enter ordinary user/temple projections.

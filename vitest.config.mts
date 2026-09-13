@@ -75,6 +75,7 @@ export default defineConfig({
         "src/db/legacyIds.ts",
         "src/migration/normalizeLegacyAuth.ts",
         "src/migration/planBetterAuthImport.ts",
+        "src/migration/planLegacyDiscourseImport.ts",
         "src/migration/planLegacyMembershipImport.ts",
         "src/migration/planLegacyRitualImport.ts",
         "src/migration/planLegacyStudyImport.ts",

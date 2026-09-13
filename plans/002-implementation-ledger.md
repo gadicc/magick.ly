@@ -668,3 +668,19 @@ exact delivery and revocation during GET using only synthetic HTTP. No real
 provider writes, new dependencies, schema changes or runtime activation occurred.
 Actual private bucket setup/acceptance and HTTP/browser integration remain
 pending. Evidence and source fingerprints are linked in the bundle record.
+
+The Discourse import projection now preserves forum-scoped numeric identities
+separately from authentication. Independent review and the protected backup
+preflight preserve all seven links and classify the other five users as missing
+links. Migration 0012 enforces unique owners and safe integer ranges; it has not
+been applied to Neon. Current Discourse routes still use Mongo.
+
+All 3,016 default tests (90 new; 14 opt-in Mongo cases skipped), 73-module coverage
+gates, types, Biome, ordinary Loom check and production build pass. Real PostgreSQL
+acceptance applies all 13 migrations to 33 tables and verifies typed aliases,
+maximum safe integer and Date round trips, origin isolation, constraints,
+transaction rollback and an unchanged migration rerun. All 41 source fingerprints
+remain unchanged and the disposable database is removed. Evidence:
+`/tmp/magickli-discourse-postgres-rehearsal/README.md` and
+`/tmp/magickli-discourse-{coverage,types,biome,loom,build}.log`.
+The next integration is the durable prepared checkpoint and atomic importer.

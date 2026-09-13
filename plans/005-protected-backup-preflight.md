@@ -13,8 +13,20 @@ The backup contains 190 documents across 10 collections. A separate metadata inv
 | [Ritual import](../src/migration/planLegacyRitualImport.ts) | 5 rituals, 59 revisions and 5 exact original compiled archives. One unresolved creator remains nullable with explicit evidence; the current revision author is not substituted. |
 | [Study import](../src/migration/planLegacyStudyImport.ts) | 49 source rows become 48 active baselines and 1 protected duplicate archive. All 49 full EJSON snapshots and hashes match the source. |
 | [File metadata import](../src/migration/planLegacyFileImport.ts) | 10 public file rows, 10 exact protected EJSON snapshots and 10 typed aliases; original fields and null ownership retained. Canonical R2 reads and a production-config-bound in-memory plan verify all ten prefixed keys. Durable aliases/location writes remain outstanding. |
+| [Discourse link import](../src/migration/planLegacyDiscourseImport.ts) | 12 canonical user projections account for 7 exact numeric links to the reviewed source forum origin, 5 missing links and 0 null links. No email merging or external UUID conversion. |
 
 No new source-shape rejection required a mapper or schema relaxation.
+
+The Discourse pass verifies all twelve typed user aliases and original property
+presence, preserves each numeric link and binds the explicit reviewed source
+origin. Identical repeat planning passes. All 21 backup files (767,839 bytes),
+the manifest and decoded inputs remain unchanged; UUID mappings are disposable
+in-memory values only. Only aggregate evidence was saved, with no database or
+provider calls. Evidence:
+`/tmp/magickli-discourse-import/preflight/report.json`, SHA-256
+`a831ce1d8d16ae4c064e8bbb79ff1dbb81c9f7e87be1633b297c4a8f45161a30`.
+This closes a concrete omission in the auth-only projection, not a claim that
+runtime Discourse actions or durable import have switched to SQL.
 
 The separate file planning pass reads the same protected backup in memory and
 retains only aggregate results. An identical rerun produces the same plan with
@@ -73,6 +85,17 @@ repeat-plan checks pass; no durable aliases or locations were written. Evidence:
 `/tmp/magickli-file-object-preflight/canonical-key-report.json`,
 `canonical-cors-report.json` and
 `/tmp/magickli-protected-preflight/files-plan-bound-report.json`.
+
+## Discourse PostgreSQL acceptance
+
+The Discourse projection also passes synthetic real PostgreSQL acceptance with
+the exact migration and planner. All 13 migrations apply, 33 tables reconcile,
+and typed aliases, maximum safe integers, origin isolation, constraints and
+rollback behave as planned. An unchanged migration rerun preserves every row;
+all 41 source fingerprints remain unchanged and the owned database is removed.
+Evidence: `/tmp/magickli-discourse-postgres-rehearsal/README.md`, result SHA-256
+`aa32430df95689ae2fc85d603bdb03b67927a7faced137a353cee2cd4bf490cf`.
+This does not call the forum or activate its SQL runtime.
 
 ## Reviewed study duplicate
 
