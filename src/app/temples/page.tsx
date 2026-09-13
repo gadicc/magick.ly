@@ -1,88 +1,108 @@
-"use client";
-import { Button, Container, TextField, Typography } from "@mui/material";
-import {
-  db,
-  useGongoLive,
-  useGongoSub,
-  useGongoUserId,
-} from "gongo-client-react";
-import React from "react";
+import { Button, Container, Stack, TextField, Typography } from "@mui/material";
+import Link from "next/link";
+import { getCurrentSqlUserId } from "@/auth/session";
+import { db } from "@/db/neonFull";
+import { createSqlTempleReader } from "@/temples/sql";
+import { startTempleJoin } from "./actions";
 
-export default function TemplePage() {
-  const userId = useGongoUserId();
-  useGongoSub("userTemplesAndMemberships");
-  const memberships = useGongoLive((db) =>
-    db.collection("templeMemberships").find({ userId }),
-  );
-  const temples = React.useMemo(
-    () =>
-      memberships.map((membership) => ({
-        ...db.collection("temples").findOne({ _id: membership.templeId }),
-        membership,
-      })),
-    [memberships],
-  );
-  const [slug, setSlug] = React.useState("");
-  const [joinPass, setJoinPass] = React.useState("");
+function signInHref(callbackURL: string) {
+  return `/signin?${new URLSearchParams({ callbackURL }).toString()}`;
+}
 
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const url = "/temples/join/" + slug + "/" + joinPass;
-    location.href = url;
-  }
+export default async function TemplePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ joined?: string; error?: string }>;
+}) {
+  const actorId = await getCurrentSqlUserId();
+  const query = await searchParams;
+  const templeList = actorId
+    ? await createSqlTempleReader(db).getMyTemples(actorId)
+    : [];
 
   return (
     <Container sx={{ my: 2 }}>
       <Typography variant="h5">My Temples</Typography>
-      {temples.length === 0 ? (
-        <p>You are not currently a member of any temples.</p>
+      {!actorId ? (
+        <Typography sx={{ my: 2 }}>
+          <Link href={signInHref("/temples")}>Sign in</Link> to see your temple
+          memberships or join an organization.
+        </Typography>
+      ) : templeList.length === 0 ? (
+        <Typography sx={{ my: 2 }}>
+          You are not currently a member of any temples.
+        </Typography>
       ) : (
         <ul>
-          {temples.map((temple) => (
-            <li key={temple._id}>
+          {templeList.map((temple) => (
+            <li key={temple.id}>
               {temple.name} (grade {temple.membership.grade}
               {temple.membership.admin ? (
-                <span>
-                  , <a href={"/temples/admin/" + temple._id}>admin</a>
-                </span>
-              ) : (
-                ""
-              )}
+                <>
+                  , <Link href={`/temples/admin/${temple.id}`}>admin</Link>
+                </>
+              ) : null}
               )
             </li>
           ))}
         </ul>
       )}
 
-      <br />
+      {query.joined ? (
+        <Typography color="success.main" sx={{ my: 2 }} role="status">
+          Your temple membership is active.
+        </Typography>
+      ) : null}
+      {query.error ? (
+        <Typography color="error" sx={{ my: 2 }} role="alert">
+          {query.error}
+        </Typography>
+      ) : null}
 
-      <Typography variant="h5">Join a Temple</Typography>
-      <p>
-        If your temple uses Magick.ly services, they&apos;ll provide you with
-        the following:
-      </p>
-      <form onSubmit={onSubmit}>
-        <TextField
-          size="small"
-          label="Temple slug"
-          sx={{ marginBottom: 1 }}
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-        />
-        <br />
-        <TextField
-          size="small"
-          label="Password"
-          sx={{ marginBottom: 1.5 }}
-          value={joinPass}
-          onChange={(e) => setJoinPass(e.target.value)}
-        />
-        <br />
-        <Button type="submit" variant="contained">
-          Join
-        </Button>
-      </form>
-      <br />
+      {actorId ? (
+        <>
+          <Typography variant="h5" sx={{ mt: 4 }}>
+            Join an existing temple
+          </Typography>
+          <Typography sx={{ my: 1 }}>
+            Enter the slug and private join code supplied by that organization.
+            You will review the temple name before membership is created.
+          </Typography>
+          <form action={startTempleJoin}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              <TextField
+                name="slug"
+                size="small"
+                label="Temple slug"
+                required
+                slotProps={{ htmlInput: { maxLength: 200 } }}
+              />
+              <TextField
+                name="joinPass"
+                size="small"
+                label="Join code"
+                type="password"
+                required
+                slotProps={{ htmlInput: { maxLength: 200 } }}
+              />
+              <Button type="submit" variant="contained">
+                Continue
+              </Button>
+            </Stack>
+          </form>
+
+          <Typography variant="h5" sx={{ mt: 4 }}>
+            Create a new temple
+          </Typography>
+          <Typography sx={{ my: 1 }}>
+            Creating a temple starts a new organization that you administer. It
+            does not request membership in an existing organization.
+          </Typography>
+          <Button component={Link} href="/temples/admin" variant="outlined">
+            Create or manage temples
+          </Button>
+        </>
+      ) : null}
     </Container>
   );
 }

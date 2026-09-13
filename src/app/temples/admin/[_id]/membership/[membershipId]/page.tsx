@@ -1,204 +1,124 @@
-"use client";
-
 import {
   Button,
   Checkbox,
   Container,
   FormControlLabel,
-  FormGroup,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers";
-import type { DateValidationError, FieldRef } from "@mui/x-date-pickers/models";
-import dayjs, { Dayjs } from "dayjs";
-import { db, useGongoOne } from "gongo-client-react";
-import { useRouter } from "next/navigation";
-import React, { use } from "react";
-import { useForm } from "@/lib/forms";
-import {
-  TempleMembershipClient,
-  templeMembershipClientSchema,
-} from "@/schemas";
+import Link from "next/link";
+import { getCurrentSqlUserId } from "@/auth/session";
+import { db } from "@/db/neonFull";
+import { createSqlTempleReader } from "@/temples/sql";
+import { updateTempleMembershipAction } from "../../../../actions";
 
-export default function TemplesAdminEditMembershipPage(props: {
-  params: Promise<{
-    _id: string;
-    membershipId: string;
-  }>;
+function signInHref(callbackURL: string) {
+  return `/signin?${new URLSearchParams({ callbackURL }).toString()}`;
+}
+
+export default async function TemplesAdminEditMembershipPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ _id: string; membershipId: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const params = use(props.params);
-
-  const { _id, membershipId } = params;
-
-  const router = useRouter();
-  const dateFieldRef = React.useRef<FieldRef<Dayjs | null>>(null);
-  const pickerErrorRef = React.useRef<DateValidationError>(null);
-  const [dateError, setDateError] = React.useState<string | null>(null);
-
-  const temple = useGongoOne((db) => db.collection("temples").find({ _id }));
-  const membership = useGongoOne((db) =>
-    db.collection("templeMemberships").find({ _id: membershipId }),
+  const { _id, membershipId } = await params;
+  const callbackURL = `/temples/admin/${encodeURIComponent(_id)}/membership/${encodeURIComponent(membershipId)}`;
+  const actorId = await getCurrentSqlUserId();
+  if (!actorId)
+    return (
+      <Container sx={{ my: 2 }}>
+        <Typography>
+          <Link href={signInHref(callbackURL)}>Sign in</Link> to edit this
+          membership.
+        </Typography>
+      </Container>
+    );
+  const view = await createSqlTempleReader(db).getAdminMembership(
+    actorId,
+    _id,
+    membershipId,
   );
-  const user = useGongoOne((db) =>
-    db.collection("users").find({ _id: membership?.userId }),
-  );
-
-  //console.log({ temple, membership, user });
-
-  const useFormProps = useForm<TempleMembershipClient>({
-    values: membership || undefined,
-    schema: templeMembershipClientSchema,
-    defaultValues: {},
-  });
-  const {
-    handleSubmit,
-    // setValue,
-    // getValues,
-    control,
-    Controller,
-    fr,
-    formState: { isDirty },
-  } = useFormProps;
-
-  function onSubmit(
-    membership: TempleMembershipClient,
-    _event?: React.BaseSyntheticEvent,
-  ) {
-    // MUI 9 publishes null while a section is empty, even if other sections
-    // still contain a date. Only a completely empty field means a real clear.
-    const sections = dateFieldRef.current?.getSections() ?? [];
-    const filled = sections.filter((section) => section.value !== "").length;
-    if (filled > 0 && filled < sections.length) {
-      setDateError("Enter a complete date or clear the field.");
-      dateFieldRef.current?.focusField();
-      return;
-    }
-    if (pickerErrorRef.current) {
-      setDateError("Enter a valid date.");
-      dateFieldRef.current?.focusField();
-      return;
-    }
-
-    const {
-      _id,
-      userId: _userId,
-      templeId: _templeId,
-      addedAt: _addedAt,
-      ...$set
-    } = membership;
-
-    if (dayjs.isDayjs($set.memberSince))
-      $set.memberSince = $set.memberSince.toDate();
-
-    // console.log("$set", $set);
-    // return;
-
-    db.collection("templeMemberships").update(membershipId, { $set });
-
-    const event = _event as
-      | React.SyntheticEvent<HTMLFormElement, SubmitEvent>
-      | undefined;
-    const submitter = event?.nativeEvent.submitter;
-    const dest = submitter?.getAttribute("data-dest");
-    if (dest === "back") router.back();
-  }
+  if (!view)
+    return (
+      <Container sx={{ my: 2 }}>
+        <Typography>
+          This membership was not found, or you cannot manage its temple.
+        </Typography>
+        <Link href="/temples/admin">Back to temple administration</Link>
+      </Container>
+    );
+  const query = await searchParams;
+  const { temple, membership } = view;
 
   return (
     <Container sx={{ my: 2 }}>
       <Typography variant="h5">Edit Membership</Typography>
-      {user?.displayName} in {temple?.name} Temple
-      <br />
-      <br />
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <TextField
-          {...fr("motto")}
-          label="Motto"
-          fullWidth
-          sx={{ marginBottom: 2 }}
-          slotProps={{ inputLabel: { shrink: true } }}
+      <Typography sx={{ my: 1 }}>
+        {membership.displayName} in {temple.name} Temple
+      </Typography>
+      {query.error ? (
+        <Typography color="error" role="alert" sx={{ my: 2 }}>
+          {query.error}
+        </Typography>
+      ) : null}
+      <form action={updateTempleMembershipAction}>
+        <input type="hidden" name="expectedActorId" value={actorId} />
+        <input type="hidden" name="templeId" value={temple.id} />
+        <input
+          type="hidden"
+          name="membershipId"
+          value={membership.membershipId}
         />
-        <Stack direction="row" spacing={2} sx={{ marginBottom: 2 }}>
+        <Stack spacing={2} sx={{ maxWidth: 640, mt: 2 }}>
           <TextField
-            {...fr("grade")}
+            name="motto"
+            label="Motto"
+            defaultValue={membership.motto ?? ""}
+            multiline
+            slotProps={{ htmlInput: { maxLength: 10_000 } }}
+          />
+          <TextField
+            name="grade"
             type="number"
             label="Grade"
+            defaultValue={membership.grade}
+            required
+            slotProps={{ htmlInput: { min: 0, max: 6, step: 1 } }}
+            helperText="Golden Dawn grade, from 0 through 6."
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="admin"
+                value="true"
+                defaultChecked={membership.admin}
+              />
+            }
+            label="Temple administrator"
+          />
+          <TextField
+            name="memberSince"
+            type="date"
+            label="Member since"
+            defaultValue={membership.memberSince?.toISOString().slice(0, 10)}
             slotProps={{ inputLabel: { shrink: true } }}
+            helperText="Optional. Clear the field if the date is unknown."
           />
-          <Controller
-            name="admin"
-            control={control}
-            render={({ field }) => (
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={field.value || false}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                    />
-                  }
-                  label="Admin"
-                />
-              </FormGroup>
-            )}
-          />
-        </Stack>
-        <Controller
-          control={control}
-          name="memberSince"
-          render={({ field, fieldState }) => (
-            <DatePicker
-              label="Member since"
-              value={field.value ? dayjs(field.value) : null}
-              onChange={(value, context) => {
-                pickerErrorRef.current = context.validationError;
-                setDateError(
-                  context.validationError ? "Enter a valid date." : null,
-                );
-                field.onChange(value);
-              }}
-              onError={(error) => {
-                pickerErrorRef.current = error;
-                setDateError(error ? "Enter a valid date." : null);
-              }}
-              sx={{ marginBottom: 2 }}
-              slotProps={{
-                field: {
-                  clearable: true,
-                  fieldRef: dateFieldRef,
-                  onClear: () => {
-                    pickerErrorRef.current = null;
-                    setDateError(null);
-                  },
-                },
-                textField: {
-                  error: !!dateError || !!fieldState.error,
-                  helperText: dateError || fieldState.error?.message,
-                },
-              }}
-            />
-          )}
-        />
-        <Stack spacing={1} direction="row">
-          <Button
-            variant="outlined"
-            type="submit"
-            fullWidth
-            disabled={!isDirty}
-          >
-            Save
-          </Button>
-          <Button
-            variant="contained"
-            type="submit"
-            fullWidth
-            data-dest="back"
-            disabled={!isDirty}
-          >
-            Save & Back
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button type="submit" variant="contained">
+              Save membership
+            </Button>
+            <Button
+              component={Link}
+              href={`/temples/admin/${temple.id}`}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+          </Stack>
         </Stack>
       </form>
     </Container>

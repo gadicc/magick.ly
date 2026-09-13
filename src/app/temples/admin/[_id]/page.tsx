@@ -1,366 +1,104 @@
-"use client";
-
-import { readStreamableValue } from "@ai-sdk/rsc";
+import { AdminPanelSettings, Edit } from "@mui/icons-material";
 import {
-  Box,
-  Button,
-  Checkbox,
   Container,
-  Dialog,
-  FormControl,
-  FormControlLabel,
-  FormGroup,
-  FormLabel,
   IconButton,
   Paper,
-  Radio,
-  RadioGroup,
-  Stack,
-  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Tabs,
-  TextField,
   Typography,
 } from "@mui/material";
-import { db, useGongoLive, useGongoOne, useGongoSub } from "gongo-client-react";
-import React, { use } from "react";
+import Link from "next/link";
+import { getCurrentSqlUserId } from "@/auth/session";
+import { db } from "@/db/neonFull";
+import { canRunDiscourseSync } from "@/temples/discourseSync";
+import { createSqlTempleReader } from "@/temples/sql";
+import { DiscourseSyncButton } from "./DiscourseSyncButton";
+import { InviteManager } from "./InviteManager";
 
-import "@/db";
-import {
-  AdminPanelSettings,
-  CheckBox,
-  ContentCopy,
-  Edit,
-  Save,
-  Share,
-  Visibility,
-  VisibilityOff,
-} from "@mui/icons-material";
-import { QRCode } from "react-qrcode";
-import { Temple } from "@/schemas";
-import * as actions from "./actions";
-
-function JoinInfo({ temple }: { temple: Temple }) {
-  const joinUrl =
-    location.origin + `/temples/join/${temple.slug}/${temple.joinPass}`;
-  const [editingJoinPass, setEditingJoinPass] = React.useState(false);
-  const [joinPass, setJoinPass] = React.useState(temple.joinPass || "");
-  const [justCopied, setJustCopied] = React.useState(false);
-  const [visibility, setVisibility] = React.useState(false);
-  const visibilityStyle = visibility
-    ? undefined
-    : {
-        color: "transparent",
-        textShadow: "0 0 5px rgba(0,0,0,0.5)",
-      };
-  const joinUrlText = (
-    <span>
-      <span>
-        {location.origin}/temples/join/{temple.slug}/
-      </span>
-      <span style={visibilityStyle}>{temple.joinPass}</span>
-    </span>
-  );
-
-  return (
-    <div>
-      <TableContainer component={Paper}>
-        <Table aria-label="simple table">
-          <TableBody>
-            <TableRow>
-              <TableCell component="th" scope="row" width={100} align="right">
-                Slug
-              </TableCell>
-              <TableCell>{temple?.slug}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell component="th" scope="row" align="right">
-                Join Pass
-              </TableCell>
-              <TableCell>
-                {" "}
-                {editingJoinPass ? (
-                  <div>
-                    <form
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        console.log("update join pass");
-                        db.collection("temples").update(temple._id, {
-                          $set: { joinPass },
-                        });
-                        setEditingJoinPass(false);
-                      }}
-                    >
-                      <TextField
-                        size="small"
-                        value={joinPass}
-                        onChange={(e) => setJoinPass(e.target.value)}
-                      />{" "}
-                      <IconButton type="submit">
-                        <Save />
-                      </IconButton>
-                    </form>
-                  </div>
-                ) : (
-                  <div>
-                    <span style={visibilityStyle}>
-                      {temple?.joinPass || "(none)"}
-                    </span>
-                    <IconButton onClick={() => setEditingJoinPass(true)}>
-                      <Edit />
-                    </IconButton>
-                    <IconButton onClick={() => setVisibility(!visibility)}>
-                      {visibility ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </div>
-                )}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <br />
-
-      {temple.joinPass ? (
-        <div>
-          <QRCode value={joinUrl} style={{ float: "right" }} />
-          <div>
-            To have members join, either:
-            <ul>
-              <li>Let them scan the adjacent QR code</li>
-              <li>Send them the link below</li>
-              <li>
-                Direct them to the website, click on &quot;Temples&quot;, and
-                enter the <i>slug</i> and <i>join pass</i> above.
-              </li>
-            </ul>
-          </div>
-          <div>
-            <a href={joinUrl}>{joinUrlText}</a>
-            <IconButton
-              disabled={justCopied}
-              onClick={() => {
-                navigator.clipboard.writeText(joinUrl);
-                setJustCopied(true);
-                setTimeout(() => setJustCopied(false), 2000);
-              }}
-            >
-              {justCopied ? <CheckBox /> : <ContentCopy />}
-            </IconButton>
-            {"share" in navigator ? (
-              <IconButton
-                disabled={justCopied}
-                onClick={() => {
-                  const data = {
-                    title: "Magick.ly",
-                    text: "Join " + temple.name + " Temple",
-                    url: joinUrl,
-                  };
-                  console.log(data);
-                  navigator.share(data);
-                }}
-              >
-                <Share />
-              </IconButton>
-            ) : null}
-          </div>
-        </div>
-      ) : (
-        <div>Set a join pass above to show the invite link and QR code</div>
-      )}
-    </div>
-  );
+function signInHref(callbackURL: string) {
+  return `/signin?${new URLSearchParams({ callbackURL }).toString()}`;
 }
 
-function Users({ templeId }: { templeId: string }) {
-  const [sortBy, setSortBy] = React.useState("addedAt");
-  const [useMotto, setUseMotto] = React.useState(false);
-  const [dLogOpen, setDLogOpen] = React.useState(false);
-  const dLogs = React.useRef<{ message: string }[]>([]);
-  const [discourseSyncResult, setDiscourseSyncResult] = React.useState({
-    color: "",
-    message: "",
-  });
-
-  useGongoSub("userTemplesAndMemberships");
-  useGongoSub(
-    "usersForTempleAdmin",
-    { _id: templeId },
-    {
-      sort: ["__updatedAt", "desc"],
-      limit: 5000,
-      minInterval: 1500,
-      maxInterval: 3000,
-      // persist: false,
-    },
-  );
-
-  const memberships = useGongoLive((db) =>
-    db.collection("templeMemberships").find({ templeId }),
-  );
-
-  const _users = React.useMemo(() => {
-    return memberships.map((m) => ({
-      ...db.collection("users").findOne({ _id: m.userId }),
-      membership: m,
-    }));
-  }, [memberships]);
-
-  const users = React.useMemo(() => {
-    const order = ["addedAt", "grade"].includes(sortBy) ? -1 : 1;
-    const users = [..._users];
-    // @ts-expect-error: huh?
-    users.sort((a, b) => {
-      if (sortBy === "addedAt") {
-        return (
-          (a.membership.addedAt.getTime() - b.membership.addedAt.getTime()) *
-          order
-        );
-      } else if (sortBy === "grade") {
-        return (a.membership.grade - b.membership.grade) * order;
-      } else if (sortBy === "name") {
-        if (useMotto)
-          return (
-            ((a.membership.motto || "").localeCompare(
-              b.membership.motto || "",
-            ) || (a.displayName || "").localeCompare(b.displayName || "")) *
-            order
-          );
-        return (a.displayName || "").localeCompare(b.displayName || "") * order;
-      }
-    });
-    return users;
-  }, [_users, sortBy, useMotto]);
-
-  const discourseSync = React.useCallback(async () => {
-    dLogs.current = [];
-    const stream = await actions.discourseSync({ templeId });
-    for await (const value of readStreamableValue(stream)) {
-      setDiscourseSyncResult({
-        message: value?.message || "",
-        color: /* value?.color || */ "",
-      });
-      if (value) dLogs.current.push(value);
-    }
-  }, [templeId]);
+export default async function AdminTemplePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ _id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { _id } = await params;
+  const callbackURL = `/temples/admin/${encodeURIComponent(_id)}`;
+  const actorId = await getCurrentSqlUserId();
+  if (!actorId)
+    return (
+      <Container sx={{ my: 2 }}>
+        <Typography>
+          <Link href={signInHref(callbackURL)}>Sign in</Link> to administer this
+          temple.
+        </Typography>
+      </Container>
+    );
+  const temple = await createSqlTempleReader(db).getAdminTemple(actorId, _id);
+  if (!temple)
+    return (
+      <Container sx={{ my: 2 }}>
+        <Typography>
+          This temple was not found, or you cannot manage it.
+        </Typography>
+        <Link href="/temples/admin">Back to temple administration</Link>
+      </Container>
+    );
+  const query = await searchParams;
+  const showDiscourseSync = await canRunDiscourseSync(db, actorId);
+  const date = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
 
   return (
-    <div>
-      <FormGroup>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={useMotto}
-              onChange={(e) => setUseMotto(e.target.checked)}
-            />
-          }
-          label="Motto"
-        />
-      </FormGroup>
-      <FormControl sx={{ flexDirection: "row", alignItems: "center" }}>
-        <FormLabel id="sortBy-radio-buttons-group-label" sx={{ mr: 1.5 }}>
-          Sort By
-        </FormLabel>
-        <RadioGroup
-          aria-labelledby="sortBy-radio-buttons-group-label"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          name="radio-buttons-group"
-          row
-        >
-          <FormControlLabel
-            value="addedAt"
-            control={<Radio />}
-            label="Added at"
-          />
-          <FormControlLabel value="grade" control={<Radio />} label="Grade" />
-          <FormControlLabel value="name" control={<Radio />} label="Name" />
-        </RadioGroup>
-      </FormControl>
+    <Container sx={{ my: 2 }}>
+      <Typography variant="h5">{temple.name} Temple</Typography>
+      {query.error ? (
+        <Typography color="error" role="alert" sx={{ my: 2 }}>
+          {query.error}
+        </Typography>
+      ) : null}
 
-      {dLogOpen && (
-        <Dialog
-          open={dLogOpen}
-          onClose={() => setDLogOpen(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <Box
-            sx={{
-              p: 2,
-              whiteSpace: "pre-wrap",
-              fontFamily: "monospace",
-              maxHeight: "80vh",
-              overflowY: "auto",
-            }}
-          >
-            {dLogs.current.map((line, index) => (
-              <div
-                key={index}
-                style={{
-                  color: line.message.startsWith("Error") ? "red" : "inherit",
-                }}
-              >
-                {line.message}
-              </div>
-            ))}
-          </Box>
-        </Dialog>
-      )}
-
-      <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-        <Button onClick={discourseSync}>Discourse Sync</Button>
-        <div
-          style={{ color: discourseSyncResult.color }}
-          onClick={() => setDLogOpen(true)}
-        >
-          {discourseSyncResult.message}
-        </div>
-      </Stack>
-
+      <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
+        Members
+      </Typography>
       <TableContainer component={Paper}>
-        <Table aria-label="simple table">
+        <Table aria-label={`${temple.name} members`}>
           <TableHead>
             <TableRow>
-              <TableCell width={50}>Grade</TableCell>
-              <TableCell>{useMotto ? "Motto" : "Name"}</TableCell>
+              <TableCell width={80}>Grade</TableCell>
+              <TableCell>Name or motto</TableCell>
               <TableCell>Added</TableCell>
-              <TableCell></TableCell>
+              <TableCell width={50}>Edit</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow
-                key={user._id}
-                sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-              >
-                <TableCell component="th" scope="row">
-                  {user.membership.grade}{" "}
-                  {user.membership.admin ? (
+            {temple.members.map((member) => (
+              <TableRow key={member.membershipId}>
+                <TableCell>
+                  {member.grade}{" "}
+                  {member.admin ? (
                     <AdminPanelSettings
+                      aria-label="Temple administrator"
                       fontSize="small"
                       sx={{ verticalAlign: "bottom" }}
                     />
                   ) : null}
                 </TableCell>
-                <TableCell>
-                  {useMotto
-                    ? user.membership.motto || "(" + user.displayName + ")"
-                    : user.displayName}{" "}
-                </TableCell>
-                <TableCell>
-                  {user.membership.addedAt.toLocaleDateString()}
-                </TableCell>
+                <TableCell>{member.motto || member.displayName}</TableCell>
+                <TableCell>{date.format(member.addedAt)}</TableCell>
                 <TableCell>
                   <IconButton
+                    component={Link}
                     size="small"
-                    href={`/temples/admin/${templeId}/membership/${user.membership._id}`}
+                    aria-label={`Edit ${member.displayName}`}
+                    href={`/temples/admin/${temple.id}/membership/${member.membershipId}`}
                   >
                     <Edit fontSize="small" />
                   </IconButton>
@@ -370,64 +108,21 @@ function Users({ templeId }: { templeId: string }) {
           </TableBody>
         </Table>
       </TableContainer>
-    </div>
-  );
-}
 
-function CustomTabPanel(props: {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      // id={`simple-tabpanel-${index}`}
-      // aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 1 }}>{children}</Box>}
-    </div>
-  );
-}
-
-export default function AdminTemplesPage(props: {
-  params: Promise<{ _id: string }>;
-}) {
-  const params = use(props.params);
-  const { _id } = params;
-
-  useGongoSub("templeForTempleAdmin", { _id });
-  const temple = useGongoOne((db) => db.collection("temples").find({ _id }));
-  const [tabId, setTabId] = React.useState(0);
-  const onTabChange = React.useCallback((event, newValue) => {
-    setTabId(newValue);
-  }, []);
-
-  if (!temple) return <div>Temple loading or not found...</div>;
-
-  return (
-    <>
-      <Container sx={{ my: 2 }}>
-        <Typography variant="h5">{temple?.name} Temple</Typography>
-        <Tabs
-          value={tabId}
-          onChange={onTabChange}
-          aria-label="temple admin tabs"
-        >
-          <Tab label="Users" />
-          <Tab label="Join Info" />
-        </Tabs>
-        <CustomTabPanel value={tabId} index={0}>
-          <Users templeId={_id} />
-        </CustomTabPanel>
-        <CustomTabPanel value={tabId} index={1}>
-          <JoinInfo temple={temple} />
-        </CustomTabPanel>
-      </Container>
-    </>
+      <Typography variant="h6" sx={{ mt: 4, mb: 1 }}>
+        Join information
+      </Typography>
+      <Typography sx={{ mb: 2 }}>Temple slug: {temple.slug}</Typography>
+      <InviteManager
+        actorId={actorId}
+        templeId={temple.id}
+        templeName={temple.name}
+        slug={temple.slug}
+        joinPass={temple.joinPass}
+      />
+      {showDiscourseSync ? (
+        <DiscourseSyncButton actorId={actorId} templeId={temple.id} />
+      ) : null}
+    </Container>
   );
 }

@@ -1,360 +1,264 @@
 "use server";
-import { createStreamableValue } from "@ai-sdk/rsc";
-import Discourse from "discourse2";
-import { db, ObjectId } from "@/api-lib/db";
-import { auth } from "@/auth";
-import type { TempleMembershipServer, UserServer } from "@/schemas";
 
-if (!process.env.DISCOURSE_API_KEY) {
-  throw new Error("DISCOURSE_API_KEY not set");
+import Discourse, { HTTPError } from "discourse2";
+import { getCurrentSqlUserId } from "@/auth/session";
+import { db } from "@/db/neonFull";
+import {
+  canRunDiscourseSync,
+  createSqlDiscourseSync,
+  type DiscourseSyncState,
+  type DiscourseSyncTransport,
+  initialDiscourseSyncState,
+  MAGICKLY_DISCOURSE_ORIGIN,
+} from "@/temples/discourseSync";
+
+function safeId(value: number) {
+  if (!Number.isSafeInteger(value) || value < 1)
+    throw new Error("Invalid Discourse response");
+  return value;
 }
 
-const DISCOURSE_URL = "https://forums.magick.ly";
-
-const discourse = new Discourse(DISCOURSE_URL, {
-  "Api-Key": process.env.DISCOURSE_API_KEY,
-  "Api-Username": "system",
-});
-
-const Users = db.collection<UserServer>("users");
-
-const groupSeed = [
-  {
-    name: "neophytes",
-    full_name: "Neophytes",
-    title: "Neophyte",
-    grade: 0,
-  },
-  {
-    name: "zelators",
-    full_name: "Zelators",
-    title: "Zelator",
-    grade: 1,
-  },
-  {
-    name: "theorici",
-    full_name: "Theorici",
-    title: "Theoricus",
-    grade: 2,
-  },
-  {
-    name: "practici",
-    full_name: "Practici",
-    title: "Practicus",
-    grade: 3,
-  },
-  {
-    name: "philosophi",
-    full_name: "Philosophi",
-    title: "Philosophus",
-    grade: 4,
-  },
-  {
-    name: "adepti-minores",
-    full_name: "Adepti Minores",
-    title: "Adeptus Minor",
-    grade: 5,
-  },
-  {
-    name: "adepti-majores",
-    full_name: "Adepti Majores",
-    title: "Adeptus Major",
-    grade: 6,
-  },
-];
-
-function normalizeMotto(motto?: string) {
-  const MAX_USERNAME_LENGTH = 20;
-  if (!motto) return null;
-
-  motto = motto.trim().replace(/\s+/g, "_");
-  if (motto.length > MAX_USERNAME_LENGTH) {
-    const pos = motto.lastIndexOf("_", MAX_USERNAME_LENGTH);
-    if (pos > 0) motto = motto.substring(0, pos);
-    else motto = motto.substring(0, MAX_USERNAME_LENGTH);
-  }
-  return motto;
+function objectValue(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error("Invalid Discourse response");
+  return value as Record<string, unknown>;
 }
 
-export async function discourseSync({
-  templeId: templeIdStr,
-}: {
-  templeId: string;
-}) {
-  const stream = createStreamableValue({ message: "Starting..." });
-  const msg = (m: string) => stream.update({ message: m });
-  const updateDone = (x) => {
-    stream.update(x);
-    stream.done();
-  };
+function stringValue(value: unknown) {
+  if (typeof value !== "string" || !value)
+    throw new Error("Invalid Discourse response");
+  return value;
+}
 
-  (async () => {
-    const session = await auth();
-    if (!session) return updateDone({ message: "No session" });
+function nullableStringValue(value: unknown) {
+  if (value === null) return null;
+  return stringValue(value);
+}
 
-    const { user } = session;
-    if (!user) return updateDone({ message: "Not logged in" });
-    if (!user?.admin) return updateDone({ message: "Not an admin" });
-
-    const templeId = new ObjectId(templeIdStr);
-
-    const allGroups = (await discourse.listGroups()).groups;
-    const groups = await Promise.all(
-      groupSeed.map(async (seed) => {
-        let group = allGroups.find((group) => group.name === seed.name);
-        if (!group) {
-          msg(`Creating discourse group "${seed.name}".`);
-          const result = await discourse.createGroup(
-            {
-              group: {
-                name: seed.name,
-                full_name: seed.full_name,
-                visibility_level: 2,
-                // @ts-expect-error: it does exist
-                members_visibility_level: 2,
-                primary_group: true,
-              },
-            },
-            { validateParams: false },
-          );
-          // console.log("result", result);
-          // @ts-expect-error: fine for now
-          group = result.basic_group;
-        }
-        if (!group) throw new Error("No group found or created");
-
-        msg(`Asserting group "${group.name}".`);
-
-        await discourse.updateGroup(
-          {
-            id: group!.id,
-            group: {
-              name: seed.name,
-              full_name: seed.full_name,
-              // @ts-expect-error: fine for now
-              title: seed.title,
-              // automatic: false,
-              mentionable_level: 3,
-              messageable_level: 3,
-              visibility_level: 2,
-              primary_group: true,
-              public_admission: false,
-              public_exit: false,
-              allow_membership_requests: false,
-              default_notification_level: 3,
-              // is_group_user: false,
-              members_visibility_level: 2,
-              // can_see_members: true,
-              // can_admin_group: true,
-              // can_edit_group: true,
-              // publish_read_state: false,
-            },
-          },
-          { validateParams: false },
-        );
-        const members = (await discourse.listGroupMembers({ id: group.name }))
-          .members;
-
-        return { ...group, grade: seed.grade, members };
-      }),
-    );
-    // console.log("groups", groups);
-
-    // 1. Get all memberships for this temple
-    const memberships = await db
-      .collection<TempleMembershipServer>("templeMemberships")
-      .find({ templeId })
-      .toArray();
-
-    const membershipMap = new Map(
-      memberships.map((m) => [m.userId.toHexString(), m]),
-    );
-
-    // 2. Get users with those memberships and left join
-    const users = (
-      await Users.find({
-        _id: { $in: memberships.map((m) => m.userId) },
-      }).toArray()
-    ).map((user) => ({
-      ...user,
-      membership: membershipMap.get(user._id.toHexString()),
-    }));
-    msg(`Found ${users.length} users with temple memberships.`);
-
-    // 3. Look through dbUsers and sync with discourse
-    for (let userI = 0; userI < users.length; userI++) {
-      const dbUser = users[userI];
-      const motto = normalizeMotto(dbUser.membership?.motto);
-
-      // console.log("dbUser", dbUser);
-      msg(
-        `Processing user ${userI + 1}/${users.length}: ${dbUser.displayName} (grade ${dbUser.membership?.grade})`,
-      );
-
-      // 4. Find or create a discourse user
-      let user: Awaited<ReturnType<typeof discourse.adminGetUser>> | null =
-        null;
-      if (dbUser.discourseId) {
-        msg(`- has existing discourse id "${dbUser.discourseId}"`);
-        user = await discourse.adminGetUser({ id: dbUser.discourseId });
-      } else if (dbUser.emails.length) {
-        for (const email of dbUser.emails) {
-          const users = await discourse.adminListUsers({
-            flag: "active",
-            email: email.value,
-          });
-
-          if (users.length) {
-            if (users.length > 1) {
-              console.warn(
-                "Multiple users with email",
-                email.value,
-                "using first match",
-              );
-            }
-            // user = users[0];
-            user = await discourse.adminGetUser({ id: users[0].id });
-            msg(`- found discourse user by email ${email.value}`);
-            break;
-          }
-        }
-      }
-      if (!user) {
-        const username = motto || dbUser.emails[0]?.value.split("@")[0];
-        msg(`- creating new discourse user: ${username}`);
-        const result = await discourse.createUser({
-          name: dbUser.displayName,
-          email: dbUser.emails[0].value,
-          password: crypto.randomUUID(),
-          username,
-          active: true,
-          approved: true,
-        });
-        if (result.success) {
-          const _user = await discourse.getUser({ username });
-          user = await discourse.adminGetUser({ id: _user.user.id });
-        } else {
-          msg(`- error creating user: ${JSON.stringify(result)}`);
-        }
-      }
-      if (!user) {
-        throw new Error("Could not find or create discourse user" + dbUser._id);
-      }
-
-      if (user && !dbUser.discourseId) {
-        msg(`- linking local user to discourse user ${user.id}`);
-        await db
-          .collection("users")
-          .updateOne({ _id: dbUser._id }, { $set: { discourseId: user.id } });
-      }
-      // console.log("user", user);
-
-      if (user.username !== motto && motto) {
-        msg(`- updating username to "${motto}"`);
-        await discourse.updateUsername({
-          username: user.username,
-          new_username: motto,
-        });
-        user.username = motto;
-      }
-
-      const grade = dbUser.membership?.grade;
-      if (!grade && grade !== 0) {
-        msg(`- user ${dbUser._id.toHexString()} has no grade, skipping...`);
-        continue;
-      }
-
-      for (let i = 0; i < groups.length; i++) {
-        const group = groups.find((g) => g.grade === i);
-        if (!group) throw new Error("No group for grade " + i);
-        const userInGroup = group.members.some((m) => m.id === user?.id);
-        // const userGroup = user?.groups?.find((g) => g.id === group.id);
-        // console.log({ group, userGroup });
-
-        if (userInGroup && i !== grade) {
-          msg(
-            `- removing user ${user?.username} from group ${group.name} (${group.id})`,
-          );
-          await discourse.removeGroupMembers({
-            id: group.id,
-            usernames: user!.username,
-          });
-        } else if (!userInGroup && i === grade) {
-          msg(
-            `- adding user ${user?.username} to group ${group.name} (${group.id})`,
-          );
-          await discourse.addGroupMembers({
-            id: group.id,
-            usernames: user!.username,
-          });
-        }
-
-        if (i === grade) {
-          const data = [
-            {
-              endpoint: "primary_group",
-              field: "primary_group_id",
-              value: group.id,
-            },
-          ];
-
-          for (const { endpoint, field, value } of data) {
-            if (user[field] !== value) {
-              msg(`- setting "${field}" to "${value}"`);
-              const response = await fetch(
-                `${DISCOURSE_URL}/admin/users/${user!.id}/${endpoint}`,
-                {
-                  method: "PUT",
-                  headers: {
-                    "Api-Key": process.env.DISCOURSE_API_KEY!,
-                    "Api-Username": "system",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                  },
-                  body: new URLSearchParams({
-                    [field]: value.toString(),
-                  }),
-                },
-              );
-              // console.log("response", response.status, await response.text());
-              if (!response.ok) {
-                console.error(
-                  `Error setting ${field}`,
-                  response.status,
-                  await response.text(),
-                );
-              }
-            }
-          }
-
-          if (user.title !== group.title) {
-            msg(`- setting title to "${group.title}"`);
-            await discourse.updateUser(
-              {
-                username: user.username,
-                // @ts-expect-error: fine for now
-                title: group.title,
-              },
-              { validateParams: false },
-            );
-          }
-        }
-      }
-    }
-
-    /*
-      const users = await db.collection("users").find().toArray();
-      for (const user of users) {
-        if (user.discourseUsername) {
-          await discourse.syncGroups(user.discourseUsername, user.groupIds);
-        }
-      }
-      */
-    return updateDone({ message: "Complete." });
-  })().catch((err) => {
-    console.error(err);
-    stream.update({ message: "Error: " + err.message });
-    stream.done();
+function createDiscourseTransport(apiKey: string): DiscourseSyncTransport {
+  const discourse = new Discourse(MAGICKLY_DISCOURSE_ORIGIN, {
+    "Api-Key": apiKey,
+    "Api-Username": "system",
   });
 
-  return stream.value;
+  return {
+    async listGroupsPage(page) {
+      const url = new URL("/groups.json", MAGICKLY_DISCOURSE_ORIGIN);
+      url.searchParams.set("page", page.toString());
+      const response = await fetch(url, {
+        cache: "no-store",
+        redirect: "error",
+        headers: {
+          "Api-Key": apiKey,
+          "Api-Username": "system",
+        },
+      });
+      if (!response.ok) throw new Error("Discourse group list failed");
+      const payload = objectValue(await response.json());
+      if (!Array.isArray(payload.groups))
+        throw new Error("Invalid Discourse response");
+      return {
+        groups: payload.groups.map((value) => {
+          const group = objectValue(value);
+          return {
+            id: safeId(Number(group.id)),
+            name: stringValue(group.name),
+            title: nullableStringValue(group.title),
+          };
+        }),
+      };
+    },
+
+    async createGroup(seed) {
+      const result = await discourse.createGroup(
+        {
+          group: {
+            name: seed.name,
+            full_name: seed.fullName,
+            visibility_level: 2,
+            primary_group: true,
+          },
+        },
+        { validateParams: false },
+      );
+      return {
+        id: safeId(result.basic_group.id),
+        name: result.basic_group.name,
+        title: result.basic_group.title,
+      };
+    },
+
+    async configureGroup(groupId, seed) {
+      const group = {
+        name: seed.name,
+        full_name: seed.fullName,
+        title: seed.title,
+        mentionable_level: 3,
+        messageable_level: 3,
+        visibility_level: 2,
+        primary_group: true,
+        public_admission: false,
+        public_exit: false,
+        allow_membership_requests: false,
+        default_notification_level: 3,
+        members_visibility_level: 2,
+      };
+      await discourse.updateGroup(
+        { id: safeId(groupId), group } as Parameters<
+          typeof discourse.updateGroup
+        >[0],
+        { validateParams: false },
+      );
+    },
+
+    async listGroupMemberPage(groupName, offset) {
+      const url = new URL(
+        `/groups/${encodeURIComponent(groupName)}/members.json`,
+        MAGICKLY_DISCOURSE_ORIGIN,
+      );
+      url.searchParams.set("offset", offset.toString());
+      const response = await fetch(url, {
+        cache: "no-store",
+        redirect: "error",
+        headers: {
+          "Api-Key": apiKey,
+          "Api-Username": "system",
+        },
+      });
+      if (!response.ok) throw new Error("Discourse group member list failed");
+      const payload = objectValue(await response.json());
+      const meta = objectValue(payload.meta);
+      if (!Array.isArray(payload.members))
+        throw new Error("Invalid Discourse response");
+      return {
+        memberIds: payload.members.map((value) =>
+          safeId(Number(objectValue(value).id)),
+        ),
+        total: Number(meta.total),
+        limit: Number(meta.limit),
+        offset: Number(meta.offset),
+      };
+    },
+
+    async getUser(userId) {
+      try {
+        const result = await discourse.adminGetUser({ id: safeId(userId) });
+        return {
+          id: safeId(result.id),
+          username: result.username,
+          title: result.title,
+          primaryGroupId: result.primary_group_id,
+        };
+      } catch (error) {
+        if (error instanceof HTTPError && error.status === 404) return null;
+        throw error;
+      }
+    },
+
+    async findUsersByEmail(email) {
+      const result = await discourse.adminListUsers({
+        flag: "active",
+        email,
+      });
+      return result.map((candidate) => ({ id: safeId(candidate.id) }));
+    },
+
+    async createUser(input) {
+      const result = await discourse.createUser({
+        name: input.name,
+        email: input.email,
+        password: input.password,
+        username: input.username,
+        active: true,
+        approved: true,
+      });
+      return {
+        success: result.success,
+        userId: result.user_id ? safeId(result.user_id) : null,
+      };
+    },
+
+    async updateUsername(username, newUsername) {
+      await discourse.updateUsername({ username, new_username: newUsername });
+    },
+
+    async addGroupMember(groupId, username) {
+      await discourse.addGroupMembers({
+        id: safeId(groupId),
+        usernames: username,
+      });
+    },
+
+    async removeGroupMember(groupId, username) {
+      await discourse.removeGroupMembers({
+        id: safeId(groupId),
+        usernames: username,
+      });
+    },
+
+    async setPrimaryGroup(userId, groupId) {
+      const response = await fetch(
+        `${MAGICKLY_DISCOURSE_ORIGIN}/admin/users/${safeId(userId)}/primary_group`,
+        {
+          method: "PUT",
+          redirect: "error",
+          headers: {
+            "Api-Key": apiKey,
+            "Api-Username": "system",
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            primary_group_id: safeId(groupId).toString(),
+          }),
+        },
+      );
+      if (!response.ok)
+        throw new Error("Discourse primary group update failed");
+    },
+
+    async setTitle(username, title) {
+      await discourse.updateUser(
+        { username, title } as Parameters<typeof discourse.updateUser>[0],
+        { validateParams: false },
+      );
+    },
+  };
+}
+
+export async function discourseSync(
+  _previous: DiscourseSyncState,
+  formData: FormData,
+): Promise<DiscourseSyncState> {
+  const expectedActorId = formData.get("actorId");
+  const templeId = formData.get("templeId");
+  if (typeof expectedActorId !== "string" || typeof templeId !== "string")
+    return {
+      ...initialDiscourseSyncState,
+      status: "error",
+      message: "The sync request is invalid.",
+    };
+
+  const currentActorId = await getCurrentSqlUserId();
+  if (
+    currentActorId !== expectedActorId ||
+    !(await canRunDiscourseSync(db, currentActorId))
+  )
+    return {
+      ...initialDiscourseSyncState,
+      status: "error",
+      message: "Global administrator access is required.",
+    };
+
+  const apiKey = process.env.DISCOURSE_API_KEY;
+  if (!apiKey)
+    return {
+      ...initialDiscourseSyncState,
+      status: "error",
+      message: "Discourse sync is not configured.",
+    };
+
+  return createSqlDiscourseSync(db, {
+    getCurrentActorId: getCurrentSqlUserId,
+    transport: createDiscourseTransport(apiKey),
+  })({ expectedActorId, templeId });
 }

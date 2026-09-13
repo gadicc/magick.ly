@@ -1,67 +1,61 @@
-"use client";
-
 import { Container, Typography } from "@mui/material";
-import {
-  db,
-  useGongoLive,
-  useGongoSub,
-  useGongoUserId,
-} from "gongo-client-react";
-import React from "react";
-import slug from "slug";
+import Link from "next/link";
+import { getCurrentSqlUserId } from "@/auth/session";
+import { db } from "@/db/neonFull";
+import { createUuidV7 } from "@/lib/ids";
+import { createSqlTempleReader } from "@/temples/sql";
+import { CreateTempleForm } from "../CreateTempleForm";
 
-import "@/db";
+function signInHref() {
+  return `/signin?${new URLSearchParams({ callbackURL: "/temples/admin" }).toString()}`;
+}
 
-export default function AdminTemplesPage() {
-  useGongoSub("templesForAdmins");
-  const temples = useGongoLive((db) => db.collection("temples").find());
-  const userId = useGongoUserId();
-  const [newTempleName, setNewTempleName] = React.useState("");
+export default async function AdminTemplesPage() {
+  const actorId = await getCurrentSqlUserId();
+  if (!actorId)
+    return (
+      <Container sx={{ my: 2 }}>
+        <Typography variant="h5">Temples</Typography>
+        <Typography sx={{ mt: 2 }}>
+          <Link href={signInHref()}>Sign in</Link> to create or administer a
+          temple.
+        </Typography>
+      </Container>
+    );
 
-  function addTemple() {
-    if (!userId) return alert("No user id");
-    const insertedDoc = db.collection("temples").insert({
-      name: newTempleName,
-      slug: slug(newTempleName),
-      createdBy: userId,
-    });
-    setNewTempleName("");
-
-    const templeId = insertedDoc._id;
-    if (!templeId)
-      return alert(
-        "Failed to insert temple membership, no temple id in inserted doc",
-      );
-
-    db.collection("templeMemberships").insert({
-      userId,
-      templeId,
-      admin: true,
-      grade: 0,
-      addedAt: new Date(),
-    });
-  }
-
+  const manageable =
+    await createSqlTempleReader(db).getManageableTemples(actorId);
   return (
     <Container sx={{ my: 2 }}>
-      <Typography variant="h5">Temples</Typography>
-      <ol>
-        {temples.map((temple) => (
-          <li key={temple._id} style={{ marginBottom: 5 }}>
-            <a href={"/temples/admin/" + temple._id}>{temple.name}</a>
-          </li>
-        ))}
-        <li>
-          <input
-            type="text"
-            value={newTempleName}
-            onChange={(e) => setNewTempleName(e.target.value)}
-          />{" "}
-          <button onClick={addTemple} disabled={!newTempleName}>
-            Add
-          </button>
-        </li>
-      </ol>
+      <Typography variant="h5">Temples you administer</Typography>
+      {manageable.temples.length ? (
+        <ol>
+          {manageable.temples.map((temple) => (
+            <li key={temple.id} style={{ marginBottom: 5 }}>
+              <Link href={`/temples/admin/${temple.id}`}>{temple.name}</Link>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <Typography sx={{ my: 2 }}>
+          You do not currently administer any temples.
+        </Typography>
+      )}
+      {manageable.globalAdmin ? (
+        <Typography variant="body2" sx={{ mb: 3 }}>
+          Your global administrator grant allows you to manage every temple.
+        </Typography>
+      ) : null}
+
+      <Typography variant="h5" sx={{ mt: 4 }}>
+        Create a new temple
+      </Typography>
+      <Typography sx={{ my: 1 }}>
+        This creates a separate organization and makes you its first
+        administrator. To join an existing temple, use its slug and join code on
+        the <Link href="/temples">My Temples page</Link>.
+      </Typography>
+      <CreateTempleForm actorId={actorId} operationId={createUuidV7()} />
     </Container>
   );
 }
