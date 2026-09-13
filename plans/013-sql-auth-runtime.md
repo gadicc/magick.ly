@@ -97,3 +97,26 @@ Biome, ordinary Loom check and an isolated production build pass. Production
 Loom check remains blocked by the pre-existing master release workflow without
 `db:migrate`; the cached Loom 1.24.0 CLI reports the same issue. No runtime route,
 provider, database or deployment was activated by this adoption.
+
+## Runtime entrypoints prepared
+
+The app now composes the reviewed factory with Loom's transaction connection
+and an explicit `BETTER_AUTH_URL`; it never borrows a Production origin from
+legacy environment variables or an incoming Host header. Fresh server session
+helpers support the SQL domain services. `/api/session` returns only the current
+user's ID, name, image and separately read global-admin flag with `no-store`,
+rechecking the session after the grant lookup. Its failure response contains no
+provider diagnostics or session tokens.
+
+The new `/signin` page starts Google authentication through Better Auth and
+accepts only local application callback paths. CI uses synthetic authentication
+values and closed loopback SQL endpoints. The existing login handler and global
+browser provider are still unchanged in this commit; their coordinated switch
+follows the reader, editor and study integration.
+
+Root adversarial review checked callback redirects, session/account changes,
+private response caching, explicit deployment origin and server/client imports.
+The isolated tree at `/tmp/magickli-auth-runtime-validation` passes 72 focused
+tests, typechecking, targeted Biome, ordinary Loom check and a production build.
+Logs: `/tmp/magickli-auth-runtime-{tests,types,biome,loom,build}.log`. These are
+local checks with synthetic credentials, not a live OAuth or deployment claim.

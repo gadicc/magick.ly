@@ -4,6 +4,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
+| SQL sign-in runtime foundations | Complete locally; global login switch pending | Explicit deployment origin, fresh server identity, private `/api/session`, safe Google callback paths and synthetic CI configuration; 72 focused tests plus isolated types/build, Biome and ordinary Loom check pass |
 | Legacy browser recovery and network fence | Complete locally; explicit SQL fence awaits coordinated activation | Verified Dexie quarantine of pending ritual/study operations, anonymous study and exact recovery strings; real Gongo update/population/failure-retry tests; 37 scoped tests, isolated typecheck/build and Biome pass; no data deletion or runtime cutover |
 | Legacy public-image reader | Complete locally; integrated into plan v2 | Whole-batch archive/current-row checks, bounded SDK GET/error streams and validated owned snapshots; all ten actual objects pass with unchanged SHA, served MIME and backup fingerprints; all six archived legacy occurrences resolve; no runtime activation |
 | Fixed-reference external-image reader | Complete locally; integrated into plan v3 | Exact reference/byte pins, bounded DNS/HTTPS with checked IP/TLS and no redirects; all four actual representations and their archived/public occurrences resolve, including explicitly recorded Wikimedia replacement; no runtime activation |

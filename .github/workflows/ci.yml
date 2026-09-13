@@ -21,8 +21,14 @@ jobs:
       ROOT_URL: http://localhost:3000
       NEXTAUTH_URL: http://localhost:3000
       AUTH_SECRET: ci-build-only-not-a-production-secret
+      BETTER_AUTH_SECRET: ci-build-only-better-auth-secret-0123456789
+      BETTER_AUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: ci-build-only-google-client
+      GOOGLE_CLIENT_SECRET: ci-build-only-google-secret
       # Build verification must never connect to production services.
       MONGO_URL: mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=100
+      DATABASE_URL: postgresql://build:build@127.0.0.1:1/build?sslmode=disable
+      DATABASE_URL_UNPOOLED: postgresql://build:build@127.0.0.1:1/build?sslmode=disable
       OPENAI_API_KEY: ci-build-only-placeholder
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
