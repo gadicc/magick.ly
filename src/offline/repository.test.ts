@@ -5,6 +5,7 @@ import type {
   SqlRitualWriteRequest,
   SqlRitualWriteResult,
 } from "../doc/sqlWriteContract";
+import { SQL_RITUAL_WRITE_MESSAGES } from "../doc/sqlWriteContract";
 import { createUuidV7 } from "../lib/ids";
 import {
   type OfflineAccount,
@@ -13,6 +14,7 @@ import {
   OFFLINE_AUTHORIZATION_WINDOW_MS as WINDOW,
 } from "./lease";
 import { OfflineRitualRepository } from "./repository";
+import { failedRitualPublication } from "./ritualPublicationContract";
 import {
   type AssetManifestEntry,
   type DraftInput,
@@ -83,6 +85,21 @@ function allowed(
     },
   };
 }
+function allowedEditor(
+  pending: PendingPermissionCheck,
+  duration = WINDOW,
+  revisionId = REV,
+  parentVersion = 4,
+) {
+  return {
+    ...allowed(pending, true, duration),
+    editor: { currentRevisionId: revisionId, parentVersion },
+  };
+}
+const sourceBinding = (revisionId = REV, parentVersion = 4) => ({
+  revisionId,
+  parentVersion,
+});
 async function downloaded(
   account: OfflineAccount,
   ritualId = R,
@@ -153,8 +170,9 @@ async function ready(f: Fixture, sourceEdit = true, sourceAsset = false) {
   const data = await downloaded(account, R, sourceAsset);
   await f.repo.acceptPermission(
     pending,
-    allowed(pending, sourceEdit),
+    sourceEdit ? allowedEditor(pending) : allowed(pending, false),
     binding(data.bundle),
+    sourceEdit ? sourceBinding() : undefined,
   );
   expect(await f.repo.installBundle(pending, data.bundle, data.assets)).toBe(
     true,
@@ -193,7 +211,7 @@ const failure = (
 ): SqlRitualWriteResult => ({
   ok: false,
   code,
-  message: "Synthetic safe failure",
+  message: SQL_RITUAL_WRITE_MESSAGES[code],
   retryable: code === "RETRYABLE" || code === "UNAVAILABLE",
 });
 
@@ -231,6 +249,7 @@ describe("real Dexie account/resource transactions", () => {
         ritualId: R,
         revisionId: REV,
         parentVersion: 4,
+        title: "Synthetic ritual",
         source: "exact source",
       }),
     ).toBe(true);
@@ -263,6 +282,7 @@ describe("real Dexie account/resource transactions", () => {
         ritualId: R,
         revisionId: REV,
         parentVersion: 4,
+        title: "Synthetic ritual",
         source: "private source",
       }),
     ).toBe(false);
@@ -284,6 +304,7 @@ describe("real Dexie account/resource transactions", () => {
       ritualId: R,
       revisionId: REV,
       parentVersion: 4,
+      title: "Synthetic ritual",
       source: "source",
     });
     const pending = await f.repo.beginCheck(r.account, R);
@@ -461,6 +482,7 @@ describe("real Dexie account/resource transactions", () => {
         ritualId: R,
         revisionId: REV,
         parentVersion: 4,
+        title: "Synthetic ritual",
         source: "late",
       }),
     ).toBe(false);
@@ -600,6 +622,7 @@ describe("real Dexie account/resource transactions", () => {
         ritualId: R2,
         revisionId: REV,
         parentVersion: 4,
+        title: "Synthetic ritual",
         source: "foreign parent",
       }),
     ).rejects.toMatchObject({ code: "INVALID" });
@@ -781,6 +804,153 @@ describe("immutable SQL-v2 save outbox", () => {
   });
 });
 
+describe("durable post-write publication outbox", () => {
+  const saved = (ritualId = R) => ({
+    ok: true as const,
+    replayed: false,
+    ritualId,
+    revisionId: createUuidV7(),
+    version: 5,
+    updatedAt: new Date(START).toISOString(),
+  });
+
+  it("atomically queues publication from an acknowledged save and retries its exact identity", async () => {
+    const f = fixture();
+    const r = await ready(f);
+    const write = command();
+    const result = saved();
+    await f.repo.enqueueSave(r.account, write);
+    const saveClaim = await f.repo.claimSave(r.account, R, write.operationId);
+    expect(await f.repo.settleSave(saveClaim!, result)).toBe(true);
+    const request = await f.repo.readRetriablePublication(r.account, R);
+    expect(request).toEqual({
+      version: 1,
+      operationId: write.operationId,
+      expectedActorId: A,
+      ritualId: R,
+      expectedRevisionId: result.revisionId,
+      expectedVersion: 5,
+    });
+    const first = await f.repo.claimPublication(r.account, request!);
+    expect(first).toMatchObject({ request, account: r.account });
+    expect(
+      await f.repo.settlePublication(
+        first!,
+        failedRitualPublication("UNAVAILABLE"),
+      ),
+    ).toBe(true);
+    expect(await f.repo.readRetriablePublication(r.account, R)).toEqual(
+      request,
+    );
+    const retry = await f.repo.claimPublication(r.account, request!);
+    const completed = {
+      ok: true as const,
+      state: "completed" as const,
+      replayed: false,
+      receipt: {
+        operationId: write.operationId,
+        bundleId: createUuidV7(),
+        ritualId: R,
+        publishedAtMs: START,
+      },
+    };
+    expect(await f.repo.settlePublication(retry!, completed)).toBe(true);
+    expect(await f.repo.readRetriablePublication(r.account, R)).toBeNull();
+    expect(await f.db.outbox.get([A, write.operationId])).toMatchObject({
+      status: "acknowledged",
+      publicationStatus: "acknowledged",
+      publicationResult: completed,
+    });
+  });
+
+  it("pauses an authentication failure until an explicit source-gated resume", async () => {
+    const f = fixture();
+    const r = await ready(f);
+    const write = command();
+    const result = saved();
+    await f.repo.enqueueSave(r.account, write);
+    const saveClaim = await f.repo.claimSave(r.account, R, write.operationId);
+    await f.repo.settleSave(saveClaim!, result);
+    const request = await f.repo.readRetriablePublication(r.account, R);
+    const claim = await f.repo.claimPublication(r.account, request!);
+    await f.repo.settlePublication(
+      claim!,
+      failedRitualPublication("AUTH_REQUIRED"),
+    );
+    expect(await f.repo.claimPublication(r.account, request!)).toBeNull();
+    expect(
+      await f.repo.resumeAuthenticatedPublication(r.account, request!),
+    ).toBe(true);
+    expect(await f.repo.claimPublication(r.account, request!)).not.toBeNull();
+  });
+
+  it("imports an acknowledged create handoff under the resulting ritual", async () => {
+    const f = fixture();
+    const r = await ready(f);
+    const create = {
+      version: 2 as const,
+      operationId: createUuidV7(),
+      expectedActorId: A,
+      kind: "create" as const,
+      scope: { kind: "public" as const },
+      title: "Imported create",
+      source: "p Imported",
+    };
+    const createResult = {
+      ok: true as const,
+      replayed: false,
+      ritualId: R,
+      revisionId: createUuidV7(),
+      version: 1,
+      updatedAt: new Date(START).toISOString(),
+    };
+    const request = {
+      version: 1 as const,
+      operationId: create.operationId,
+      expectedActorId: A,
+      ritualId: R,
+      expectedRevisionId: createResult.revisionId,
+      expectedVersion: 1,
+    };
+    await f.repo.enqueuePublication(r.account, create, createResult, request);
+    expect(await f.repo.readRetriablePublication(r.account, R)).toEqual(
+      request,
+    );
+  });
+
+  it("marks an older pending publication stale when a newer save is acknowledged", async () => {
+    const f = fixture();
+    const r = await ready(f);
+    const older = command();
+    const olderResult = saved();
+    await f.repo.enqueueSave(r.account, older);
+    await f.repo.settleSave(
+      (await f.repo.claimSave(r.account, R, older.operationId))!,
+      olderResult,
+    );
+    const newer = {
+      ...command(),
+      expectedRevisionId: olderResult.revisionId,
+      expectedVersion: 5,
+      source: "p Newer",
+    };
+    const newerResult = { ...saved(), version: 6 };
+    await f.repo.enqueueSave(r.account, newer);
+    await f.repo.settleSave(
+      (await f.repo.claimSave(r.account, R, newer.operationId))!,
+      newerResult,
+    );
+    expect(await f.repo.readRetriablePublication(r.account, R)).toMatchObject({
+      operationId: newer.operationId,
+      expectedRevisionId: newerResult.revisionId,
+      expectedVersion: 6,
+    });
+    expect(
+      (await f.db.outbox.get([A, older.operationId]))?.publicationStatus,
+    ).toBe("stale");
+  });
+});
+
 describe("snapshot and suspension boundaries", () => {
   it("preserves simultaneous/stale local draft variants without overwriting or retargeting", async () => {
     const f = fixture();
@@ -871,6 +1041,7 @@ describe("snapshot and suspension boundaries", () => {
         ritualId: R,
         revisionId: REV,
         parentVersion: 4,
+        title: "Synthetic ritual",
         source: "source",
       });
       const table =
@@ -1135,14 +1306,17 @@ describe("check-only permissions without complete rendered output", () => {
     ritualId: R,
     revisionId: REV,
     parentVersion: 4,
+    title: "Synthetic ritual",
     source: "\uFEFFExact e\u0301 é 🌍\r\n",
   });
   it("renews and installs editor source without authorizing any bundle installation", async () => {
     const f = fixture(),
       account = await f.repo.activateAccount(A),
       pending = await f.repo.beginCheck(account, R),
-      reply = allowed(pending);
-    expect(await f.repo.acceptPermission(pending, reply)).toBe("accepted");
+      reply = allowedEditor(pending);
+    expect(
+      await f.repo.acceptPermission(pending, reply, undefined, sourceBinding()),
+    ).toBe("accepted");
     expect(await f.db.checks.get([A, R])).toMatchObject({
       requestId: pending.requestId,
       acceptedLeaseId: reply.kind === "granted" && reply.grant.leaseId,
@@ -1166,7 +1340,12 @@ describe("check-only permissions without complete rendered output", () => {
     const old = await f.db.bundles.get([A, R]);
     f.now = START + WINDOW - 100;
     const pending = await f.repo.beginCheck(r.account, R);
-    await f.repo.acceptPermission(pending, allowed(pending));
+    await f.repo.acceptPermission(
+      pending,
+      allowedEditor(pending),
+      undefined,
+      sourceBinding(),
+    );
     expect((await f.db.bundles.get([A, R]))?.authorization).toEqual(
       old?.authorization,
     );
@@ -1206,8 +1385,10 @@ describe("check-only permissions without complete rendered output", () => {
   });
   it("a newly begun, unaccepted check cannot borrow an earlier source grant or install late source", async () => {
     const f = fixture(),
-      r = await ready(f),
-      pending = await f.repo.beginCheck(r.account, R);
+      r = await ready(f);
+    expect(await f.repo.installSource(r.pending, source())).toBe(true);
+    const pending = await f.repo.beginCheck(r.account, R);
+    expect(await f.repo.readInstalledSource(r.account, R)).toEqual(source());
     expect(await f.repo.installSource(pending, source())).toBe(false);
     expect(await f.repo.installSource(r.pending, source())).toBe(false);
     for (const kind of [
@@ -1217,8 +1398,14 @@ describe("check-only permissions without complete rendered output", () => {
       await f.repo.acceptPermission(pending, { ...pending, kind });
       expect(await f.repo.installSource(pending, source())).toBe(false);
     }
-    expect(await f.db.sources.count()).toBe(0);
-    await f.repo.acceptPermission(pending, allowed(pending));
+    expect(await f.db.sources.count()).toBe(1);
+    expect(await f.repo.readInstalledSource(r.account, R)).toEqual(source());
+    await f.repo.acceptPermission(
+      pending,
+      allowedEditor(pending),
+      undefined,
+      sourceBinding(),
+    );
     expect(await f.repo.installSource(pending, source())).toBe(true);
   });
   it.each(["missing", "mismatched"])(
@@ -1254,9 +1441,86 @@ describe("check-only permissions without complete rendered output", () => {
     const f = fixture(),
       account = await f.repo.activateAccount(A),
       pending = await f.repo.beginCheck(account, R);
-    await f.repo.acceptPermission(pending, allowed(pending, true, 10));
+    await f.repo.acceptPermission(
+      pending,
+      allowedEditor(pending, 10),
+      undefined,
+      sourceBinding(),
+    );
     f.now += 10;
     expect(await f.repo.installSource(pending, source())).toBe(false);
     expect(await f.db.sources.count()).toBe(0);
+  });
+
+  it("atomically replaces the installed current source and fails closed on ambiguous legacy rows", async () => {
+    const f = fixture(),
+      account = await f.repo.activateAccount(A),
+      first = await f.repo.beginCheck(account, R);
+    await f.repo.acceptPermission(
+      first,
+      allowedEditor(first),
+      undefined,
+      sourceBinding(),
+    );
+    expect(await f.repo.installSource(first, source())).toBe(true);
+    const nextRevision = createUuidV7();
+    const second = await f.repo.beginCheck(account, R);
+    const replacement = {
+      ...source(),
+      revisionId: nextRevision,
+      parentVersion: 5,
+      title: "Replacement title",
+      source: "p Replacement",
+    };
+    await f.repo.acceptPermission(
+      second,
+      allowedEditor(second, WINDOW, nextRevision, 5),
+      undefined,
+      sourceBinding(nextRevision, 5),
+    );
+    expect(await f.repo.readInstalledSource(account, R)).toBeNull();
+    expect(await f.db.sources.count()).toBe(1);
+    expect(await f.repo.installSource(second, replacement)).toBe(true);
+    expect(await f.repo.readInstalledSource(account, R)).toEqual(replacement);
+    expect(await f.repo.readSource(account, R, REV)).toBeNull();
+
+    await f.db.sources.add(source());
+    expect(await f.repo.readInstalledSource(account, R)).toBeNull();
+  });
+
+  it("lists every owned draft only through a current source gate", async () => {
+    const f = fixture(),
+      account = await f.repo.activateAccount(A),
+      pending = await f.repo.beginCheck(account, R);
+    await f.repo.acceptPermission(pending, allowed(pending));
+    const older = draft();
+    const newer = { ...draft(), updatedAtMs: START + 1 };
+    await f.repo.preserveDraft(older, null);
+    await f.repo.preserveDraft(newer, null);
+    expect(await f.repo.listDrafts(account, R)).toMatchObject([
+      { id: newer.id },
+      { id: older.id },
+    ]);
+    const denied = await f.repo.beginCheck(account, R);
+    await f.repo.acceptPermission(denied, { ...denied, kind: "denied" });
+    expect(await f.repo.listDrafts(account, R)).toBeNull();
+    expect(await f.db.drafts.count()).toBe(2);
+  });
+
+  it("recovers and explicitly resumes the exact authentication-paused save", async () => {
+    const f = fixture(),
+      r = await ready(f),
+      request = command();
+    await f.repo.enqueueSave(r.account, request);
+    const claim = await f.repo.claimSave(r.account, R, request.operationId);
+    expect(claim).not.toBeNull();
+    await f.repo.settleSave(claim!, failure("NOT_AUTHENTICATED"));
+    expect(await f.repo.readRetriableSave(r.account, R)).toEqual(request);
+    expect(
+      await f.repo.resumeAuthenticatedSave(r.account, R, request.operationId),
+    ).toBe(true);
+    expect(
+      await f.repo.claimSave(r.account, R, request.operationId),
+    ).toMatchObject({ operationId: request.operationId });
   });
 });

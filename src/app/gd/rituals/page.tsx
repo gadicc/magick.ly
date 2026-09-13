@@ -14,7 +14,7 @@ import {
 import { connection } from "next/server";
 import { sqlRitualReader } from "@/doc/sqlRuntime";
 import Link from "@/lib/link";
-import DocAdmin from "./DocAdmin";
+import SqlDocAdmin from "./SqlDocAdmin";
 
 const builtInDocs = [
   {
@@ -86,7 +86,7 @@ export default async function Rituals() {
         <p>
           <Link href="/offline/ritual">Open downloaded rituals</Link>
         </p>
-        <DocAdmin />
+        <SqlDocAdmin />
         <br />
         <p>
           Note: You&apos;ll only find material here that is readily available

@@ -1,0 +1,572 @@
+// @vitest-environment jsdom
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import React from "react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { formatRitualFileLocator } from "@/files/ritualFileLocator";
+import { LockedRecoveryQueue } from "@/offline/recovery";
+import {
+  createCreationPublicationHandoff,
+  creationPublicationHandoffKey,
+  retainCreationPublicationHandoff,
+} from "@/offline/ritualPublicationHandoff";
+import SqlDocEdit from "./SqlDocEdit";
+
+const ids = vi.hoisted(() => ({
+  owner: "01995100-0000-7000-8000-000000000001",
+  epoch: "01995100-0000-7000-8000-000000000002",
+  ritualA: "01995100-0000-7000-8000-000000000003",
+  ritualB: "01995100-0000-7000-8000-000000000004",
+  revision: "01995100-0000-7000-8000-000000000005",
+  nextRevision: "01995100-0000-7000-8000-000000000006",
+  claim: "01995100-0000-7000-8000-000000000007",
+  createOperation: "01995100-0000-7000-8000-000000000009",
+  bundle: "01995100-0000-7000-8000-000000000010",
+  attachment: "01995100-0000-7000-8000-000000000011",
+  file: "01995100-0000-7000-8000-000000000012",
+}));
+const mock = vi.hoisted(() => ({
+  register: vi.fn(),
+  registered: null as null | {
+    captureRecovery?: () => { persist(): Promise<void> } | null;
+    hide(reason: string, options: { retainUncapturedDraft: boolean }): void;
+    available(): void;
+  },
+  source: vi.fn(),
+  drafts: vi.fn(),
+  pending: vi.fn(),
+  publication: vi.fn(),
+  preserve: vi.fn(),
+  enqueue: vi.fn(),
+  resume: vi.fn(),
+  claim: vi.fn(),
+  settle: vi.fn(),
+  enqueuePublication: vi.fn(),
+  resumePublication: vi.fn(),
+  claimPublication: vi.fn(),
+  settlePublication: vi.fn(),
+  exportDraft: vi.fn(),
+  send: vi.fn(),
+  sendPublication: vi.fn(),
+  sync: vi.fn(),
+  diagnostics: vi.fn(),
+  transform: vi.fn(),
+  download: vi.fn(),
+  commitAllowed: true,
+}));
+
+let recoveryQueue = new LockedRecoveryQueue();
+
+const account = { ownerId: ids.owner, epoch: ids.epoch };
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+const runtime = {
+  start: vi.fn().mockResolvedValue(undefined),
+  refreshVerifiedAccount: vi.fn().mockResolvedValue(true),
+  repository: {
+    readInstalledSource: (...args: unknown[]) => mock.source(...args),
+    listDrafts: (...args: unknown[]) => mock.drafts(...args),
+    readRetriableSave: (...args: unknown[]) => mock.pending(...args),
+    readRetriablePublication: (...args: unknown[]) => mock.publication(...args),
+    preserveDraft: (...args: unknown[]) => mock.preserve(...args),
+    enqueueSave: (...args: unknown[]) => mock.enqueue(...args),
+    resumeAuthenticatedSave: (...args: unknown[]) => mock.resume(...args),
+    claimSave: (...args: unknown[]) => mock.claim(...args),
+    settleSave: (...args: unknown[]) => mock.settle(...args),
+    enqueuePublication: (...args: unknown[]) =>
+      mock.enqueuePublication(...args),
+    resumeAuthenticatedPublication: (...args: unknown[]) =>
+      mock.resumePublication(...args),
+    claimPublication: (...args: unknown[]) => mock.claimPublication(...args),
+    settlePublication: (...args: unknown[]) => mock.settlePublication(...args),
+    exportDraft: (...args: unknown[]) => mock.exportDraft(...args),
+  },
+  coordinator: {
+    state: { account },
+    register: (...args: unknown[]) => mock.register(...args),
+    commit: vi.fn((_operation: unknown, work: () => void) => {
+      if (!mock.commitAllowed) return false;
+      work();
+      return true;
+    }),
+    finish: vi.fn(),
+  },
+};
+
+vi.mock("@/offline/browserRuntime", () => ({
+  getBrowserOfflineRuntime: () => runtime,
+}));
+vi.mock("@/offline/ritualSourceSync", () => ({
+  syncOfflineRitualSource: (...args: unknown[]) => mock.sync(...args),
+}));
+vi.mock("@/doc/sqlEditorClient", () => ({
+  sendSqlRitualWrite: (...args: unknown[]) => mock.send(...args),
+  sendRitualPublication: (...args: unknown[]) => mock.sendPublication(...args),
+}));
+vi.mock("@/doc/drafts", () => ({
+  downloadRitualRecovery: (...args: unknown[]) => mock.download(...args),
+}));
+vi.mock("@uiw/react-codemirror", async () => {
+  const { useCallback, useMemo, useRef } = await import("react");
+  return {
+    Prec: { highest: (value: unknown) => value },
+    useCodeMirror: ({ onChange }: { onChange(value: string): void }) => {
+      const change = useRef(onChange);
+      change.current = onChange;
+      const textarea = useRef<HTMLTextAreaElement | null>(null);
+      const view = useMemo(() => {
+        let value = "";
+        return {
+          state: {
+            doc: {
+              get length() {
+                return value.length;
+              },
+              toString: () => value,
+            },
+          },
+          dispatch: (update?: { changes?: { insert: string } }) => {
+            if (!update?.changes) return;
+            value = update.changes.insert;
+            if (textarea.current) textarea.current.value = value;
+            change.current(value);
+          },
+        };
+      }, []);
+      const setContainer = useCallback(
+        (node: HTMLElement | null) => {
+          if (!node) return;
+          const input = document.createElement("textarea");
+          input.setAttribute("aria-label", "Ritual source");
+          input.value = view.state.doc.toString();
+          input.oninput = () =>
+            view.dispatch({ changes: { insert: input.value } });
+          node.replaceChildren(input);
+          textarea.current = input;
+        },
+        [view],
+      );
+      return { view, setContainer };
+    },
+  };
+});
+vi.mock("@uiw/react-split", () => ({
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+vi.mock("@codemirror/lint", () => ({
+  setDiagnostics: (...args: unknown[]) => mock.diagnostics(...args),
+}));
+vi.mock("../DocRender", () => ({
+  default: ({ doc }: { doc: unknown }) => (
+    <output aria-label="Preview">{JSON.stringify(doc)}</output>
+  ),
+}));
+vi.mock("./scripts", () => ({ default: {} }));
+vi.mock("./checkSrc", () => ({ checkSrc: () => [] }));
+vi.mock("./SourceMapConsumer", () => ({
+  default: class {
+    originalPositionFor(value: unknown) {
+      return value;
+    }
+    destroy() {}
+  },
+}));
+vi.mock("./shortcuts", () => ({
+  shortcutHighlighters: [],
+  transformAndMapShortcuts: (...args: unknown[]) => mock.transform(...args),
+}));
+
+beforeEach(() => {
+  localStorage.clear();
+  vi.clearAllMocks();
+  recoveryQueue = new LockedRecoveryQueue();
+  mock.commitAllowed = true;
+  mock.registered = null;
+  runtime.start.mockResolvedValue(undefined);
+  runtime.refreshVerifiedAccount.mockResolvedValue(true);
+  mock.source.mockImplementation((_account, ritualId) =>
+    Promise.resolve({
+      ownerId: ids.owner,
+      ritualId,
+      revisionId: ids.revision,
+      parentVersion: 4,
+      title: ritualId === ids.ritualA ? "Protected A" : "Protected B",
+      source: `p Source ${ritualId === ids.ritualA ? "A" : "B"}`,
+    }),
+  );
+  mock.drafts.mockResolvedValue([]);
+  mock.pending.mockResolvedValue(null);
+  mock.publication.mockResolvedValue(null);
+  mock.preserve.mockResolvedValue({
+    id: "01995100-0000-7000-8000-000000000008",
+    localVersion: 1,
+    conflict: false,
+  });
+  mock.enqueue.mockResolvedValue(undefined);
+  mock.resume.mockResolvedValue(false);
+  mock.claim.mockResolvedValue({
+    account,
+    ritualId: ids.ritualA,
+    operationId: "01995100-0000-7000-8000-000000000009",
+    claimId: ids.claim,
+    payloadJson: "{}",
+  });
+  mock.settle.mockResolvedValue(true);
+  mock.enqueuePublication.mockResolvedValue(undefined);
+  mock.resumePublication.mockResolvedValue(false);
+  mock.claimPublication.mockImplementation((_account, request) =>
+    Promise.resolve({ request, account, claimId: ids.claim }),
+  );
+  mock.settlePublication.mockResolvedValue(true);
+  mock.exportDraft.mockImplementation((_account, ritualId, draftId) => {
+    const input = mock.preserve.mock.calls.at(-1)?.[0];
+    return Promise.resolve(
+      input
+        ? {
+            ...input,
+            ritualId,
+            id: draftId,
+            localVersion: 1,
+            conflictOf: null,
+          }
+        : null,
+    );
+  });
+  mock.send.mockResolvedValue(null);
+  mock.sendPublication.mockResolvedValue(null);
+  mock.sync.mockResolvedValue(null);
+  mock.transform.mockImplementation(async (value: string) => ({
+    transformed: value,
+    sourceMap: {},
+  }));
+  mock.register.mockImplementation((view) => {
+    mock.registered = view;
+    const registration = {
+      begin: () => ({ signal: new AbortController().signal }),
+      beginPermissionCheck: () => ({
+        account,
+        signal: new AbortController().signal,
+      }),
+      dispose: vi.fn(() => {
+        const recovery = view.captureRecovery?.();
+        if (recovery) recoveryQueue.add(recovery);
+        view.hide("unmount", { retainUncapturedDraft: false });
+      }),
+    };
+    queueMicrotask(() => view.available());
+    return registration;
+  });
+});
+afterEach(() => {
+  cleanup();
+  delete (window as Window & { doc?: unknown }).doc;
+});
+
+it("clears source, title, preview, and script access when the capability locks", async () => {
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  expect(await screen.findByText("Protected A")).toBeDefined();
+  const source = screen.getByLabelText("Ritual source") as HTMLTextAreaElement;
+  expect(source.value).toBe("p Source A");
+  fireEvent.input(source, { target: { value: "p Unsaved A" } });
+  const recovery = mock.registered?.captureRecovery?.();
+  expect(recovery).not.toBeNull();
+  act(() => mock.registered?.hide("expiry", { retainUncapturedDraft: false }));
+  expect(screen.queryByText("Protected A")).toBeNull();
+  expect(screen.queryByLabelText("Ritual source")).toBeNull();
+  expect(screen.queryByLabelText("Preview")).toBeNull();
+  expect((window as Window & { doc?: unknown }).doc).toBeUndefined();
+  await recovery?.persist();
+  expect(mock.preserve).toHaveBeenCalledWith(
+    expect.objectContaining({ source: "p Unsaved A" }),
+    expect.any(Number),
+  );
+});
+
+it("keeps an inserted attachment in CodeMirror and in the following edit", async () => {
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  const locator = formatRitualFileLocator({
+    ritualId: ids.ritualA,
+    attachmentId: ids.attachment,
+    fileId: ids.file,
+  });
+  fireEvent.change(screen.getByLabelText("Attached image source reference"), {
+    target: { value: locator },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Insert image" }));
+  expect(source.value).toContain(`img(src=${JSON.stringify(locator)})`);
+
+  fireEvent.input(source, { target: { value: `${source.value}p Tail` } });
+  fireEvent.click(screen.getByRole("button", { name: "Save ritual" }));
+  await waitFor(() => expect(mock.send).toHaveBeenCalledOnce());
+  expect(mock.send.mock.calls[0][0].source).toContain(
+    `img(src=${JSON.stringify(locator)})\np Tail`,
+  );
+});
+
+it("ignores an older compilation that finishes after the latest source", async () => {
+  const first = deferred<{ transformed: string; sourceMap: object }>();
+  mock.transform.mockImplementation((value: string) =>
+    value === "p First"
+      ? first.promise
+      : Promise.resolve({ transformed: value, sourceMap: {} }),
+  );
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  fireEvent.input(source, { target: { value: "p First" } });
+  await act(
+    async () => await new Promise((resolve) => window.setTimeout(resolve, 350)),
+  );
+  fireEvent.input(source, { target: { value: "p Second" } });
+  await act(
+    async () => await new Promise((resolve) => window.setTimeout(resolve, 350)),
+  );
+  await waitFor(() =>
+    expect(screen.getByLabelText("Preview").textContent).toContain("Second"),
+  );
+  await act(async () => {
+    first.resolve({ transformed: "p First", sourceMap: {} });
+    await first.promise;
+  });
+  expect(screen.getByLabelText("Preview").textContent).toContain("Second");
+  expect(screen.getByLabelText("Preview").textContent).not.toContain("First");
+});
+
+it("persists a captured debounce-window edit after the editor unmounts", async () => {
+  const rendered = render(<SqlDocEdit ritualId={ids.ritualA} />);
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  fireEvent.input(source, { target: { value: "p Unsaved before navigation" } });
+  rendered.unmount();
+  await waitFor(() =>
+    expect(mock.preserve).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "p Unsaved before navigation" }),
+      expect.any(Number),
+    ),
+  );
+  expect(recoveryQueue.state.failed).toBe(0);
+  expect(recoveryQueue.state.pending).toBe(0);
+});
+
+it("does not export source after the capability is revoked during the guarded read", async () => {
+  const exported = deferred<null>();
+  mock.exportDraft.mockReturnValue(exported.promise);
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  await screen.findByLabelText("Ritual source");
+  fireEvent.click(screen.getByRole("button", { name: "Download recovery" }));
+  await waitFor(() => expect(mock.exportDraft).toHaveBeenCalledOnce());
+  act(() => {
+    mock.commitAllowed = false;
+    mock.registered?.hide("expiry", { retainUncapturedDraft: false });
+  });
+  await act(async () => exported.resolve(null));
+  expect(mock.download).not.toHaveBeenCalled();
+});
+
+it("preserves the current unsaved source before a gated recovery export", async () => {
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  fireEvent.input(source, { target: { value: "p Unsaved export" } });
+  fireEvent.click(screen.getByRole("button", { name: "Download recovery" }));
+  await waitFor(() => expect(mock.download).toHaveBeenCalledOnce());
+  expect(mock.exportDraft).toHaveBeenCalledWith(
+    account,
+    ids.ritualA,
+    expect.any(String),
+  );
+  expect(mock.download).toHaveBeenCalledWith({
+    draft: expect.objectContaining({
+      ownerId: ids.owner,
+      ritualId: ids.ritualA,
+      source: "p Unsaved export",
+    }),
+  });
+});
+
+it("does not render route A while route B resolves", async () => {
+  const rendered = render(
+    <SqlDocEdit key={ids.ritualA} ritualId={ids.ritualA} />,
+  );
+  expect(await screen.findByText("Protected A")).toBeDefined();
+  rendered.rerender(<SqlDocEdit key={ids.ritualB} ritualId={ids.ritualB} />);
+  expect(screen.queryByText("Protected A")).toBeNull();
+  expect(await screen.findByText("Protected B")).toBeDefined();
+});
+
+it("retries an unknown save with the same exact CAS request", async () => {
+  mock.send.mockResolvedValueOnce(null).mockResolvedValueOnce({
+    ok: true,
+    replayed: true,
+    ritualId: ids.ritualA,
+    revisionId: ids.nextRevision,
+    version: 5,
+    updatedAt: "2026-09-13T12:00:00.000Z",
+  });
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  fireEvent.input(source, { target: { value: "p Changed" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save ritual" }));
+  await screen.findByRole("button", { name: "Retry pending save" });
+  const request = mock.send.mock.calls[0][0];
+  expect(request).toMatchObject({
+    version: 2,
+    kind: "save",
+    expectedActorId: ids.owner,
+    ritualId: ids.ritualA,
+    expectedRevisionId: ids.revision,
+    expectedVersion: 4,
+    source: "p Changed",
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Retry pending save" }));
+  await waitFor(() => expect(mock.send).toHaveBeenCalledTimes(2));
+  expect(mock.send.mock.calls[1][0]).toEqual(request);
+  expect(mock.settle).toHaveBeenCalledTimes(2);
+});
+
+it("publishes an acknowledged save with its original write identity without claiming an offline download", async () => {
+  mock.send.mockResolvedValue({
+    ok: true,
+    replayed: false,
+    ritualId: ids.ritualA,
+    revisionId: ids.nextRevision,
+    version: 5,
+    updatedAt: "2026-09-13T12:00:00.000Z",
+  });
+  mock.publication.mockImplementation(() => {
+    const write = mock.send.mock.calls[0]?.[0];
+    return Promise.resolve(
+      write
+        ? {
+            version: 1,
+            operationId: write.operationId,
+            expectedActorId: ids.owner,
+            ritualId: ids.ritualA,
+            expectedRevisionId: ids.nextRevision,
+            expectedVersion: 5,
+          }
+        : null,
+    );
+  });
+  mock.sendPublication.mockImplementation((request) =>
+    Promise.resolve({
+      ok: true,
+      state: "completed",
+      replayed: false,
+      receipt: {
+        operationId: request.operationId,
+        bundleId: ids.bundle,
+        ritualId: request.ritualId,
+        publishedAtMs: 1,
+      },
+    }),
+  );
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  fireEvent.input(source, { target: { value: "p Published" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save ritual" }));
+  expect(await screen.findByText(/published for download/i)).toBeDefined();
+  const write = mock.send.mock.calls[0][0];
+  expect(mock.sendPublication).toHaveBeenCalledWith(
+    expect.objectContaining({
+      operationId: write.operationId,
+      expectedActorId: ids.owner,
+      ritualId: ids.ritualA,
+      expectedRevisionId: ids.nextRevision,
+      expectedVersion: 5,
+    }),
+    expect.any(AbortSignal),
+  );
+  expect(screen.queryByText(/offline ready/i)).toBeNull();
+});
+
+it("closes an expired publication retry and points to administrator recovery", async () => {
+  const request = {
+    version: 1 as const,
+    operationId: ids.createOperation,
+    expectedActorId: ids.owner,
+    ritualId: ids.ritualA,
+    expectedRevisionId: ids.revision,
+    expectedVersion: 4,
+  };
+  mock.publication.mockResolvedValue(request);
+  mock.sendPublication.mockResolvedValue({
+    ok: false,
+    code: "EXPIRED",
+    message:
+      "This publication attempt expired. Start a new attempt for the current saved version.",
+    retryable: false,
+  });
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  expect(
+    await screen.findByText(
+      /ask an administrator to run publication recovery/i,
+    ),
+  ).toBeDefined();
+  expect(
+    screen.queryByRole("button", { name: "Retry publication" }),
+  ).toBeNull();
+  expect(mock.settlePublication).toHaveBeenCalledWith(
+    expect.objectContaining({ request }),
+    expect.objectContaining({ code: "EXPIRED", retryable: false }),
+  );
+});
+
+it("moves an acknowledged create handoff into the gated outbox before publication", async () => {
+  const write = {
+    version: 2 as const,
+    operationId: ids.createOperation,
+    expectedActorId: ids.owner,
+    kind: "create" as const,
+    scope: { kind: "public" as const },
+    title: "Created ritual",
+    source: "p Created",
+  };
+  const result = {
+    ok: true as const,
+    replayed: false,
+    ritualId: ids.ritualA,
+    revisionId: ids.revision,
+    version: 1,
+    updatedAt: "2026-09-13T12:00:00.000Z",
+  };
+  const handoff = createCreationPublicationHandoff(write, result)!;
+  retainCreationPublicationHandoff(localStorage, handoff);
+  mock.publication.mockResolvedValue(handoff.publication);
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  await screen.findByText("Protected A");
+  await waitFor(() =>
+    expect(mock.enqueuePublication).toHaveBeenCalledWith(
+      account,
+      write,
+      result,
+      handoff.publication,
+    ),
+  );
+  expect(
+    localStorage.getItem(creationPublicationHandoffKey(ids.owner, ids.ritualA)),
+  ).toBeNull();
+});

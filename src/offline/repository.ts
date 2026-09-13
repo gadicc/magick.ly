@@ -1,3 +1,4 @@
+import { parseSqlRitualWriteResult } from "../doc/sqlEditorContract";
 import type {
   SqlRitualWriteRequest,
   SqlRitualWriteResult,
@@ -12,6 +13,12 @@ import {
   type PermissionReply,
 } from "./lease";
 import { inventoryRitualAssetJson } from "./ritualAssetInventory";
+import {
+  parseRitualPublicationRequest,
+  parseRitualPublicationResult,
+  type RitualPublicationRequestV1,
+  type RitualPublicationResult,
+} from "./ritualPublicationContract";
 import type {
   OfflineClockObservation,
   OfflineResourceState,
@@ -21,6 +28,7 @@ import type {
   DraftInput,
   OfflineDraft,
   OutboxRow,
+  PublicationOutboxClaim,
   RitualBundle,
   RitualOfflineDatabase,
   SourceSnapshot,
@@ -141,10 +149,24 @@ function validBundleMetadata(bundle: RitualBundle): boolean {
 }
 
 type SaveRequest = Extract<SqlRitualWriteRequest, { kind: "save" }>;
+type CreateRequest = Extract<SqlRitualWriteRequest, { kind: "create" }>;
 function isSaveRequest(value: unknown, ownerId: string): value is SaveRequest {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
+  const keys = Reflect.ownKeys(row);
   return (
+    (keys.length === 8 || (keys.length === 9 && Object.hasOwn(row, "title"))) &&
+    [
+      "version",
+      "kind",
+      "operationId",
+      "expectedActorId",
+      "ritualId",
+      "expectedRevisionId",
+      "expectedVersion",
+      "source",
+      ...(Object.hasOwn(row, "title") ? ["title"] : []),
+    ].every((key) => Object.hasOwn(row, key)) &&
     row.version === 2 &&
     row.kind === "save" &&
     row.expectedActorId === ownerId &&
@@ -153,7 +175,15 @@ function isSaveRequest(value: unknown, ownerId: string): value is SaveRequest {
     id(row.expectedRevisionId) &&
     instant(row.expectedVersion) &&
     typeof row.source === "string" &&
-    (row.title === undefined || typeof row.title === "string")
+    row.source.length > 0 &&
+    row.source.isWellFormed() &&
+    !row.source.includes("\0") &&
+    new TextEncoder().encode(row.source).byteLength <= 1024 * 1024 &&
+    (!Object.hasOwn(row, "title") ||
+      (typeof row.title === "string" &&
+        row.title.isWellFormed() &&
+        !row.title.includes("\0") &&
+        row.title.length <= 500))
   );
 }
 function storedSave(row: OutboxRow): SaveRequest | null {
@@ -167,6 +197,79 @@ function storedSave(row: OutboxRow): SaveRequest | null {
   } catch {
     return null;
   }
+}
+function isCreateRequest(
+  value: unknown,
+  ownerId: string,
+): value is CreateRequest {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const row = value as Record<string, unknown>;
+  const scope = row.scope as Record<string, unknown> | undefined;
+  const scopeValid =
+    !!scope &&
+    ((Reflect.ownKeys(scope).length === 1 && scope.kind === "public") ||
+      (Reflect.ownKeys(scope).length === 2 &&
+        scope.kind === "group" &&
+        id(scope.groupId)) ||
+      (Reflect.ownKeys(scope).length === 3 &&
+        scope.kind === "temple" &&
+        id(scope.templeId) &&
+        instant(scope.minGrade)));
+  return (
+    Reflect.ownKeys(row).length === 7 &&
+    [
+      "version",
+      "kind",
+      "operationId",
+      "expectedActorId",
+      "scope",
+      "title",
+      "source",
+    ].every((key) => Object.hasOwn(row, key)) &&
+    row.version === 2 &&
+    row.kind === "create" &&
+    row.expectedActorId === ownerId &&
+    id(row.operationId) &&
+    scopeValid &&
+    typeof row.title === "string" &&
+    row.title.isWellFormed() &&
+    !row.title.includes("\0") &&
+    !!row.title.trim() &&
+    row.title.length <= 500 &&
+    typeof row.source === "string" &&
+    row.source.isWellFormed() &&
+    !row.source.includes("\0") &&
+    new TextEncoder().encode(row.source).byteLength <= 1024 * 1024
+  );
+}
+function storedPublication(row: OutboxRow): RitualPublicationRequestV1 | null {
+  try {
+    return row.publicationPayloadJson
+      ? parseRitualPublicationRequest(JSON.parse(row.publicationPayloadJson))
+      : null;
+  } catch {
+    return null;
+  }
+}
+function validSourceSnapshot(
+  value: SourceSnapshot,
+  ownerId: string,
+  ritualId: string,
+): boolean {
+  return (
+    value.ownerId === ownerId &&
+    value.ritualId === ritualId &&
+    id(value.revisionId) &&
+    instant(value.parentVersion) &&
+    typeof value.title === "string" &&
+    value.title.isWellFormed() &&
+    !value.title.includes("\0") &&
+    new TextEncoder().encode(value.title).byteLength <= 2000 &&
+    typeof value.source === "string" &&
+    value.source.isWellFormed() &&
+    !value.source.includes("\0") &&
+    new TextEncoder().encode(value.source).byteLength <= 1024 * 1024
+  );
 }
 
 /** A claim is bound to one active account epoch and one persisted immutable command. */
@@ -183,6 +286,11 @@ export interface AcceptedBundleBinding {
   bundleId: string;
   manifestSha256: string;
   routeAlias?: string;
+}
+/** Current editor parent accepted with the final source permission response. */
+export interface AcceptedSourceBinding {
+  revisionId: string;
+  parentVersion: number;
 }
 
 /**
@@ -371,12 +479,22 @@ export class OfflineRitualRepository {
       requireValue(id(ritualId), "INVALID");
       const startedAtMs = this.now();
       requireValue(instant(startedAtMs), "INVALID");
+      const previous = await this.db.checks.get([account.ownerId, ritualId]);
       const pending = {
         ownerId: account.ownerId,
         ritualId,
         accountEpoch: account.epoch,
         requestId: createUuidV7(),
         startedAtMs,
+        ...(id(previous?.sourceLeaseId) &&
+        id(previous.sourceRevisionId) &&
+        instant(previous.sourceParentVersion)
+          ? {
+              sourceLeaseId: previous.sourceLeaseId,
+              sourceRevisionId: previous.sourceRevisionId,
+              sourceParentVersion: previous.sourceParentVersion,
+            }
+          : {}),
       };
       await this.db.checks.put(pending);
       return pending;
@@ -394,10 +512,12 @@ export class OfflineRitualRepository {
     pending: PendingPermissionCheck,
     reply: PermissionReply,
     bundle?: AcceptedBundleBinding,
+    source?: AcceptedSourceBinding,
   ) {
     pending = structuredClone(pending);
     reply = structuredClone(reply);
     bundle = bundle ? structuredClone(bundle) : undefined;
+    source = source ? structuredClone(source) : undefined;
     return this.transaction(async () => {
       const state = await this.db.device.get("active");
       const current = state?.cleanupOwnerId ? null : (state?.account ?? null);
@@ -423,6 +543,22 @@ export class OfflineRitualRepository {
             (bundle.routeAlias === undefined || routeAlias(bundle.routeAlias)),
           "INVALID",
         );
+      if (source !== undefined) {
+        const editor = (
+          reply as PermissionReply & {
+            editor?: { currentRevisionId: unknown; parentVersion: unknown };
+          }
+        ).editor;
+        requireValue(
+          reply.kind === "granted" &&
+            result.authorization.grant?.sourceEdit === true &&
+            id(source.revisionId) &&
+            instant(source.parentVersion) &&
+            editor?.currentRevisionId === source.revisionId &&
+            editor.parentVersion === source.parentVersion,
+          "INVALID",
+        );
+      }
       await this.db.authorizations.put(result.authorization);
       if (result.purgeDownloads) await this.purgeResource(...key);
       else if (result.purgeSourceSnapshots) await this.purgeSource(...key);
@@ -436,6 +572,13 @@ export class OfflineRitualRepository {
                 bundleId: bundle.bundleId,
                 manifestSha256: bundle.manifestSha256,
                 ...(bundle.routeAlias ? { routeAlias: bundle.routeAlias } : {}),
+              }),
+          ...(source === undefined
+            ? {}
+            : {
+                sourceLeaseId: result.authorization.grant.leaseId,
+                sourceRevisionId: source.revisionId,
+                sourceParentVersion: source.parentVersion,
               }),
         });
         if (result.authorization.grant.sourceEdit) {
@@ -591,11 +734,7 @@ export class OfflineRitualRepository {
     pending = structuredClone(pending);
     source = structuredClone(source);
     requireValue(
-      source.ownerId === pending.ownerId &&
-        source.ritualId === pending.ritualId &&
-        id(source.revisionId) &&
-        instant(source.parentVersion) &&
-        typeof source.source === "string",
+      validSourceSnapshot(source, pending.ownerId, pending.ritualId),
       "INVALID",
     );
     return this.transaction(async () => {
@@ -609,15 +748,23 @@ export class OfflineRitualRepository {
         state?.account?.ownerId !== pending.ownerId ||
         state.account.epoch !== pending.accountEpoch ||
         check?.requestId !== pending.requestId ||
-        !id(check.acceptedLeaseId)
+        !id(check.acceptedLeaseId) ||
+        check.sourceLeaseId !== check.acceptedLeaseId ||
+        check.sourceRevisionId !== source.revisionId ||
+        check.sourceParentVersion !== source.parentVersion
       )
         return false;
       const gate = await this.gate(state.account, pending.ritualId);
       if (
         !gate.sourceEdit ||
-        check.acceptedLeaseId !== gate.authorization?.grant?.leaseId
+        check.acceptedLeaseId !== gate.authorization?.grant?.leaseId ||
+        check.sourceLeaseId !== gate.authorization.grant.leaseId
       )
         return false;
+      await this.db.sources
+        .where("[ownerId+ritualId]")
+        .equals([pending.ownerId, pending.ritualId])
+        .delete();
       await this.db.sources.put(source);
       return (await this.gate(state.account, pending.ritualId)).sourceEdit;
     });
@@ -755,12 +902,51 @@ export class OfflineRitualRepository {
   ): Promise<SourceSnapshot | null> {
     account = structuredClone(account);
     return this.deliver(account, ritualId, true, async () => {
+      const check = await this.db.checks.get([account.ownerId, ritualId]);
+      const authorization = await this.db.authorizations.get([
+        account.ownerId,
+        ritualId,
+      ]);
       const value = await this.db.sources.get([
         account.ownerId,
         ritualId,
         revisionId,
       ]);
-      return value ? { value } : null;
+      return value &&
+        value.revisionId === revisionId &&
+        check?.sourceLeaseId === authorization?.grant?.leaseId &&
+        check?.sourceRevisionId === value.revisionId &&
+        check.sourceParentVersion === value.parentVersion &&
+        validSourceSnapshot(value, account.ownerId, ritualId)
+        ? { value }
+        : null;
+    });
+  }
+
+  /** The source sync replaces this ritual's snapshot atomically, so ambiguity fails closed. */
+  readInstalledSource(
+    account: OfflineAccount,
+    ritualId: string,
+  ): Promise<SourceSnapshot | null> {
+    account = structuredClone(account);
+    return this.deliver(account, ritualId, true, async () => {
+      const check = await this.db.checks.get([account.ownerId, ritualId]);
+      const authorization = await this.db.authorizations.get([
+        account.ownerId,
+        ritualId,
+      ]);
+      const values = await this.db.sources
+        .where("[ownerId+ritualId]")
+        .equals([account.ownerId, ritualId])
+        .toArray();
+      if (values.length !== 1) return null;
+      const value = values[0];
+      return validSourceSnapshot(value, account.ownerId, ritualId) &&
+        check?.sourceLeaseId === authorization?.grant?.leaseId &&
+        check?.sourceRevisionId === value.revisionId &&
+        check.sourceParentVersion === value.parentVersion
+        ? { value }
+        : null;
     });
   }
 
@@ -818,6 +1004,42 @@ export class OfflineRitualRepository {
     });
   }
 
+  /** All returned recovery variants remain behind the same current source/edit gate. */
+  listDrafts(
+    account: OfflineAccount,
+    ritualId: string,
+  ): Promise<OfflineDraft[] | null> {
+    account = structuredClone(account);
+    return this.deliver(account, ritualId, true, async () => {
+      const values = (
+        await this.db.drafts
+          .where("[ownerId+ritualId]")
+          .equals([account.ownerId, ritualId])
+          .toArray()
+      ).filter(
+        (draft) =>
+          draft.ownerId === account.ownerId &&
+          draft.ritualId === ritualId &&
+          id(draft.id) &&
+          id(draft.expectedRevisionId) &&
+          instant(draft.expectedVersion) &&
+          instant(draft.updatedAtMs) &&
+          instant(draft.localVersion) &&
+          draft.localVersion > 0 &&
+          typeof draft.source === "string" &&
+          typeof draft.savedSource === "string" &&
+          (draft.conflictOf === null || id(draft.conflictOf)),
+      );
+      values.sort(
+        (left, right) =>
+          right.updatedAtMs - left.updatedAtMs ||
+          right.localVersion - left.localVersion ||
+          left.id.localeCompare(right.id),
+      );
+      return { value: values };
+    });
+  }
+
   exportDraft(
     account: OfflineAccount,
     ritualId: string,
@@ -862,6 +1084,91 @@ export class OfflineRitualRepository {
       return true;
     });
     requireValue(allowed, "LOCKED");
+  }
+
+  /** Recover one exact retryable command after a reload; ambiguity stays locked for manual recovery. */
+  async readRetriableSave(
+    account: OfflineAccount,
+    ritualId: string,
+  ): Promise<SaveRequest | null> {
+    account = structuredClone(account);
+    const snapshot = await this.deliver(account, ritualId, true, async () => {
+      const rows = (
+        await this.db.outbox
+          .where("[ownerId+ritualId]")
+          .equals([account.ownerId, ritualId])
+          .toArray()
+      ).filter(
+        (row) =>
+          row.status === "queued" ||
+          row.status === "authentication-required" ||
+          (row.status === "sending" &&
+            (row.claimEpoch !== account.epoch ||
+              (row.claimUntilMs !== null && this.now() >= row.claimUntilMs))),
+      );
+      if (rows.length !== 1 || !storedSave(rows[0])) return null;
+      return {
+        value: {
+          payloadJson: rows[0].payloadJson,
+          payloadSha256: rows[0].payloadSha256,
+        },
+      };
+    });
+    if (
+      !snapshot ||
+      !hash(snapshot.payloadSha256) ||
+      (await sha256(snapshot.payloadJson)) !== snapshot.payloadSha256
+    )
+      return null;
+    return this.deliver(account, ritualId, true, async () => {
+      const stored = await this.db.outbox
+        .where("[ownerId+ritualId]")
+        .equals([account.ownerId, ritualId])
+        .toArray();
+      const eligible = stored.filter(
+        (row) =>
+          (row.status === "queued" ||
+            row.status === "authentication-required" ||
+            (row.status === "sending" &&
+              (row.claimEpoch !== account.epoch ||
+                (row.claimUntilMs !== null &&
+                  this.now() >= row.claimUntilMs)))) &&
+          row.payloadJson === snapshot.payloadJson &&
+          row.payloadSha256 === snapshot.payloadSha256,
+      );
+      if (eligible.length !== 1) return null;
+      try {
+        const value: unknown = JSON.parse(snapshot.payloadJson);
+        const row = isSaveRequest(value, account.ownerId) ? value : null;
+        return row?.ritualId === ritualId ? { value: row } : null;
+      } catch {
+        return null;
+      }
+    });
+  }
+
+  /** A fresh source-capable account may explicitly resume its own authentication-paused command. */
+  async resumeAuthenticatedSave(
+    account: OfflineAccount,
+    ritualId: string,
+    operationId: string,
+  ): Promise<boolean> {
+    account = structuredClone(account);
+    requireValue(id(ritualId) && id(operationId), "INVALID");
+    return (
+      (await this.deliver(account, ritualId, true, async () => {
+        const row = await this.db.outbox.get([account.ownerId, operationId]);
+        if (
+          !row ||
+          row.ritualId !== ritualId ||
+          row.status !== "authentication-required" ||
+          !storedSave(row)
+        )
+          return { value: false };
+        await this.db.outbox.put({ ...row, status: "queued" });
+        return { value: true };
+      })) ?? false
+    );
   }
 
   /** Transactions serialize concurrent tabs; a killed sender's claim expires without changing its operation ID. */
@@ -935,12 +1242,43 @@ export class OfflineRitualRepository {
    * Retain a matching receipt even after lease expiry, as locked recovery metadata only.
    * It never changes cached content, the editor CAS base or any access grant.
    */
-  settleSave(
+  async settleSave(
     claim: OutboxClaim,
-    result: SqlRitualWriteResult,
+    resultValue: SqlRitualWriteResult,
   ): Promise<boolean> {
     claim = structuredClone(claim);
-    result = structuredClone(result);
+    resultValue = structuredClone(resultValue);
+    let write: SaveRequest | null = null;
+    try {
+      const value: unknown = JSON.parse(claim.payloadJson);
+      write = isSaveRequest(value, claim.account.ownerId) ? value : null;
+    } catch {
+      return false;
+    }
+    if (
+      !write ||
+      write.operationId !== claim.operationId ||
+      write.ritualId !== claim.ritualId
+    )
+      return false;
+    const result = parseSqlRitualWriteResult(write, resultValue);
+    requireValue(result, "INVALID");
+    const publication = result.ok
+      ? ({
+          version: 1,
+          operationId: write.operationId,
+          expectedActorId: write.expectedActorId,
+          ritualId: result.ritualId,
+          expectedRevisionId: result.revisionId,
+          expectedVersion: result.version,
+        } satisfies RitualPublicationRequestV1)
+      : null;
+    const publicationPayloadJson = publication
+      ? JSON.stringify(publication)
+      : null;
+    const publicationPayloadSha256 = publicationPayloadJson
+      ? await sha256(publicationPayloadJson)
+      : null;
     return this.transaction(async () => {
       const state = await this.db.device.get("active");
       if (
@@ -958,18 +1296,11 @@ export class OfflineRitualRepository {
         row.claimId !== claim.claimId ||
         row.claimEpoch !== claim.account.epoch ||
         row.status !== "sending" ||
-        row.ritualId !== claim.ritualId
+        row.ritualId !== claim.ritualId ||
+        row.payloadJson !== claim.payloadJson ||
+        JSON.stringify(storedSave(row)) !== JSON.stringify(write)
       )
         return false;
-      if (result.ok)
-        requireValue(
-          result.ritualId === row.ritualId &&
-            id(result.revisionId) &&
-            instant(result.version) &&
-            typeof result.updatedAt === "string" &&
-            Number.isFinite(Date.parse(result.updatedAt)),
-          "INVALID",
-        );
       await this.gate(claim.account, claim.ritualId);
       const status: OutboxRow["status"] = result.ok
         ? "acknowledged"
@@ -981,6 +1312,24 @@ export class OfflineRitualRepository {
             : result.code === "RETRYABLE" || result.code === "UNAVAILABLE"
               ? "queued"
               : "rejected";
+      if (publication)
+        for (const previous of await this.db.outbox
+          .where("[ownerId+ritualId]")
+          .equals([claim.account.ownerId, claim.ritualId])
+          .toArray())
+          if (
+            previous.operationId !== claim.operationId &&
+            previous.publicationStatus !== undefined &&
+            previous.publicationStatus !== "acknowledged" &&
+            previous.publicationStatus !== "stale"
+          )
+            await this.db.outbox.put({
+              ...previous,
+              publicationStatus: "stale",
+              publicationClaimId: null,
+              publicationClaimEpoch: null,
+              publicationClaimUntilMs: null,
+            });
       await this.db.outbox.put({
         ...row,
         status,
@@ -988,6 +1337,305 @@ export class OfflineRitualRepository {
         claimId: null,
         claimEpoch: null,
         claimUntilMs: null,
+        ...(publication && publicationPayloadJson && publicationPayloadSha256
+          ? {
+              publicationPayloadJson,
+              publicationPayloadSha256,
+              publicationStatus: "queued" as const,
+              publicationAttempts: 0,
+              publicationClaimId: null,
+              publicationClaimEpoch: null,
+              publicationClaimUntilMs: null,
+              publicationResult: null,
+            }
+          : {}),
+      });
+      return true;
+    });
+  }
+
+  /** Attach publication to its acknowledged immutable write without allocating a second identity. */
+  async enqueuePublication(
+    account: OfflineAccount,
+    write: SaveRequest | CreateRequest,
+    writeResult: Extract<SqlRitualWriteResult, { ok: true }>,
+    requestValue: RitualPublicationRequestV1,
+  ): Promise<void> {
+    account = structuredClone(account);
+    write = structuredClone(write);
+    writeResult = structuredClone(writeResult);
+    const request = parseRitualPublicationRequest(requestValue);
+    requireValue(
+      !!request &&
+        (isSaveRequest(write, account.ownerId) ||
+          isCreateRequest(write, account.ownerId)) &&
+        write.operationId === request.operationId &&
+        request.expectedActorId === account.ownerId &&
+        request.ritualId === writeResult.ritualId &&
+        request.expectedRevisionId === writeResult.revisionId &&
+        request.expectedVersion === writeResult.version &&
+        writeResult.ok &&
+        id(writeResult.ritualId) &&
+        id(writeResult.revisionId) &&
+        instant(writeResult.version) &&
+        Number.isFinite(Date.parse(writeResult.updatedAt)),
+      "INVALID",
+    );
+    const writeJson = JSON.stringify(write);
+    const writeHash = await sha256(writeJson);
+    const payloadJson = JSON.stringify(request);
+    const payloadSha256 = await sha256(payloadJson);
+    const allowed = await this.transaction(async () => {
+      if (!(await this.gate(account, request.ritualId)).sourceEdit)
+        return false;
+      const old = await this.db.outbox.get([
+        account.ownerId,
+        request.operationId,
+      ]);
+      if (old) {
+        requireValue(
+          old.ritualId === request.ritualId &&
+            old.payloadJson === writeJson &&
+            old.payloadSha256 === writeHash &&
+            old.status === "acknowledged" &&
+            JSON.stringify(old.result) === JSON.stringify(writeResult) &&
+            (!old.publicationPayloadJson ||
+              (old.publicationPayloadJson === payloadJson &&
+                old.publicationPayloadSha256 === payloadSha256)),
+          "IMMUTABLE",
+        );
+      }
+      for (const previous of await this.db.outbox
+        .where("[ownerId+ritualId]")
+        .equals([account.ownerId, request.ritualId])
+        .toArray())
+        if (
+          previous.operationId !== request.operationId &&
+          previous.publicationStatus !== undefined &&
+          previous.publicationStatus !== "acknowledged" &&
+          previous.publicationStatus !== "stale"
+        )
+          await this.db.outbox.put({
+            ...previous,
+            publicationStatus: "stale",
+            publicationClaimId: null,
+            publicationClaimEpoch: null,
+            publicationClaimUntilMs: null,
+          });
+      await this.db.outbox.put({
+        ...(old ?? {
+          ownerId: account.ownerId,
+          ritualId: request.ritualId,
+          operationId: request.operationId,
+          payloadJson: writeJson,
+          payloadSha256: writeHash,
+          status: "acknowledged" as const,
+          attempts: 0,
+          claimId: null,
+          claimEpoch: null,
+          claimUntilMs: null,
+          result: writeResult,
+        }),
+        publicationPayloadJson: payloadJson,
+        publicationPayloadSha256: payloadSha256,
+        publicationStatus: old?.publicationStatus ?? "queued",
+        publicationAttempts: old?.publicationAttempts ?? 0,
+        publicationClaimId: old?.publicationClaimId ?? null,
+        publicationClaimEpoch: old?.publicationClaimEpoch ?? null,
+        publicationClaimUntilMs: old?.publicationClaimUntilMs ?? null,
+        publicationResult: old?.publicationResult ?? null,
+      });
+      return true;
+    });
+    requireValue(allowed, "LOCKED");
+  }
+
+  /** Recover a single exact retryable publication only through the source capability. */
+  async readRetriablePublication(
+    account: OfflineAccount,
+    ritualId: string,
+  ): Promise<RitualPublicationRequestV1 | null> {
+    account = structuredClone(account);
+    const snapshot = await this.deliver(account, ritualId, true, async () => {
+      const rows = (
+        await this.db.outbox
+          .where("[ownerId+ritualId]")
+          .equals([account.ownerId, ritualId])
+          .toArray()
+      ).filter(
+        (row) =>
+          row.publicationStatus === "queued" ||
+          row.publicationStatus === "authentication-required" ||
+          (row.publicationStatus === "sending" &&
+            (row.publicationClaimEpoch !== account.epoch ||
+              (row.publicationClaimUntilMs !== null &&
+                row.publicationClaimUntilMs !== undefined &&
+                this.now() >= row.publicationClaimUntilMs))),
+      );
+      const row = rows[0];
+      if (
+        rows.length !== 1 ||
+        !row.publicationPayloadJson ||
+        !row.publicationPayloadSha256 ||
+        !storedPublication(row)
+      )
+        return null;
+      return {
+        value: {
+          payloadJson: row.publicationPayloadJson,
+          payloadSha256: row.publicationPayloadSha256,
+        },
+      };
+    });
+    if (
+      !snapshot ||
+      !hash(snapshot.payloadSha256) ||
+      (await sha256(snapshot.payloadJson)) !== snapshot.payloadSha256
+    )
+      return null;
+    return this.deliver(account, ritualId, true, async () => {
+      const rows = await this.db.outbox
+        .where("[ownerId+ritualId]")
+        .equals([account.ownerId, ritualId])
+        .toArray();
+      const matching = rows.filter(
+        (row) =>
+          row.publicationPayloadJson === snapshot.payloadJson &&
+          row.publicationPayloadSha256 === snapshot.payloadSha256 &&
+          (row.publicationStatus === "queued" ||
+            row.publicationStatus === "authentication-required" ||
+            (row.publicationStatus === "sending" &&
+              (row.publicationClaimEpoch !== account.epoch ||
+                (row.publicationClaimUntilMs !== null &&
+                  row.publicationClaimUntilMs !== undefined &&
+                  this.now() >= row.publicationClaimUntilMs)))),
+      );
+      const request =
+        matching.length === 1 ? storedPublication(matching[0]) : null;
+      return request?.ritualId === ritualId ? { value: request } : null;
+    });
+  }
+
+  async resumeAuthenticatedPublication(
+    account: OfflineAccount,
+    request: RitualPublicationRequestV1,
+  ): Promise<boolean> {
+    account = structuredClone(account);
+    const parsed = parseRitualPublicationRequest(request);
+    requireValue(
+      !!parsed && parsed.expectedActorId === account.ownerId,
+      "INVALID",
+    );
+    return (
+      (await this.deliver(account, parsed.ritualId, true, async () => {
+        const row = await this.db.outbox.get([
+          account.ownerId,
+          parsed.operationId,
+        ]);
+        if (
+          row?.publicationStatus !== "authentication-required" ||
+          JSON.stringify(storedPublication(row)) !== JSON.stringify(parsed)
+        )
+          return { value: false };
+        await this.db.outbox.put({ ...row, publicationStatus: "queued" });
+        return { value: true };
+      })) ?? false
+    );
+  }
+
+  async claimPublication(
+    account: OfflineAccount,
+    request: RitualPublicationRequestV1,
+  ): Promise<PublicationOutboxClaim | null> {
+    account = structuredClone(account);
+    const parsed = parseRitualPublicationRequest(request);
+    if (
+      !parsed ||
+      parsed.expectedActorId !== account.ownerId ||
+      JSON.stringify(
+        await this.readRetriablePublication(account, parsed.ritualId),
+      ) !== JSON.stringify(parsed)
+    )
+      return null;
+    return this.deliver(account, parsed.ritualId, true, async () => {
+      const row = await this.db.outbox.get([
+        account.ownerId,
+        parsed.operationId,
+      ]);
+      const current = row && storedPublication(row);
+      const now = this.now();
+      if (
+        !row ||
+        JSON.stringify(current) !== JSON.stringify(parsed) ||
+        (row.publicationStatus !== "queued" &&
+          !(
+            row.publicationStatus === "sending" &&
+            (row.publicationClaimEpoch !== account.epoch ||
+              (row.publicationClaimUntilMs !== null &&
+                row.publicationClaimUntilMs !== undefined &&
+                now >= row.publicationClaimUntilMs))
+          ))
+      )
+        return null;
+      const claimId = createUuidV7();
+      await this.db.outbox.put({
+        ...row,
+        publicationStatus: "sending",
+        publicationAttempts: (row.publicationAttempts ?? 0) + 1,
+        publicationClaimId: claimId,
+        publicationClaimEpoch: account.epoch,
+        publicationClaimUntilMs: now + CLAIM_MS,
+      });
+      return { value: { request: parsed, claimId, account } };
+    });
+  }
+
+  async settlePublication(
+    claim: PublicationOutboxClaim,
+    resultValue: RitualPublicationResult,
+  ): Promise<boolean> {
+    claim = structuredClone(claim);
+    const result = parseRitualPublicationResult(claim.request, resultValue);
+    if (!result) return false;
+    return this.transaction(async () => {
+      const state = await this.db.device.get("active");
+      if (
+        state?.cleanupOwnerId ||
+        state?.account?.ownerId !== claim.account.ownerId ||
+        state.account.epoch !== claim.account.epoch
+      )
+        return false;
+      const row = await this.db.outbox.get([
+        claim.account.ownerId,
+        claim.request.operationId,
+      ]);
+      if (
+        !row ||
+        row.ritualId !== claim.request.ritualId ||
+        row.publicationStatus !== "sending" ||
+        row.publicationClaimId !== claim.claimId ||
+        row.publicationClaimEpoch !== claim.account.epoch ||
+        JSON.stringify(storedPublication(row)) !== JSON.stringify(claim.request)
+      )
+        return false;
+      await this.gate(claim.account, claim.request.ritualId);
+      const publicationStatus: NonNullable<OutboxRow["publicationStatus"]> =
+        result.ok
+          ? "acknowledged"
+          : result.code === "AUTH_REQUIRED" || result.code === "ACTOR_CHANGED"
+            ? "authentication-required"
+            : result.code === "STALE"
+              ? "stale"
+              : result.retryable
+                ? "queued"
+                : "rejected";
+      await this.db.outbox.put({
+        ...row,
+        publicationStatus,
+        publicationResult: result,
+        publicationClaimId: null,
+        publicationClaimEpoch: null,
+        publicationClaimUntilMs: null,
       });
       return true;
     });

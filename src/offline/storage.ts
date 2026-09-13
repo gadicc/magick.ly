@@ -5,6 +5,10 @@ import type {
   OfflineAuthorization,
   PendingPermissionCheck,
 } from "./lease";
+import type {
+  RitualPublicationRequestV1,
+  RitualPublicationResult,
+} from "./ritualPublicationContract";
 
 /** Persist the fence before attempting purge; authentication never clears cleanupPending. */
 export interface DeviceState {
@@ -21,6 +25,10 @@ export interface StoredCheck extends PendingPermissionCheck {
   manifestSha256?: string;
   /** Exact normalized legacy route resolved by the server for this check. */
   routeAlias?: string;
+  /** Exact current editor parent accepted in the same source delivery envelope. */
+  sourceLeaseId?: string;
+  sourceRevisionId?: string;
+  sourceParentVersion?: number;
 }
 /** Manifest entries come from the authorized server projection, never a URL-derived ACL. */
 export interface AssetManifestEntry {
@@ -71,6 +79,8 @@ export interface SourceSnapshot {
   ritualId: string;
   revisionId: string;
   parentVersion: number;
+  /** Protected editor metadata; clear it from view memory with the source. */
+  title: string;
   source: string;
 }
 /** Writes may preserve already-held text after a lock; reads/exports always require a fresh gate. */
@@ -106,6 +116,27 @@ export interface OutboxRow {
   claimEpoch: string | null;
   claimUntilMs: number | null;
   result: SqlRitualWriteResult | null;
+  /** Same durable write identity; optional fields require no IndexedDB schema/index change. */
+  publicationPayloadJson?: string;
+  publicationPayloadSha256?: string;
+  publicationStatus?:
+    | "queued"
+    | "sending"
+    | "authentication-required"
+    | "stale"
+    | "rejected"
+    | "acknowledged";
+  publicationAttempts?: number;
+  publicationClaimId?: string | null;
+  publicationClaimEpoch?: string | null;
+  publicationClaimUntilMs?: number | null;
+  publicationResult?: RitualPublicationResult | null;
+}
+
+export interface PublicationOutboxClaim {
+  request: RitualPublicationRequestV1;
+  claimId: string;
+  account: OfflineAccount;
 }
 /** Raw legacy evidence is never attributed to the active account or automatically replayed. */
 export interface QuarantinedRecovery {

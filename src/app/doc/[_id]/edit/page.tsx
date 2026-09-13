@@ -1,13 +1,20 @@
-"use client";
-import dynamic from "next/dynamic";
-import React from "react";
+import { Alert } from "@mui/material";
+import { connection } from "next/server";
+import { resolveSqlRitualRouteId } from "@/doc/sqlRuntime";
+import SqlDocEdit from "./SqlDocEdit";
 
-const DocEditNoSSR = dynamic(() => import("./DocEdit"), { ssr: false });
-
-export default function DocEdit(props: { params: Promise<{ _id: string }> }) {
-  const params = React.use(props.params);
-
-  const { _id } = params;
-
-  return <DocEditNoSSR params={{ _id }} />;
+export default async function DocEditPage({
+  params,
+}: {
+  params: Promise<{ _id: string }>;
+}) {
+  await connection();
+  const ritualId = await resolveSqlRitualRouteId((await params)._id).catch(
+    () => null,
+  );
+  return ritualId ? (
+    <SqlDocEdit key={ritualId} ritualId={ritualId} />
+  ) : (
+    <Alert severity="info">Ritual source is unavailable.</Alert>
+  );
 }
