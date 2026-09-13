@@ -873,3 +873,14 @@ use synthetic provider responses and PGlite, with all fetch calls forbidden.
 Independent review is clean. Existing Auth.js/Gongo routes remain active, and
 real browser/OAuth/SQL transport activation is still pending. A separate shared
 Loom TLS fix is being prepared before use of its transaction-capable runtime.
+
+The [SQL upload runtime](016-sql-upload-runtime.md) now exposes authenticated
+ritual-scoped image initiation and finalization, a retryable browser upload form,
+and read-only preservation of legacy public image URLs through their protected
+SQL snapshots. Private and legacy credentials remain separate. Root review fixed
+in-flight selection changes, duplicate submits and Unicode response filenames.
+The isolated unit passes 251 focused tests, TypeScript, Biome, ordinary Loom
+check and production build. No provider object writes or deployment occurred.
+Source image insertion, bundle publication, global authentication activation and
+final cutover remain pending; this is a completed upload boundary, not an active
+end-to-end image workflow.
