@@ -4,7 +4,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
-| Legacy public-image reader | Complete locally; plan integration pending | Whole-batch archive/current-row checks, bounded SDK GET/error streams and validated owned snapshots; all ten actual objects pass with unchanged SHA, served MIME and backup fingerprints; no runtime activation |
+| Legacy public-image reader | Complete locally; integrated into plan v2 | Whole-batch archive/current-row checks, bounded SDK GET/error streams and validated owned snapshots; all ten actual objects pass with unchanged SHA, served MIME and backup fingerprints; all six archived legacy occurrences resolve; no runtime activation |
 | Planning and backup protection | Complete | Production dump checksums, gzip, BSON and JSON verified; isolated Mongo restore validated all 190 documents, 10 collections and 20 indexes; dump directory ignored; London/London confirmed |
 | Runtime and tooling baseline | Complete | Node 24/pnpm 10.18; frozen install, Biome, typecheck, coverage and build pass; explicit CI and scripts; obsolete ESLint/Prettier removed; redundant Biome defaults removed |
 | Unused tRPC | Complete | Removed scaffold and both dependencies; lockfile update removes only tRPC; generated route types, full typecheck and 58-test suite pass |
@@ -561,3 +561,14 @@ of Loom until this modernization is complete. Conversation review, structural
 validation and an independent synthetic Gongo/internal-auth forward test are
 complete for the initial draft. Runtime migration and cutover lessons remain to
 be added; no shared skill has been committed, installed or published.
+
+Legacy-image plan integration passes independent adversarial review, all 37 plan
+tests (12 new), and 2,022 default tests with 14 opt-in Mongo cases skipped. The
+57-module coverage gates pass at 98.18% statements, 96.81% branches, 99.87%
+functions and 99.29% lines; types, Biome, ordinary Loom check and production build
+pass. Actual corpus acceptance resolves 12/17 archived image occurrences, leaving
+four external and one generated-image gap. Plan v2 binds the optional legacy
+catalog identity and copied bytes while retaining exact source/query/fragment
+identity. No runtime route, cache readiness or private-file grant changed.
+Evidence: `/tmp/magickli-legacy-plan-acceptance.json` and
+`/tmp/magickli-legacy-plan-{coverage,types,biome,loom,build}.log`.

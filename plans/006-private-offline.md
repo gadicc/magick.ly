@@ -404,6 +404,34 @@ successful reads of three existing external images, the verified Wikimedia
 standard-size replacement, and the generated SVG embedded-font experiment. These
 findings do not install durable assets or activate their resolvers.
 
+### Legacy public images in plan v2
+
+`magickli-ritual-asset-plan-v2` adds an optional trusted legacy catalog and binds
+its identity, or explicit absence, into the plan digest. Its validator identity
+must agree with the static catalog. Only inventory-classified `file2` digests
+can resolve through it; arbitrary file URLs, unsupported queries, foreign
+origins and new private-upload routes remain gaps. Each copied byte snapshot is
+charged before allocation and checked against its captured size/SHA. Asset
+provenance retains the canonical legacy file ID plus source/provenance hashes;
+provider locations and archived file metadata do not enter the plan.
+
+Original reference spelling, query encoding, origin and occurrence fragments
+remain unchanged. Identical network references share a capture; separate query
+spellings or origins retain their separate identities. Disposal of the source
+catalog cannot invalidate an already built plan. Neither catalog evidence nor
+the legacy file's public status grants access to a private ritual or attachment.
+No active persisted v1 plan consumer exists; v2 is an explicit evidence-format
+change before runtime activation, not a rewrite of durable download records.
+
+Read-only acceptance now resolves all six legacy occurrences: 12 of the 17
+archived images, with four external and one generated-image gap remaining.
+Three of five archived trees have complete image plans (one contains no images).
+Public builtin results remain unchanged. The static catalog identity is unchanged,
+all 21 backup fingerprints, 15 public image hashes and three builtin sources
+remain unchanged, and no provider/database writes occurred. The plan uses only
+captured images; the acceptance's ten GETs belong to legacy catalog acquisition.
+Evidence: `/tmp/magickli-legacy-plan-acceptance.json`.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.

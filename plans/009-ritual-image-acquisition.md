@@ -33,9 +33,11 @@ retained. Evidence: `/tmp/magickli-legacy-catalog-acceptance.json`.
 
 The static and legacy catalogs now share the unchanged validation identity
 `cd11c8765f14de5253e312c69be35cf9a55193c237b4afc811a3d29044a0957c`.
-The reader alone does not wire legacy occurrences into a plan, replace the live
-file route or grant access to new private attachments. Durable manifests and
-authenticated bundle delivery remain required.
+The optional legacy capability is now integrated into
+[ritual asset plan v2](006-private-offline.md#legacy-public-images-in-plan-v2).
+All six archived legacy occurrences resolve without changing their references.
+The live file route and new private attachments remain separate; durable
+manifests and authenticated bundle delivery are still required.
 
 ## Existing external images
 

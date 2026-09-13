@@ -2,13 +2,22 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { Readable } from "node:stream";
+import { ObjectId } from "bson";
 import sharp from "sharp";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import {
+  createLegacyRitualImageCatalog,
+  type LegacyRitualImageCatalog,
+  type LegacyRitualImageSource,
+} from "../files/legacyRitualImageCatalog";
 import {
   createStaticRitualImageCatalog,
   type StaticRitualImageCatalog,
 } from "../files/staticRitualImageCatalog";
 import * as svgModule from "../files/validateRitualSvg";
+import { createUuidV7 } from "../lib/ids";
+import { planLegacyFileImport } from "../migration/planLegacyFileImport";
 import {
   createRitualAssetPlan,
   RITUAL_ASSET_PLAN_LIMITS,
@@ -31,6 +40,7 @@ let directory: string;
 let catalog: StaticRitualImageCatalog;
 let png: Buffer;
 const plans: RitualAssetPlan[] = [];
+const legacyCatalogs: LegacyRitualImageCatalog[] = [];
 beforeEach(async () => {
   directory = await fs.mkdtemp(path.join(tmpdir(), "magickli-asset-plan-"));
   await fs.mkdir(path.join(directory, "pics"));
@@ -50,6 +60,7 @@ afterEach(async () => {
   vi.useRealTimers();
   vi.restoreAllMocks();
   for (const plan of plans.splice(0)) plan.dispose();
+  for (const legacy of legacyCatalogs.splice(0)) legacy.dispose();
   catalog.dispose();
   await fs.rm(directory, { recursive: true, force: true });
 });
@@ -65,6 +76,60 @@ async function plan(
   });
   plans.push(result);
   return result;
+}
+async function legacy(bytes: Uint8Array = png, contentType = "image/png") {
+  const bucket = "synthetic-legacy-bucket";
+  const imported = planLegacyFileImport(
+    [
+      {
+        _id: new ObjectId(),
+        sha256: hash(bytes),
+        size: bytes.length,
+        type: "image",
+        mimeType: contentType,
+        image: {},
+        createdAt: new Date("2014-01-02"),
+      },
+    ],
+    {
+      lookup: () => createUuidV7(),
+      storageProvider: "r2",
+      sourceBucket: bucket,
+      sourceObjectKeyPrefix: bucket + "/",
+      importedAt: new Date("2026-09-12"),
+    },
+  );
+  const handle = vi.fn(async () => ({
+    response: {
+      statusCode: 200,
+      headers: {
+        "content-length": String(bytes.length),
+        "content-type": "application/octet-stream",
+      },
+      body: Readable.from([Buffer.from(bytes)]),
+    },
+  }));
+  const catalog = await createLegacyRitualImageCatalog({
+    storage: {
+      kind: "r2",
+      endpoint:
+        "https://00000000000000000000000000000000.r2.cloudflarestorage.com",
+      bucket,
+      credentials: {
+        accessKeyId: "SYNTHETIC",
+        secretAccessKey: "synthetic-only",
+      },
+    },
+    sources: [
+      {
+        file: imported.files[0],
+        snapshot: imported.snapshots[0],
+      } as LegacyRitualImageSource,
+    ],
+    requestHandler: { handle },
+  });
+  legacyCatalogs.push(catalog);
+  return { catalog, handle, fileId: imported.files[0].id };
 }
 
 it("resolves exact references without rewriting query spelling, fragments, paths or archived JSON", async () => {
@@ -147,6 +212,215 @@ it("owns byte copies independently of the catalog, caller, files and disposal", 
   expect(survivingCopy).toEqual(new Uint8Array(png));
   for (const index of [-1, 0.5, Infinity, 99, NaN])
     expect(result.copyBytes(index)).toBeNull();
+});
+
+it("resolves legacy public snapshots while retaining exact query spelling, origins and per-occurrence fragments", async () => {
+  const { catalog: legacyCatalog, handle, fileId } = await legacy();
+  const sha256 = hash(png),
+    reference = `/api/file2?sha256=${sha256}`;
+  const source = doc(
+    reference + "#one",
+    reference + "#two",
+    `/api/file2?%73ha256=${sha256}`,
+    `https://magick.ly${reference}`,
+    "/pics/image.png",
+  );
+  const result = await plan(source, { legacyCatalog });
+  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v2");
+  expect(result.metadata.legacyCatalogSha256).toBe(
+    legacyCatalog.metadata.sha256,
+  );
+  expect(result.metadata.resolutionComplete).toBe(true);
+  expect(result.metadata.occurrences.map((row) => row.assetIndex)).toEqual([
+    0, 0, 1, 2, 3,
+  ]);
+  expect(result.metadata.occurrences.map((row) => row.displayFragment)).toEqual(
+    ["#one", "#two", "", "", ""],
+  );
+  expect(result.metadata.assets.map((row) => row.networkReference)).toEqual([
+    reference,
+    `/api/file2?%73ha256=${sha256}`,
+    `https://magick.ly${reference}`,
+    "/pics/image.png",
+  ]);
+  expect(result.metadata.assets[0]).toMatchObject({
+    provenance: {
+      kind: "legacy-public",
+      fileId,
+      sourceSha256: legacyCatalog.metadata.entries[0].sourceSha256,
+      provenanceSha256: legacyCatalog.metadata.entries[0].provenanceSha256,
+    },
+    mime: "image/png",
+    width: 3,
+    frameHeight: 2,
+    frames: 1,
+  });
+  expect(result.metadata.occurrences.map((row) => row.src)).toEqual(
+    JSON.parse(source).children.map((row: { src: string }) => row.src),
+  );
+  expect(handle).toHaveBeenCalledTimes(1); // Catalog acquisition only; planning performs no GET.
+});
+
+it("keeps legacy SVG dependency facts and original bytes without treating them as raster dimensions", async () => {
+  const bytes = new TextEncoder().encode(svg),
+    { catalog: legacyCatalog } = await legacy(bytes, "image/svg+xml");
+  const result = await plan(doc(`/api/file2?sha256=${hash(bytes)}#a`), {
+    legacyCatalog,
+  });
+  expect(result.metadata.assets[0]).toMatchObject({
+    validationKind: "svg",
+    mime: "image/svg+xml",
+    elements: 2,
+    embeddedRasters: [],
+  });
+  expect(result.metadata.assets[0]).not.toHaveProperty("width");
+  expect(result.copyBytes(0)).toEqual(bytes);
+  expect(Object.isFrozen(result.metadata.assets[0].provenance)).toBe(true);
+});
+
+it("retains legacy captures after catalog disposal and clears only its own bytes on plan disposal", async () => {
+  const { catalog: legacyCatalog } = await legacy();
+  const result = await plan(doc(`/api/file2?sha256=${hash(png)}`), {
+    legacyCatalog,
+  });
+  legacyCatalog.dispose();
+  const first = result.copyBytes(0)!;
+  first.fill(0);
+  const owned = result.copyBytes(0)!;
+  expect(owned).toEqual(new Uint8Array(png));
+  result.dispose();
+  expect(result.copyBytes(0)).toBeNull();
+  expect(owned).toEqual(new Uint8Array(png));
+});
+
+it("binds the supplied legacy catalog identity even when the document contains no legacy images", async () => {
+  const { catalog: legacyCatalog } = await legacy();
+  const without = await plan(doc());
+  const withLegacy = await plan(doc(), { legacyCatalog });
+  expect(without.metadata.legacyCatalogSha256).toBeNull();
+  expect(withLegacy.metadata.sha256).not.toBe(without.metadata.sha256);
+});
+
+it("snapshots the trusted legacy metadata before yielding", async () => {
+  const { catalog: original } = await legacy();
+  const metadata = structuredClone(original.metadata);
+  const legacyCatalog = { ...original, metadata };
+  const pending = plan(doc(`/api/file2?sha256=${hash(png)}`), {
+    legacyCatalog,
+  });
+  Object.assign(metadata, { sha256: "changed", entries: [] });
+  const result = await pending;
+  expect(result.metadata.legacyCatalogSha256).toBe(original.metadata.sha256);
+  expect(result.metadata.resolutionComplete).toBe(true);
+});
+
+it("leaves absent, unresolved or disposed legacy snapshots incomplete", async () => {
+  const { catalog: available } = await legacy();
+  expect(
+    (
+      await plan(doc(`/api/file2?sha256=${"0".repeat(64)}`), {
+        legacyCatalog: available,
+      })
+    ).metadata.issues[0].code,
+  ).toBe("legacy-unavailable");
+  const { catalog: unsupported } = await legacy(png, "image/tiff");
+  expect(
+    (
+      await plan(doc(`/api/file2?sha256=${hash(png)}`), {
+        legacyCatalog: unsupported,
+      })
+    ).metadata.resolutionComplete,
+  ).toBe(false);
+  available.dispose();
+  expect(
+    (
+      await plan(doc(`/api/file2?sha256=${hash(png)}`), {
+        legacyCatalog: available,
+      })
+    ).metadata.issues[0].code,
+  ).toBe("legacy-unavailable");
+});
+
+it.each(["profile", "validationSha256"] as const)(
+  "rejects incompatible legacy %s before copying bytes",
+  async (field) => {
+    const { catalog: original } = await legacy();
+    const copyBytes = vi.fn(original.copyBytes);
+    const legacyCatalog = {
+      ...original,
+      copyBytes,
+      metadata: { ...original.metadata, [field]: "unsupported" },
+    } as LegacyRitualImageCatalog;
+    await expect(
+      plan(doc(`/api/file2?sha256=${hash(png)}`), { legacyCatalog }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    expect(copyBytes).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["size", "digest"])(
+  "refuses a legacy snapshot %s mismatch and clears the returned allocation",
+  async (mismatch) => {
+    const { catalog: original } = await legacy();
+    const bytes = new Uint8Array(
+      mismatch === "size" ? png.length + 1 : png.length,
+    ).fill(1);
+    const result = await plan(doc(`/api/file2?sha256=${hash(png)}`), {
+      legacyCatalog: { ...original, copyBytes: () => bytes },
+    });
+    expect(result.metadata.issues[0].code).toBe("legacy-snapshot-mismatch");
+    expect(result.metadata.resolutionComplete).toBe(false);
+    expect(bytes.every((byte) => byte === 0)).toBe(true);
+  },
+);
+
+it("charges each distinct legacy reference, deduplicates fragments, and clears earlier copies on failure", async () => {
+  const { catalog: original } = await legacy();
+  const copies: Uint8Array[] = [];
+  const legacyCatalog = {
+    ...original,
+    copyBytes: (sha256: string) => {
+      const bytes = original.copyBytes(sha256)!;
+      copies.push(bytes);
+      return bytes;
+    },
+  };
+  const ref = `/api/file2?sha256=${hash(png)}`;
+  expect(
+    (
+      await plan(doc(ref + "#a", ref + "#b"), {
+        legacyCatalog,
+        limits: { capturedBytes: png.length },
+      })
+    ).metadata.resolutionComplete,
+  ).toBe(true);
+  expect(copies.length).toBe(1);
+  copies.length = 0;
+  await expect(
+    plan(doc(ref, `https://magick.ly${ref}`), {
+      legacyCatalog,
+      limits: { capturedBytes: png.length },
+    }),
+  ).rejects.toMatchObject({ code: "CAPTURE_LIMIT" });
+  expect(copies.length).toBe(1);
+  expect(copies[0].every((byte) => byte === 0)).toBe(true);
+});
+
+it("does not let a legacy snapshot resolve a private-file route, foreign origin or unsupported query", async () => {
+  const { catalog: legacyCatalog, fileId } = await legacy();
+  const result = await plan(
+    doc(
+      `/api/files/${fileId}`,
+      `https://other.example/api/file2?sha256=${hash(png)}`,
+      `/api/file2?sha256=${hash(png)}&returnMeta=1`,
+    ),
+    { legacyCatalog },
+  );
+  expect(result.metadata.resolutionComplete).toBe(false);
+  expect(result.metadata.assets).toEqual([]);
+  expect(
+    result.metadata.occurrences.every((row) => row.assetIndex === null),
+  ).toBe(true);
 });
 
 it("keeps absent/static, protected legacy, external and generated sources explicitly incomplete", async () => {

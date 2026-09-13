@@ -5,6 +5,7 @@ import {
   DataImageError,
   decodeDataImage,
 } from "../files/dataImage";
+import type { LegacyRitualImageCatalog } from "../files/legacyRitualImageCatalog";
 import {
   RITUAL_IMAGE_LIMITS,
   RitualUploadError,
@@ -76,7 +77,7 @@ function rasterFacts(image: {
 
 /**
  * Enumerate the exact selected-render JSON internally and resolve only captured
- * static images and closed, validated inline images. No network requests or
+ * static/legacy snapshots and closed, validated inline images. No network requests or
  * caller-supplied occurrence/manifest callbacks are accepted. The caller must
  * authorize and select content separately; even a complete plan grants no access.
  *
@@ -90,6 +91,8 @@ export async function createRitualAssetPlan(
     knownAppOrigins: readonly string[];
     /** Trusted server-built catalog; never deserialize this capability from a request. */
     staticCatalog: StaticRitualImageCatalog;
+    /** Only historical public imports qualify; this is never a private-upload authorization shortcut. */
+    legacyCatalog?: LegacyRitualImageCatalog;
     signal?: AbortSignal;
     limits?: Partial<Limits>;
   },
@@ -118,9 +121,17 @@ export async function createRitualAssetPlan(
   // Take the trusted catalog/config snapshot before yielding to the caller.
   const catalog = options.staticCatalog;
   const catalogMetadata = structuredClone(catalog.metadata);
+  const legacyCatalog = options.legacyCatalog;
+  const legacyMetadata = legacyCatalog
+    ? structuredClone(legacyCatalog.metadata)
+    : null;
   if (
     catalogMetadata.profile !== "magickli-static-image-catalog-v2" ||
-    catalogMetadata.validationProfile !== "magickli-static-image-validation-v2"
+    catalogMetadata.validationProfile !==
+      "magickli-static-image-validation-v2" ||
+    (legacyMetadata !== null &&
+      (legacyMetadata.profile !== "magickli-legacy-image-catalog-v1" ||
+        legacyMetadata.validationSha256 !== catalogMetadata.validationSha256))
   )
     throw new RitualAssetPlanError("INVALID_INPUT");
   const inventory = inventoryRitualAssetJson(contentJson, {
@@ -129,6 +140,9 @@ export async function createRitualAssetPlan(
   });
   const entries = new Map(
     catalogMetadata.entries.map((entry) => [entry.pathname, entry]),
+  );
+  const legacyEntries = new Map(
+    legacyMetadata?.entries.map((entry) => [entry.sha256, entry]),
   );
   const captured: Uint8Array[] = [];
   const assets: RitualResolvedAsset[] = [];
@@ -199,6 +213,34 @@ export async function createRitualAssetPlan(
         } = entry;
         facts = imageFacts;
         provenance = { kind: "static", pathname, canonicalPathname };
+      } else if (reference.kind === "legacy-file2") {
+        if (!legacyCatalog) return "legacy-file2-pending";
+        const entry = legacyEntries.get(reference.sha256);
+        if (!entry || entry.kind !== "available") return "legacy-unavailable";
+        charge(entry.bytes);
+        bytes = legacyCatalog.copyBytes(reference.sha256) ?? undefined;
+        if (!bytes) return "legacy-unavailable";
+        if (
+          bytes.length !== entry.bytes ||
+          (await sha256Hex(bytes)) !== entry.sha256
+        )
+          return "legacy-snapshot-mismatch";
+        const {
+          kind: _kind,
+          fileId,
+          sha256: _sha,
+          bytes: _size,
+          sourceSha256,
+          provenanceSha256,
+          ...imageFacts
+        } = entry;
+        facts = imageFacts;
+        provenance = {
+          kind: "legacy-public",
+          fileId,
+          sourceSha256,
+          provenanceSha256,
+        };
       } else if (reference.kind === "inline-image") {
         if (++inlineImages > limits.inlineImages)
           throw new RitualAssetPlanError("INLINE_LIMIT");
@@ -314,10 +356,11 @@ export async function createRitualAssetPlan(
         issues.push({ code: result, path: [...item.path], field: "src" });
     }
     const identity = {
-      profile: "magickli-ritual-asset-plan-v1" as const,
+      profile: "magickli-ritual-asset-plan-v2" as const,
       contentSha256,
       inventoryProfile: inventory.profile,
       staticCatalogSha256: catalogMetadata.sha256,
+      legacyCatalogSha256: legacyMetadata?.sha256 ?? null,
       validationSha256: catalogMetadata.validationSha256,
       limits,
       resolutionComplete: inventory.enumerationComplete && issues.length === 0,
