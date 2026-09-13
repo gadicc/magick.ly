@@ -89,8 +89,11 @@ Factory SHA-256:
 No route/build entrypoint changed, so this is handler/PGlite evidence rather than
 a new deployed build, browser, real PostgreSQL or live OAuth acceptance claim.
 
-Separate review confirmed Loom 1.24.0's nonlocal `neonFull` connection uses
-postgres.js `ssl: "require"`, which encrypts traffic without verifying the server
-certificate. A shared correction is being prepared and must be adopted before
-this new runtime is activated. This auth factory receives its database connection
-and does not repair that separate transport boundary.
+Magickli now pins Loom 1.25.0, whose nonlocal `neonFull` connection requires
+native certificate-chain and hostname verification. The installed `neonFull.js`
+and `databaseTls.js` hashes match the independently reviewed release, and
+postgres.js remains 3.4.9. Frozen install, the 3,922-test coverage suite, types,
+Biome, ordinary Loom check and an isolated production build pass. Production
+Loom check remains blocked by the pre-existing master release workflow without
+`db:migrate`; the cached Loom 1.24.0 CLI reports the same issue. No runtime route,
+provider, database or deployment was activated by this adoption.
