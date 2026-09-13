@@ -153,9 +153,78 @@ Evidence: `/tmp/magickli-tree-font-probe-initial.json`,
 `/tmp/magickli-tree-font-probe.json` and the ignored public-only screenshot
 `output/playwright/tree-font-probe/fonts.png`.
 
-The generated-image adapter still needs a versioned, closed query/props contract,
-explicit font provenance, rendering/settling acceptance and durable output bytes.
-The route's arbitrary query forwarding and PNG/fontconfig path also need
-consolidation with the future whitelisted component-render route. Do not broaden
-the preserved SVG validator to accept arbitrary external fonts, silently rewrite
-compiled archives, or substitute PNG for an SVG reference.
+### Shared component-image renderer
+
+The canonical `/api/render/tree-of-life` route and legacy `/api/treeOfLife` now
+delegate to one closed renderer. Only this component is registered. Source field
+names come from the interactive page and actual grade/ritual callers; ordered
+comma lists and explicit empty top/bottom labels are preserved. The parser
+converts true/false explicitly, accepts known highlights and King/Queen colors,
+and separates output format from component props. Arbitrary labels, callbacks,
+unknown/repeated keys, unsupported formats and unbounded dimensions return 400.
+Da'at has no King-scale color in the existing data; that combination also returns
+400 rather than inventing a color or crashing. Direct component callers retain
+their existing props and CSS dimensions.
+
+`@resvg/resvg-wasm` 2.6.2 outlines the trusted JSX output into the versioned
+`magickli-tree-image-outlines-v1` representation. It receives explicit bundled
+font bytes with default size 16, matching the browser's inherited path-letter
+size. It does not receive uploaded SVG or fetch fonts. Next's private bundled
+converter was rejected after it silently dropped text with supplied fonts.
+Embedding font data alone was also rejected for image output: neither
+`Image.decode()` nor parent-document font readiness reliably waited for fonts
+inside an SVG image.
+
+The representation retains the original centered viewBox and outer sizing.
+Normalization changes curve/antialiasing details slightly; it is not a claim of
+pixel equality with browser text. Independent review found all 52 labels,
+including 20 curved labels, within the known ritual's viewport with no observed
+Hebrew reordering or clipping. It removes inert duplicate link IDs and expresses
+hidden text-path carrier geometry as `display="none"`. Independent comparison
+found zero differing pixel channels for that visibility adjustment. The shared
+SVG validator remains unchanged. Flip uses an SVG reflection around the centered
+coordinates, after outlining, instead of unsupported CSS 3D transforms.
+
+Devanagari, Symbols and Symbols 2 join the existing Sans/Hebrew fonts. All three
+are required to cover the existing chakra and grade field glyphs; their source
+URLs, hashes and upstream OFL notices are committed under `public/fonts`.
+The service returns normalized request props, source SVG digest, font/WASM
+provenance and the final representation's byte size/digest. SVG remains SVG;
+PNG explicitly rasterizes that same outlined image. URL images contain outlined
+text and no navigation links. The interactive component and live-DOM export
+controls retain their existing editable text and links.
+
+Width/height are positive integer pixels, at most 4,096 on either axis and
+4,194,304 effective pixels, including the derived dimension when one is omitted.
+Font size is 1–128 with up to two decimal places. These replace accidental
+unbounded query forwarding. Source data and saved ritual references are not
+rewritten. The route no longer changes global Fontconfig state or logs local
+font configuration. WASM and fonts are included in both route traces as server
+assets; the package stays outside the webpack bundle. The first build exposed
+webpack interpreting `require.resolve` as a WASM import, so loading now uses the
+explicit traced runtime path instead of a build-machine source path.
+
+Actual production-build acceptance passes 38 valid cases, five refused cases,
+identical legacy/canonical/repeated SVG bytes in the same process, all SVG
+compatibility checks, and decoded PNG dimensions. The known ritual image is
+142,962 bytes, 229 elements, SHA-256
+`00c82f49fa8318986a278ec4f3f3ea49520f9ecdae797c12d011e53475ebfef9`.
+Chromium 152 cold/offline acceptance compares five actual component fixtures:
+the ritual, Devanagari chakra names, elemental symbols, planetary symbols and
+GradeTree. Each has 30 identical immediate/animation-frame samples across three
+fresh Blob images, with zero HTTP requests or page errors. Original intrinsic
+86×150 image sizing is retained; comparisons draw at 341×598. The font-loaded
+source and outlined image screenshots were visually inspected. This is local
+Chromium evidence, not an iOS device test or a Vercel latency measurement.
+
+Evidence: `/tmp/magickli-tree-api-acceptance.json`,
+`/tmp/magickli-tree-browser-acceptance.json`, the ignored public screenshot
+`output/playwright/tree-render/comparison.png`, and independent review/probes in
+`/tmp/magickli-tree-render-review/`. The permanent tests pin all five fonts and
+accepted outline fingerprints for each script/symbol group; a generic nonempty
+Latin fixture alone would miss partial glyph loss.
+
+Generated catalog/plan integration and durable authorized publication remain
+pending. The other clipboard/download widgets also remain a separate unit:
+several export completed client-side state, so adding their slugs without a
+server rendering contract would produce incomplete output.

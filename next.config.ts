@@ -16,7 +16,17 @@ export default async function (phase: string): Promise<NextConfig> {
       })),
     // See also alternative with patch-package:
     // https://stackoverflow.com/a/77722836/1839099
-    serverExternalPackages: ["pdf-parse"],
+    serverExternalPackages: ["pdf-parse", "@resvg/resvg-wasm"],
+    outputFileTracingIncludes: {
+      "/api/treeOfLife": [
+        "./public/fonts/*.ttf",
+        "./node_modules/@resvg/resvg-wasm/index_bg.wasm",
+      ],
+      "/api/render/*": [
+        "./public/fonts/*.ttf",
+        "./node_modules/@resvg/resvg-wasm/index_bg.wasm",
+      ],
+    },
     experimental: {},
     webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
       // https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application

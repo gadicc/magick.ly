@@ -596,3 +596,18 @@ and public theoricus 5/6; only the generated Tree of Life image remains. Four of
 five archived trees have complete image plans, but authorized durable delivery
 and private reader activation remain pending. Evidence:
 `/tmp/magickli-external-plan-{acceptance.json,coverage.log,types.log,biome.log,loom.log,build.log}`.
+
+The Tree of Life image renderer now backs `/api/render/tree-of-life` and its
+legacy URL with one closed query contract and deterministic outlined SVG/PNG.
+Independent adversarial review covered source-data compatibility, actual field
+glyph coverage, native output and invisible text-path geometry. All 2,228 default
+tests pass (116 new; 14 opt-in Mongo cases skipped), with 62-module coverage gates
+at 98.23% statements, 96.86% branches, 99.87% functions and 99.33% lines. All four
+new renderer modules have 100% measured coverage. Types, Biome, ordinary Loom
+check and production build pass. Actual built-route acceptance passes 38 valid
+and five invalid cases; five font-loaded/browser comparisons pass with stable
+offline first-frame output and no network requests. Font/WASM asset traces are
+present for both routes. No Magickly deployment or private-data change occurred.
+Generated asset-plan integration remains next. See the
+[rendering record](009-ritual-image-acquisition.md#shared-component-image-renderer)
+and `/tmp/magickli-tree-render-{coverage,types,biome,loom,build}.log`.
