@@ -1,0 +1,234 @@
+/** @vitest-environment jsdom */
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import StudyQuiz from "../app/study/[_id]/StudyQuiz";
+import { fetchDueCards } from "./scheduling";
+import type { StudyCard, StudySet } from "./sets";
+
+const A = "01993000-0000-7000-8000-000000000001";
+const databaseHarness = vi.hoisted(() => ({
+  factory: undefined as IDBFactory | undefined,
+  name: "",
+}));
+
+vi.mock("./storage", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./storage")>();
+  return {
+    ...actual,
+    StudyDatabase: class StudyTestDatabase extends actual.StudyDatabase {
+      constructor(_name?: string) {
+        if (!databaseHarness.factory)
+          throw new Error("Study test IndexedDB is not initialized.");
+        super(databaseHarness.name, {
+          indexedDB: databaseHarness.factory,
+          IDBKeyRange,
+        });
+      }
+    },
+  };
+});
+
+class TestBroadcastChannel {
+  static readonly peers = new Map<string, Set<TestBroadcastChannel>>();
+  onmessage: ((event: MessageEvent<unknown>) => void) | null = null;
+
+  constructor(readonly name: string) {
+    const peers = TestBroadcastChannel.peers.get(name) ?? new Set();
+    peers.add(this);
+    TestBroadcastChannel.peers.set(name, peers);
+  }
+
+  postMessage(value: unknown) {
+    for (const peer of TestBroadcastChannel.peers.get(this.name) ?? []) {
+      if (peer !== this)
+        queueMicrotask(() => peer.onmessage?.({ data: value } as MessageEvent));
+    }
+  }
+
+  close() {
+    TestBroadcastChannel.peers.get(this.name)?.delete(this);
+  }
+}
+
+let studyClient: typeof import("./client");
+let studyStorage: typeof import("./storage");
+
+beforeEach(async () => {
+  vi.resetModules();
+  TestBroadcastChannel.peers.clear();
+  databaseHarness.factory = new IDBFactory();
+  databaseHarness.name = `study-client-${crypto.randomUUID()}`;
+  Object.defineProperty(globalThis, "indexedDB", {
+    configurable: true,
+    value: databaseHarness.factory,
+  });
+  Object.defineProperty(globalThis, "IDBKeyRange", {
+    configurable: true,
+    value: IDBKeyRange,
+  });
+  Object.defineProperty(window.navigator, "onLine", {
+    configurable: true,
+    value: true,
+  });
+  vi.stubGlobal("BroadcastChannel", TestBroadcastChannel);
+  studyClient = await import("./client");
+  studyStorage = await import("./storage");
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+const cards: StudyCard[] = [
+  {
+    id: "one",
+    question: "Question one",
+    answer: "A",
+    answers: ["A", "B"],
+  },
+  {
+    id: "two",
+    question: "Question two",
+    answer: "B",
+    answers: ["A", "B"],
+  },
+];
+const set = {
+  id: "synthetic",
+  data: { one: {}, two: {} },
+  question: "question",
+  answer: "answer",
+  answers: ["A", "B"],
+  gdGrade: "0=0",
+  Question: ({ question }: { question: string }) => <div>{question}</div>,
+  generateCards: () => cards,
+} as unknown as StudySet;
+
+describe("study client identity and continuity", () => {
+  it("keeps the live quiz mounted while a local review refreshes its snapshot", async () => {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+    vi.spyOn(Math, "random").mockReturnValue(0);
+
+    function StudyHarness() {
+      const runtime = studyClient.useStudySet(A, "synthetic", ["one", "two"]);
+      if (runtime.loading || !runtime.snapshot) return <div>Loading</div>;
+      return (
+        <StudyQuiz
+          set={set}
+          cards={fetchDueCards(cards, runtime.snapshot)}
+          mode="supermemo"
+          setMode={vi.fn()}
+          onReview={runtime.review}
+          syncWarning={runtime.error}
+        />
+      );
+    }
+
+    render(<StudyHarness />);
+    await screen.findByText("Question one");
+    fireEvent.click(screen.getByRole("button", { name: "A" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "A" }).style.background).toBe(
+        "green",
+      ),
+    );
+    expect(screen.queryByText("Loading")).toBeNull();
+    await waitFor(() => expect(screen.getByText("Question two")).toBeTruthy());
+    expect(screen.getByText("1 / 1")).toBeTruthy();
+  });
+
+  it("does not let a delayed identity lookup reopen account state after sign-out", async () => {
+    let resolveSession: (response: Response) => void = () => undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveSession = resolve;
+          }),
+      ),
+    );
+
+    function ScopeHarness() {
+      const runtime = studyClient.useStudyList(null);
+      return <div>{runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    render(<ScopeHarness />);
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await act(async () => studyClient.prepareStudySignOut());
+    await screen.findByText(/^anonymous:/);
+
+    await act(async () => {
+      resolveSession(Response.json({ user: { id: A } }));
+      await Promise.resolve();
+    });
+    const observer = new studyStorage.StudyDatabase("magickli-study");
+    expect(await observer.device.get("active")).toMatchObject({
+      explicitlySignedOut: true,
+    });
+    expect(
+      (await observer.device.get("active"))?.lastAccountId,
+    ).toBeUndefined();
+    observer.close();
+  });
+
+  it("hides an account scope and aborts its network request on cross-tab sign-out", async () => {
+    let aborted = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_input: RequestInfo | URL, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener(
+              "abort",
+              () => {
+                aborted = true;
+                reject(new DOMException("Aborted", "AbortError"));
+              },
+              { once: true },
+            );
+          }),
+      ),
+    );
+    await studyClient.activateStudyAccount(A);
+
+    function ScopeHarness() {
+      const runtime = studyClient.useStudyList(A);
+      return <div>{runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    render(<ScopeHarness />);
+    await screen.findByText(`account:${A}`);
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    const otherDb = new studyStorage.StudyDatabase("magickli-study");
+    const otherTab = new studyStorage.StudyRepository(otherDb);
+    await act(async () => otherTab.markSignedOut());
+    await waitFor(() => expect(screen.getByText("hidden")).toBeTruthy());
+    expect(aborted).toBe(true);
+    expect(await otherTab.lastLocalAccountId()).toBeNull();
+
+    await act(async () => studyClient.activateStudyAccount(A));
+    await screen.findByText(`account:${A}`);
+    expect(await otherDb.device.get("active")).toMatchObject({
+      explicitlySignedOut: false,
+      lastAccountId: A,
+    });
+    await act(async () => studyClient.prepareStudySignOut());
+    otherTab.close();
+  });
+});

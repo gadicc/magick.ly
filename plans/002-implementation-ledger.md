@@ -4,6 +4,7 @@ Current infrastructure boundary: the new London Neon database is connected and h
 
 | Unit | Status | Verification / notes |
 | --- | --- | --- |
+| Study SQL/Dexie runtime | Complete locally; global login switch pending | Durable review events and SQL receipts, separate anonymous/account progress, lost-reply recovery and cross-tab sign-out; [study runtime](018-sql-study-runtime.md) |
 | SQL ritual reader and offline navigation | Complete locally; publication/runtime cutover pending | Guarded private Dexie reads, SQL public/catalog projection, scoped old-link aliases, downloaded catalog and anonymous service-worker fallback; see [reader contract](017-sql-ritual-reader.md) |
 | SQL upload routes and legacy public URLs | Complete locally; source insertion/publication pending | Authorized selected-ritual uploads, retained retry UUIDs and protected legacy snapshot reads; 251 focused tests, isolated types/build, Biome and Loom check pass; [upload boundary](016-sql-upload-runtime.md) |
 | Study review receipt schema and import boundary | Complete locally; live migration pending | Additive migration 0014; immutable UUIDv7 review receipts; all 34 application tables and required migration artifacts checked; 313 scoped tests, isolated types and Biome pass |
@@ -894,3 +895,12 @@ check. Root review corrected stale private route state, delayed sign-out identit
 responses, a revoked permission during manifest assembly, missing first-visit
 offline-library routing and compressed asset decoding. Publication markers and
 the coordinated runtime cutover remain pending; incomplete bundles fail closed.
+
+The [study runtime](018-sql-study-runtime.md) now uses separate account/anonymous
+Dexie projections with atomic local review events and idempotent SQL receipts.
+Root adversarial fixes prevent lost-reply double counting, preserve retryable
+unknown outcomes and keep the quiz mounted during snapshot refresh. Delayed
+identity responses and cross-tab sign-out cannot reopen the old account view.
+The isolated runtime passes 53 focused tests, TypeScript, Biome, ordinary Loom
+check and production build. Its schema remains unapplied on main; coordinated
+global sign-in activation and deployed acceptance remain next.

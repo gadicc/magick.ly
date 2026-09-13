@@ -1,13 +1,12 @@
 "use client";
 
 import {
-  Button,
   Chip,
   Container,
   MenuItem,
   Paper,
   Select,
-  SelectChangeEvent,
+  type SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -17,22 +16,16 @@ import {
   Typography,
 } from "@mui/material";
 import { formatDistanceToNowStrict } from "date-fns";
-import {
-  useGongoIsPopulated,
-  useGongoLive,
-  useGongoOne,
-  useGongoSub,
-  useGongoUserId,
-} from "gongo-client-react";
-import { signIn } from "next-auth/react";
 import React from "react";
-import db, { enableNetwork } from "@/db";
+import { useSession } from "@/auth/client";
 import Link from "@/lib/link";
 import {
   useRouter,
   useSearchParams,
   useSetSearchParam,
 } from "@/lib/navigation";
+import { useStudyList } from "@/study/client";
+import { materializeStudyCards } from "@/study/reviewContract";
 import { dueCount } from "@/study/scheduling";
 import { sets as allSets, tags as allTags } from "@/study/sets";
 
@@ -40,53 +33,54 @@ function StudyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setSearchParam = useSetSearchParam();
-
-  const _tags = searchParams?.get("tags");
-
+  const session = useSession();
+  const accountId = session.isPending
+    ? undefined
+    : (session.data?.user.id ?? null);
+  const runtime = useStudyList(accountId);
+  const selectedTags = searchParams?.get("tags");
   const tags = React.useMemo(
-    () =>
-      (_tags && (Array.isArray(_tags) ? _tags : _tags.split(","))) || ["all"],
-    [_tags],
+    () => selectedTags?.split(",") ?? ["all"],
+    [selectedTags],
   );
-  const isPopulated = useGongoIsPopulated();
   const gdGrade = searchParams?.get("gdGrade") || "all";
-
-  const currentSets = useGongoLive((db) =>
-    db.collection("studySet").find().sort("setId", "asc"),
-  ).filter(
-    (s) =>
-      !!allSets[s.setId] &&
-      (gdGrade === "all" || allSets[s.setId].gdGrade === gdGrade) &&
-      (tags[0] === "all" ||
-        tags.every((tag) => allSets[s.setId].tags?.includes(tag))),
-  );
-
-  const network = useGongoOne((db) => db.gongoStore.find({ _id: "network" }));
-  const userId = useGongoUserId();
-  useGongoSub("studySet");
-
   const setGdGrade = (event: SelectChangeEvent) =>
     setSearchParam("gdGrade", event.target.value);
   const setTags = (event: SelectChangeEvent) =>
     setSearchParam("tags", event.target.value);
 
+  const currentSets = React.useMemo(
+    () =>
+      runtime.snapshots
+        .filter(
+          (row) =>
+            !!allSets[row.setId] &&
+            (gdGrade === "all" || allSets[row.setId].gdGrade === gdGrade) &&
+            (tags[0] === "all" ||
+              tags.every((tag) => allSets[row.setId].tags?.includes(tag))),
+        )
+        .map((row) =>
+          materializeStudyCards(
+            row,
+            Object.keys(allSets[row.setId].data),
+            Date.now(),
+          ),
+        ),
+    [gdGrade, runtime.snapshots, tags],
+  );
   const currentSetIds = React.useMemo(
-    () => currentSets.map((s) => s.setId),
+    () => new Set(currentSets.map((row) => row.setId)),
     [currentSets],
   );
-
   const otherSets = React.useMemo(
     () =>
-      Object.keys(allSets)
-        .filter((key) => gdGrade === "all" || allSets[key].gdGrade === gdGrade)
+      Object.values(allSets)
+        .filter((set) => gdGrade === "all" || set.gdGrade === gdGrade)
         .filter(
-          (key) =>
-            !tags ||
-            tags[0] === "all" ||
-            tags.every((tag) => allSets[key].tags?.includes(tag)),
+          (set) =>
+            tags[0] === "all" || tags.every((tag) => set.tags?.includes(tag)),
         )
-        .filter((setId) => !currentSetIds.includes(setId))
-        .map((setId) => allSets[setId])
+        .filter((set) => !currentSetIds.has(set.id))
         .sort((a, b) => {
           if (a.gdGrade !== b.gdGrade)
             return (
@@ -97,15 +91,11 @@ function StudyPage() {
         }),
     [currentSetIds, gdGrade, tags],
   );
-
   const sortedTags = React.useMemo(() => [...allTags].sort(), []);
 
-  React.useEffect(() => {
-    // @ts-expect-error: TODO
-    if (db.transport) db.transport.poll();
-  }, []);
-
-  if (!isPopulated) return <div>Initializating...</div>;
+  if (runtime.error && !runtime.scope)
+    return <div>Study progress could not be loaded: {runtime.error}</div>;
+  if (runtime.loading) return <div>Initializing study progress…</div>;
 
   return (
     <Container sx={{ py: 1 }}>
@@ -122,13 +112,18 @@ function StudyPage() {
           </MenuItem>
         ))}
       </Select>
+      {runtime.error && (
+        <Typography color="warning.main" sx={{ mt: 1 }}>
+          Progress is saved on this device. Sync will retry when available.
+        </Typography>
+      )}
       <br />
       <br />
       <Typography variant="h5" sx={{ paddingBottom: 1 }}>
         Current Sets
       </Typography>
       <TableContainer component={Paper}>
-        <Table aria-label="simple table">
+        <Table aria-label="Current study sets">
           <TableHead>
             <TableRow>
               <TableCell>Set</TableCell>
@@ -140,34 +135,30 @@ function StudyPage() {
           <TableBody>
             {currentSets.map((set) => {
               const dueCards = dueCount(set);
-              const score =
-                set.correct + set.incorrect > 0
-                  ? Math.round(
-                      (set.correct / (set.correct + set.incorrect)) * 100,
-                    ) + "%"
-                  : "(info)";
-
+              const attempts = set.correct + set.incorrect;
+              const score = attempts
+                ? `${Math.round((set.correct / attempts) * 100)}%`
+                : "(info)";
               return (
                 <TableRow
-                  key={set._id}
+                  key={set.setId}
                   sx={{
                     opacity: dueCards ? 1 : 0.5,
                     "&:last-child td, &:last-child th": { border: 0 },
                   }}
-                  // onClick={() => router.push("/study/" + set.setId)}
                 >
-                  <TableCell /* sx={{ verticalAlign: "top" }} */>
+                  <TableCell>
                     <div style={{ display: "inline-block", width: 55 }}>
                       <Chip size="small" label={allSets[set.setId].gdGrade} />
                     </div>
-                    <Link href={"/study/" + set.setId}>{set.setId}</Link>
+                    <Link href={`/study/${set.setId}`}>{set.setId}</Link>
                   </TableCell>
-                  <TableCell align="center" sx={{ _verticalAlign: "top" }}>
+                  <TableCell align="center">
                     {dueCards
-                      ? dueCards + " cards"
-                      : "in " + formatDistanceToNowStrict(set.dueDate)}
+                      ? `${dueCards} cards`
+                      : `in ${formatDistanceToNowStrict(set.dueDate)}`}
                     <br />
-                    <Link href={"/study/info/" + set.setId}>{score}</Link>
+                    <Link href={`/study/info/${set.setId}`}>{score}</Link>
                   </TableCell>
                 </TableRow>
               );
@@ -176,34 +167,26 @@ function StudyPage() {
         </Table>
       </TableContainer>
       <br />
-      {(!network?.enabled || !userId) && (
-        <span>
-          {!network?.enabled && (
-            <>
-              <Button onClick={enableNetwork}>Enable Network</Button>
-              and{" "}
-            </>
-          )}
-          <Button
-            disabled={!network?.enabled}
-            onClick={() => signIn() /*db.auth.loginWithService("google")*/}
-          >
-            Login
-          </Button>
-          to sync and save your progress, and participate in leaderboards
-          (coming soon).
-          <br />
-          <br />
-        </span>
+      {runtime.scope?.kind === "anonymous" ? (
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          Anonymous progress is available offline on this device.{" "}
+          <Link href="/signin?callbackURL=/study">Sign in</Link> to keep
+          separate account progress in sync.
+        </Typography>
+      ) : (
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          Account progress syncs when online. Existing anonymous device progress
+          remains separate and is available after sign-out.
+        </Typography>
       )}
       <Typography variant="h5" sx={{ paddingBottom: 1 }}>
         Available Sets
       </Typography>
       <TableContainer component={Paper}>
-        <Table aria-label="simple table">
+        <Table aria-label="Available study sets">
           <TableHead>
             <TableRow>
-              <TableCell></TableCell>
+              <TableCell />
               <TableCell>Set</TableCell>
               <TableCell align="right"># Cards</TableCell>
             </TableRow>
@@ -213,13 +196,13 @@ function StudyPage() {
               <TableRow
                 key={set.id}
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                onClick={() => router.push("/study/" + set.id)}
+                onClick={() => router.push(`/study/${set.id}`)}
               >
-                <TableCell sx={{ padding: "16px 0px 16px 10px" }}>
+                <TableCell sx={{ padding: "16px 0 16px 10px" }}>
                   <Chip size="small" label={set.gdGrade} />
                 </TableCell>
                 <TableCell component="th" scope="row">
-                  <Link href={"/study/" + set.id}>{set.id}</Link>
+                  <Link href={`/study/${set.id}`}>{set.id}</Link>
                 </TableCell>
                 <TableCell align="right">
                   {Object.keys(set.data).length}

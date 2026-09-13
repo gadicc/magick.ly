@@ -1,11 +1,24 @@
 import { type SuperMemoGrade, supermemo } from "supermemo";
-import type { StudyCardStats, StudySetStats } from "../app/study/[_id]/exports";
 import type { StudyCard, StudySet } from "./sets";
+import type {
+  StudyCardStats,
+  StudyRuntimeCardStats,
+  StudyRuntimeSetStats,
+  StudySetStats,
+} from "./types";
 
 /** A completed card: wrong guesses so far and its start time in epoch milliseconds. */
 export interface StudyAttempt {
   wrongCount: number;
   startTime: number;
+  mode: string;
+}
+
+/** Immutable timing facts used by both the browser outbox and SQL scheduler. */
+export interface CompletedStudyAttempt {
+  wrongCount: number;
+  elapsedMs: number;
+  answeredAtMs: number;
   mode: string;
 }
 
@@ -18,12 +31,16 @@ export interface StudyReview {
   dueDate?: Date;
 }
 
-export function newCardStats(): StudyCardStats {
+export interface RuntimeStudyReview extends Omit<StudyReview, "card"> {
+  card: StudyRuntimeCardStats;
+}
+
+export function newCardStats(dueDate = new Date()): StudyCardStats {
   return {
     correct: 0,
     incorrect: 0,
     time: 0,
-    dueDate: new Date(),
+    dueDate: new Date(dueDate.getTime()),
     supermemo: {
       interval: 0,
       repetition: 0,
@@ -80,17 +97,44 @@ export function reviewCard(
   _studyData: StudySetStats,
   { wrongCount, startTime, mode }: StudyAttempt,
 ) {
-  // Content can acquire new cards after this study record was first created.
-  const card = { ...(_studyData.cards[cardId] || newCardStats()) };
+  const answeredAtMs = Date.now();
+  return reviewCardAt(cardId, _studyData, {
+    wrongCount,
+    elapsedMs: answeredAtMs - startTime,
+    answeredAtMs,
+    mode,
+  });
+}
 
-  const studyDataUpdate: StudyReview = {
+/** Applies a completed review deterministically without reading the wall clock. */
+export function reviewCardAt(
+  cardId: string,
+  _studyData: StudySetStats,
+  attempt: CompletedStudyAttempt,
+): StudyReview;
+export function reviewCardAt(
+  cardId: string,
+  _studyData: StudyRuntimeSetStats,
+  attempt: CompletedStudyAttempt,
+): RuntimeStudyReview;
+export function reviewCardAt(
+  cardId: string,
+  _studyData: StudyRuntimeSetStats,
+  { wrongCount, elapsedMs, answeredAtMs, mode }: CompletedStudyAttempt,
+) {
+  // Content can acquire new cards after this study record was first created.
+  const card = {
+    ...(_studyData.cards[cardId] || newCardStats(new Date(answeredAtMs))),
+  };
+
+  const studyDataUpdate: RuntimeStudyReview = {
     correct: _studyData.correct,
     incorrect: _studyData.incorrect,
     time: _studyData.time,
     card,
   };
 
-  const elapsed = Date.now() - startTime;
+  const elapsed = elapsedMs;
   card.time += elapsed;
   studyDataUpdate.time += elapsed;
 
@@ -113,7 +157,7 @@ export function reviewCard(
     card.supermemo = supermemo(card.supermemo, grade);
 
     const dayInMs = 86400000;
-    card.dueDate = new Date(Date.now() + card.supermemo.interval * dayInMs);
+    card.dueDate = new Date(answeredAtMs + card.supermemo.interval * dayInMs);
 
     let earliestDueDate = card.dueDate;
     for (const [id, card2] of Object.entries(_studyData.cards)) {
@@ -136,7 +180,7 @@ export function reviewCard(
 
 export function fetchDueCards(
   allCards: StudyCard[],
-  studyData: StudySetStats,
+  studyData: StudyRuntimeSetStats,
 ): StudyCard[] {
   const now = new Date();
   const cards: StudyCard[] = [];
@@ -149,7 +193,7 @@ export function fetchDueCards(
 
 export function repetitionCards(
   allCards: StudyCard[],
-  studyData: StudySetStats,
+  studyData: StudyRuntimeSetStats,
 ): StudyCard[] {
   const cards: StudyCard[] = [];
   for (const setCard of allCards) {
@@ -160,7 +204,7 @@ export function repetitionCards(
   return cards;
 }
 
-export function dueCount(set: StudySetStats): number {
+export function dueCount(set: StudyRuntimeSetStats): number {
   let count = 0;
   const now = new Date();
   for (const card of Object.values(set.cards)) if (card.dueDate <= now) count++;

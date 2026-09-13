@@ -59,6 +59,7 @@ export interface StudySetData<T = StudyCardDataItem> {
   question: string | ((item: T) => string | React.ReactNode);
   answer: string | ((item: T) => string);
   answers?: string[];
+  questionStyle?: Record<string, unknown>;
   gdGrade:
     | "0=0"
     | "1=10"
