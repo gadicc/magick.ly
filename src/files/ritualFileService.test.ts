@@ -2,11 +2,11 @@ import { createHash } from "node:crypto";
 import type { LoomFileStorageAdapter } from "@gadicc/loom/files";
 import { describe, expect, it, vi } from "vitest";
 import { createUuidV7 } from "../lib/ids";
+import type { RitualFileRecord } from "./repository";
 import {
   createAuthorizedRitualFileReader,
   createRitualFileLoomService,
 } from "./ritualFileService";
-import type { RitualFileRecord } from "./repository";
 
 vi.mock("server-only", () => ({}));
 

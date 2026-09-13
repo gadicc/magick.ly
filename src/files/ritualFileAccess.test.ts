@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { createUuidV7 } from "../lib/ids";
+import type { RitualFileRecord } from "./repository";
 import { createRitualFileAuthorizer } from "./ritualFileAccess";
 import { formatRitualFileLocator } from "./ritualFileLocator";
-import type { RitualFileRecord } from "./repository";
 
 vi.mock("server-only", () => ({}));
 

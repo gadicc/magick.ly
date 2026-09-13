@@ -2,9 +2,9 @@ import "server-only";
 
 import type { LoomFileRouteAccess } from "@gadicc/loom/next/files";
 import { sqlRitualReader } from "../doc/sqlRuntime";
+import type { RitualFileRecord } from "./repository";
 import { createRitualFileAuthorizer } from "./ritualFileAccess";
 import { parseRitualFileLocator } from "./ritualFileLocator";
-import type { RitualFileRecord } from "./repository";
 
 const authorize = createRitualFileAuthorizer(sqlRitualReader);
 const unavailable = () =>

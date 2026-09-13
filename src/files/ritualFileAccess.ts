@@ -1,11 +1,11 @@
 import "server-only";
 
 import { inventoryRitualAssetJson } from "../offline/ritualAssetInventory";
+import type { RitualFileRecord } from "./repository";
 import {
   formatRitualFileLocator,
   type RitualFileLocator,
 } from "./ritualFileLocator";
-import type { RitualFileRecord } from "./repository";
 
 export interface RenderedRitualForFileAccess {
   ritual: { id: string; canEdit: boolean };

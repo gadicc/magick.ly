@@ -6,9 +6,9 @@ import {
   readLoomFileBodyBytes,
   sha256Hex,
 } from "@gadicc/loom/files";
+import type { RitualFileRecord } from "./repository";
 import type { RitualFileLocator } from "./ritualFileLocator";
 import { RITUAL_UPLOAD_MAX_BYTES } from "./ritualUploadProtocol";
-import type { RitualFileRecord } from "./repository";
 
 export interface RitualFileRepositoryRead {
   findById(id: string): Promise<RitualFileRecord | null>;

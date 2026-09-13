@@ -7,8 +7,8 @@ import {
   type PrivateRitualImageCatalog,
   PrivateRitualImageCatalogError,
 } from "./privateRitualImageCatalog";
-import { formatRitualFileLocator } from "./ritualFileLocator";
 import type { RitualFileRecord } from "./repository";
+import { formatRitualFileLocator } from "./ritualFileLocator";
 
 vi.mock("server-only", () => ({}));
 

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { formatRitualFileLocator } from "@/files/ritualFileLocator";
 import type { RitualFileRecord } from "@/files/repository";
+import { formatRitualFileLocator } from "@/files/ritualFileLocator";
 import { GET } from "./route";
 
 const mocks = vi.hoisted(() => ({
