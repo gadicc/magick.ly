@@ -796,3 +796,20 @@ and IDs disposable. Evidence: `/tmp/magickli-import-service-postgres/README.md`,
 The trusted maintenance launcher still needs selected-URL/control-plane identity
 and an approved matching Neon catalog; authentication/runtime integration and
 final cutover remain pending. Neon still has only migrations 0000–0001 applied.
+
+The [dedicated maintenance connection](011-legacy-import-checkpoint.md) now binds
+one explicit direct Neon URL to its reviewed transport selection and forces
+certificate/hostname verification. It refuses routing overrides and unsupported
+channel-binding requirements, preserves exact credentials and ignores ambient
+PG settings. It does not authenticate a provider branch or activate an importer.
+
+All 3,759 default tests (95 new; 14 opt-in Mongo skipped), 84-module coverage
+gates, types, Biome and ordinary Loom check pass. Coverage is 98.28% statements,
+97.17% branches, 99.91% functions and 99.31% lines. Independent review is clean;
+real-driver local TLS acceptance proves untrusted/wrong-host refusal before
+startup and matching-certificate success. This unused maintenance module does
+not change any built route; the preceding integrated importer build passed.
+Evidence: `/tmp/magickli-import-connection-tls/README.md` and
+`/tmp/magickli-import-connection-{coverage,types,biome,loom}.log`.
+Fresh provider identity, reviewed artifacts and the maintenance commands remain
+next. No live target or environment variables were changed.

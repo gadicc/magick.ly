@@ -305,6 +305,37 @@ disposable. Evidence:
 `/tmp/magickli-import-service-corpus-postgres/result.json`, SHA-256
 `3bb7fd44772a62f46f9910f4efe8e12e412e41f27974579c1a119fac4273ea4f`.
 
+## Dedicated maintenance connection
+
+`createLegacyImportConnection` now takes one captured direct Neon URL and an
+exact host/port/database/role selection. It refuses pooled/multiple hosts,
+ambiguous routing/startup options, duplicate query keys, raw whitespace,
+fragments and missing credentials. Encoded identifiers and credentials retain
+their exact values. The returned client is lazy and dedicated; constructing it
+does not contact a database or approve the selected provider destination.
+
+The constructor supplies all installed postgres.js routing/lifetime/default
+options explicitly, uses one connection and forces certificate/hostname
+verification. Ambient PG variables cannot change the selected credentials,
+destination, TLS or debug behavior. Connection and close waits are bounded;
+notices are suppressed. It never imports the environment-selected runtime
+singleton. The maintenance caller still owns SQL error handling and closing the
+client in finally without obscuring an earlier import outcome.
+
+Installed postgres.js 3.4.9 implements SCRAM-SHA-256 but not channel binding's
+PLUS mechanism. An explicit `channel_binding=require` is therefore refused with
+`UNSUPPORTED_CHANNEL_BINDING`; the constructor never silently drops a requested
+security property. Supporting such a URL requires a separately reviewed driver
+change or explicit connection-policy decision.
+
+All 95 independently written tests pass with complete module coverage, including
+actual installed-driver option parsing under hostile ambient PG variables.
+Native TLS tests reject an untrusted certificate and a trusted wrong hostname
+before PostgreSQL startup, and accept a matching trusted certificate through a
+synthetic local PostgreSQL protocol server. No actual Neon connection occurs.
+Evidence: `/tmp/magickli-import-connection-tls/result.json`, SHA-256
+`da274004ed5cea532661262cf9fabac7472f84e396419a4855013d181b6b40bc`.
+
 ## Next integration
 
 The maintenance command must bind the actual selected direct connection to fresh
@@ -317,3 +348,14 @@ table locks do not promise immunity to arbitrary concurrent administrative DDL.
 Final cutover still requires a fresh backup under the approved write pause and
 the separately tested canonical-auth, SQL runtime, private offline and recovery
 paths. No Neon import, provider write, runtime switch or deployment has occurred.
+
+The installed Loom migration preflight and runtime URL selector have different
+precedence; the latter also does not establish provider branch identity. Do not
+validate one selected URL and then import the ordinary singleton against another.
+The dedicated constructor above addresses transport selection only. The next
+launcher gates remain refreshed endpoint/branch evidence and protected reviewed
+artifacts. The current Neon API exposes the required read-only
+[endpoint](https://api-docs.neon.tech/reference/getprojectendpoint),
+[branch](https://api-docs.neon.tech/reference/getprojectbranch) and
+[project](https://api-docs.neon.tech/reference/getproject) metadata calls; their
+availability is not evidence that this task has authenticated access to them.
