@@ -175,3 +175,28 @@ No provider plan or permission rejection was established. The original failed
 records remain under `/tmp/magickli-neon-rehearsal`; CLI evidence is
 `/tmp/magickli-neon-cli-stdin-probe/final-report.json`, SHA-256
 `770f1f0dad3accf179f93c6c14939bc9657ce11b2b4d24443e39e2235adf211b`.
+
+## Final 16-migration synthetic rehearsal
+
+The current migration set (0000–0015) passed on a fresh schema-only London
+branch using the actual `pnpm migration:legacy` command. Its approved catalog
+contains all 35 ordinary tables: 34 application import tables and the protected
+import-run table. Preparation, inspection and application work across fresh
+processes after removal of the synthetic source backup. Completed inspection,
+completed application retry and an unchanged migration rerun preserve the same
+saved identities, rows and receipts.
+
+All 81 reviewed source fingerprints stayed unchanged. The branch
+`br-withered-cloud-za1valmp` was removed. A separate authenticated check confirmed
+only the original main branch remains; a separate read-only SQL probe matched
+the before/after main catalog, original two migration records and zero aliases.
+No production schema change or private import occurred.
+
+Evidence: `/tmp/magickli-neon-rehearsal-final-2/result.json`, SHA-256
+`c7c846685de7302350ec194f8eeb49b06abc9ca2a06b233b7a1e066593e3c268`,
+and `independent-verification.json` in the same directory. The final rehearsal
+catalog identity is
+`cd9d2a2b34abf69ee01f541ca722a5d8948adbe7b0aa2766fdc6b91ba16972ba`.
+The preceding run stopped before application when a concurrent tooling edit
+changed its reviewed fingerprint. Its branch was also removed and its failure
+artifacts remain intact under `/tmp/magickli-neon-rehearsal-final`.

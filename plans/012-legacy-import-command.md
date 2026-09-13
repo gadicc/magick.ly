@@ -153,3 +153,24 @@ the initial run. Isolated typechecking and targeted Biome pass. Evidence:
 `/tmp/magickli-study-import-types.log` and
 `/tmp/magickli-study-import-boundary-biome.log`. Live migration, runtime review
 acceptance and final cutover are separate steps.
+
+## Final command rehearsal with the current schema
+
+The 16-migration set, including migration 0015, now passes the real maintenance
+command on a disposable London Neon branch. The command checks all 34 application
+tables against the approved 35-table catalog. The synthetic fixture retains 76
+expected rows; runtime-only tables remain deliberately empty.
+
+After `prepare`, the runner removes only its invented source backup. A fresh
+`prepare` and `inspect` return the identical prepared receipt; `apply` completes
+from the immutable saved plan. An unchanged migration rerun and fresh completed
+`inspect`/`apply` preserve the exact completed receipt. The saved plan SHA-256
+remains `37ff6f2e565f3964739ba0f9cd741bc8cfa782db4afd4017a492be0e97d15f10`.
+The launcher holds and rechecks all 81 source fingerprints throughout the run.
+
+Independent review verifies receipt equality, source and saved-plan hashes,
+owned-branch absence and the unchanged main catalog/journal/empty aliases.
+See [the provisioning evidence](004-neon-provisioning.md#final-16-migration-synthetic-rehearsal).
+This proves the current command and schema with synthetic data. Effective
+Preview isolation, real application journeys, the final writer pause, a fresh
+consistent production snapshot and production import remain separate gates.
