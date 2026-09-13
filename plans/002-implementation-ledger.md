@@ -684,3 +684,17 @@ remain unchanged and the disposable database is removed. Evidence:
 `/tmp/magickli-discourse-postgres-rehearsal/README.md` and
 `/tmp/magickli-discourse-{coverage,types,biome,loom,build}.log`.
 The next integration is the durable prepared checkpoint and atomic importer.
+
+The [complete preparation and checkpoint format](011-legacy-import-checkpoint.md)
+now composes all domain planners with stable canonical/provenance IDs and exact
+source/configuration/destination bindings. Protected corpus acceptance accounts
+for all 190 documents and round-trips the prepared data with unchanged backup
+fingerprints. Previously unclassified locale/gender/photo-provider fields are
+preserved privately; old tokens and sessions remain excluded.
+
+All 3,288 tests (272 new; 14 opt-in Mongo cases skipped), 77-module coverage gates,
+types, Biome, ordinary Loom check and production build pass. Adversarial work
+fixed escaped-string budgeting and allocator-triggered source mutation. The
+record documents which independent reviews finished before review workers hit
+the account usage limit. The atomic SQL importer and owned backup loader remain
+next; no database, provider or runtime behavior changed.

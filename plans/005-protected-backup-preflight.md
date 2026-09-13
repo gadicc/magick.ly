@@ -123,6 +123,14 @@ The [SQL ritual reader](../src/doc/sqlReads.ts) may return an original archive o
 
 ## Remaining cutover gates
 
+The [combined preparation/checkpoint pass](011-legacy-import-checkpoint.md) now
+accounts for all domain rows together, including exact typed aliases and stable
+provenance IDs. It also retains previously unclassified historical locale/gender
+values and photo provider labels privately. Repeat preparation and exact Date/
+JSON checkpoint round trips pass with unchanged backup/module hashes. This pass
+uses synthetic destination bindings and creates no durable import artifact.
+The authoritative owned loader and atomic SQL application remain separate work.
+
 The pure rendered asset inventory finds all 17 image occurrences across the five
 exact current archives: six legacy file URLs, four external images, two inline
 images, one generated TreeOfLife and four local PNG references. Two local paths
