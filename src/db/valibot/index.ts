@@ -2,6 +2,7 @@ export * from "./generated/auth";
 export * from "./generated/discourse";
 export * from "./generated/legacyFiles";
 export * from "./generated/legacyIds";
+export * from "./generated/legacyImportRuns";
 export * from "./generated/loomFiles";
 export * from "./generated/memberships";
 export * from "./generated/ritualBundles";

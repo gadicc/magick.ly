@@ -78,6 +78,7 @@ describe("complete legacy import row projection", () => {
     const rows = project(p);
     const schemaNames = Object.values(schema)
       .filter((value) => is(value, Table))
+      .filter((table) => table !== schema.legacyImportRuns)
       .map((table) => getTableName(table))
       .sort();
     expect(schemaNames).toHaveLength(33);

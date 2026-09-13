@@ -202,6 +202,43 @@ The future importer must supply
 target/schema checks, a transaction, locks and deadlines; this helper does not
 make an unlocked sequence of table reads an atomic snapshot.
 
+## Durable checkpoint schema and migration history
+
+Migration 0013 adds `legacy_import_runs`, separate from the 33 application tables.
+One required unique slot permits one bootstrap run per database. All IDs, source/
+configuration/schema/target hashes, expected-row hash and imported/prepared dates
+are explicit. The exact protected payload must fit 1 byte–64 MiB and match its UTF-8
+SHA-256. Timestamps must be finite. Completion is either wholly absent or has a
+date no earlier than preparation and the same expected-row fingerprint.
+
+The table has no defaults or domain foreign keys. Application deletion cannot
+cascade away completion evidence, and a retry cannot generate fresh IDs through
+SQL defaults. The future service owns immutable-header behavior and allowed
+state transitions; SQL constraints alone do not implement a resumable importer.
+Generated Valibot output and the app schema barrel include the new table, while
+complete application-row reconciliation deliberately excludes this ledger.
+
+`legacyImportMigrations` binds the installed Drizzle reader's complete ordered
+SQL identities, including exact decoded SQL hashes, breakpoint flags and positive
+safe timestamps. It reconstructs the reader's statement split without trimming
+or changing line endings and validates the declared SQL hash. Migration-history
+verification compares every applied `(created_at, hash)` in both directions with
+multiplicity, detecting changed or duplicated old entries even if the latest
+timestamp still matches. Input is copied before awaits and errors contain only
+fixed categories. A matching journal does not prove an unchanged schema catalog;
+the caller must still provide that check, target identity and transaction locks.
+
+Forty-nine independently written schema tests and 35 migration-history tests
+pass. Root review added rejection of PostgreSQL infinity timestamps; subsequent
+independent review found no migration-helper defect. Actual PostgreSQL 15.17 via
+Loom 1.24.0 applies all 14 migrations to 34 tables, round-trips the synthetic
+protected checkpoint, rejects singleton/hash/completion/history drift, reconciles
+complete rows and repeats migrations without altering the saved baseline or
+completion. All 58 source fingerprints remain unchanged; the disposable database
+is removed. Evidence: `/tmp/magickli-import-runs-postgres/result.json`, SHA-256
+`db007410e15a2d3b076ee6e602b7f2534c9d695958059f24823ec24cbbbec2ad`.
+This migration has not been applied to Neon.
+
 ## Next integration
 
 Use one protected singleton prepared run and one ordered atomic application

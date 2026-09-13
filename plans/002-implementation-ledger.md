@@ -751,3 +751,20 @@ private SQL import. Evidence: `/tmp/magickli-import-rows-postgres/README.md`,
 `/tmp/magickli-import-rows-{coverage,final-types,biome,loom,build}.log`.
 Durable preparation/application and their target/schema/transaction fences remain
 the next integration; runtime traffic continues to use the existing database.
+
+Migration 0013 now defines the protected singleton import checkpoint, with exact
+payload hashes, explicit IDs/dates and consistent completion evidence. The
+separate migration-history checker validates every applied historical hash and
+timestamp against the reviewed Drizzle artifact. Neither module activates import
+or runtime traffic. [Current contract and evidence](011-legacy-import-checkpoint.md)
+distinguish these foundations from the still-pending atomic prepare/apply service.
+
+All 3,553 tests (84 new; 14 opt-in Mongo skipped), 81-module coverage gates, types,
+Biome, ordinary Loom check and production build pass. Coverage is 98.29%
+statements, 97.16% branches, 99.91% functions and 99.33% lines. Independent schema
+tests and migration-helper review pass. Actual PostgreSQL acceptance applies all
+14 migrations to 34 tables, preserves a synthetic checkpoint across rerun and
+rejects old-journal drift with all 58 source fingerprints unchanged. Its disposable
+database is removed. Evidence: `/tmp/magickli-import-runs-postgres/README.md` and
+`/tmp/magickli-import-runs-{coverage,types,biome,loom,build}.log`. Migration 0013 is
+local only; target catalog/connection validation and import orchestration remain.
