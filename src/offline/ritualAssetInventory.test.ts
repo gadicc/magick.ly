@@ -38,6 +38,7 @@ describe("ritual asset occurrence identity", () => {
       "/pics/synthetic.svg#",
     ];
     const result = good(node(refs.map((src) => img(src))));
+    expect(result.profile).toBe("magickli-jrt-assets-v2");
     expect(result.occurrences.map((o) => o.src)).toEqual(refs);
     expect(result.occurrences.map((o) => o.path)).toEqual([[0], [1], [2], [3]]);
     expect(result.occurrences[0]).toMatchObject({
@@ -136,6 +137,44 @@ describe("ritual asset occurrence identity", () => {
     expect(result.occurrences[0].networkReference).toBe(
       generated.split("#")[0],
     );
+  });
+  it("recognizes only the two local generated routes and retains their exact URL identities", () => {
+    const refs = [
+      "/api/treeOfLife?field=name.roman&fmt=svg#legacy",
+      "/api/render/tree-of-life?fmt=svg&field=name%2Eroman#canonical",
+      "https://magick.ly/api/render/tree-of-life?field=name.roman#%23raw",
+    ];
+    const tree = node(refs.map((src) => img(src))),
+      original = JSON.stringify(tree),
+      result = good(tree);
+    expect(result.occurrences.map((row) => row.reference.kind)).toEqual(
+      Array(3).fill("generated-tree-of-life"),
+    );
+    expect(result.occurrences.map((row) => row.src)).toEqual(refs);
+    expect(result.occurrences.map((row) => row.networkReference)).toEqual(
+      refs.map((ref) => ref.split("#")[0]),
+    );
+    expect(result.occurrences.map((row) => row.displayFragment)).toEqual([
+      "#legacy",
+      "#canonical",
+      "#%23raw",
+    ]);
+    expect(JSON.stringify(tree)).toBe(original);
+    for (const reference of [
+      "/api/render/tree-of-life/",
+      "/api/render/TreeOfLife",
+      "/api/render/rose-sigil",
+      "/api/render/../render/tree-of-life",
+      "/api/render/tree%2Dof%2Dlife",
+    ])
+      expect(
+        inventory(node([img(reference)]), options).occurrences[0].reference
+          .kind,
+      ).toBe("unresolved");
+    expect(
+      good(node([img("https://other.example/api/render/tree-of-life")]))
+        .occurrences[0].reference.kind,
+    ).toBe("external");
   });
   it.each([
     "/api/files/future-id",

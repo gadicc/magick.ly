@@ -224,7 +224,49 @@ Evidence: `/tmp/magickli-tree-api-acceptance.json`,
 accepted outline fingerprints for each script/symbol group; a generic nonempty
 Latin fixture alone would miss partial glyph loss.
 
-Generated catalog/plan integration and durable authorized publication remain
-pending. The other clipboard/download widgets also remain a separate unit:
+Durable authorized publication remains pending. The other clipboard/download
+widgets also remain a separate unit:
 several export completed client-side state, so adding their slugs without a
 server rendering contract would produce incomplete output.
+
+### Generated capture and complete image plans
+
+The generated-image catalog calls the closed renderer in process for exact
+inventoried Tree of Life references. Both route spellings are recognized;
+unknown paths/origins and unsupported query props remain unresolved without a
+network request. Input arrays, including holes, are validated and copied before
+rendering. The catalog retains owned validated bytes and records the exact
+reference digest, normalized props, source SVG digest, font/WASM identity and
+final output digest. Copies survive catalog disposal; retained buffers are wiped.
+
+The catalog permits at most 32 references, 16 KiB per reference, 4 MiB per image
+and 32 MiB cumulative rendered bytes, with a cooperative 30-second deadline.
+These are output/capture bounds, not a renderer working-memory limit or immediate
+interruption of native/WASM work. The closed renderer separately bounds dimensions
+and pixel count. Cancellation or a terminal budget failure wipes earlier captures.
+
+Inventory v2 recognizes the canonical route. Plan v4 consumes the captured
+capability without invoking a renderer, snapshots metadata before awaiting, checks
+copied byte size/digest and binds the generated catalog identity even when unused.
+Original query spelling/order, aliases and occurrence fragments remain exact;
+source JSON is unchanged. Missing/disposed/mismatched captures remain explicit
+issues rather than claiming download readiness. This is still server resolution
+evidence, not an authorization grant or durable offline manifest.
+
+Read-only acceptance now resolves all 17/17 image occurrences in all five archived
+ritual trees, plus 2/2, 4/4 and 6/6 in the three built-in sources. It reads the ten
+verified legacy objects and four pinned external images, uses the 15-file static
+catalog, and generates the one missing Tree of Life image. The generated catalog
+SHA-256 is `4df0f9ec4fd9516b498ba5bd878140112140fa0b29577c468639e032a39caf57`;
+its image matches the production-built route's 142,962-byte output above. The
+fifth archived tree now captures 1,518,677 bytes across seven images. All 21 backup
+fingerprints, 15 public images and three source files remain unchanged. No
+database connection, provider write or retained protected source/object bytes was
+needed. Disposable aliases served only the in-memory legacy projection.
+
+The isolated acceptance harness initially mixed BSON's CJS decoder with the ESM
+importer's ObjectId class. Using one actual ESM module instance restored the
+intended identity check; application validation was not weakened. Evidence:
+`/tmp/magickli-generated-plan-acceptance.json` and its script. Independent factory
+review includes nine real-renderer/native-validator probe groups under
+`/tmp/magickli-generated-catalog-review/`.

@@ -7,6 +7,7 @@ import { ObjectId } from "bson";
 import sharp from "sharp";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ExternalRitualImageCatalog } from "../files/externalRitualImageCatalog";
+import type { GeneratedRitualImageCatalog } from "../files/generatedRitualImageCatalogTypes";
 import {
   createLegacyRitualImageCatalog,
   type LegacyRitualImageCatalog,
@@ -19,6 +20,7 @@ import {
 import * as svgModule from "../files/validateRitualSvg";
 import { createUuidV7 } from "../lib/ids";
 import { planLegacyFileImport } from "../migration/planLegacyFileImport";
+import { parseComponentImageRequest } from "../render/componentImageRequest";
 import {
   createRitualAssetPlan,
   RITUAL_ASSET_PLAN_LIMITS,
@@ -43,6 +45,7 @@ let png: Buffer;
 const plans: RitualAssetPlan[] = [];
 const legacyCatalogs: LegacyRitualImageCatalog[] = [];
 const externalCatalogs: ExternalRitualImageCatalog[] = [];
+const generatedCatalogs: GeneratedRitualImageCatalog[] = [];
 beforeEach(async () => {
   directory = await fs.mkdtemp(path.join(tmpdir(), "magickli-asset-plan-"));
   await fs.mkdir(path.join(directory, "pics"));
@@ -64,6 +67,7 @@ afterEach(async () => {
   for (const plan of plans.splice(0)) plan.dispose();
   for (const legacy of legacyCatalogs.splice(0)) legacy.dispose();
   for (const external of externalCatalogs.splice(0)) external.dispose();
+  for (const generated of generatedCatalogs.splice(0)) generated.dispose();
   catalog.dispose();
   await fs.rm(directory, { recursive: true, force: true });
 });
@@ -179,6 +183,69 @@ function external(
   return result;
 }
 
+// A captured-byte capability keeps plan tests separate from the renderer's own
+// real-font/native-codec suite. Requests use the production closed parser.
+function generated(
+  references = ["/api/render/tree-of-life?fmt=png&field=name.roman"],
+): GeneratedRitualImageCatalog {
+  const entries = references.map((reference) => {
+    const request = parseComponentImageRequest(
+      "tree-of-life",
+      new URL(reference, "https://magick.ly").searchParams,
+    );
+    const staticEntry = catalog.metadata.entries.find(
+      (entry) =>
+        entry.pathname ===
+        (request.format === "svg" ? "/pics/diagram.svg" : "/pics/image.png"),
+    )!;
+    if (staticEntry.kind !== "available") throw Error("Missing fixture image");
+    const {
+      kind: _kind,
+      pathname: _path,
+      canonicalPathname: _canonical,
+      ...facts
+    } = staticEntry;
+    return {
+      ...facts,
+      kind: "available" as const,
+      referenceSha256: hash(reference),
+      sourceSha256: hash("synthetic JSX " + JSON.stringify(request.props)),
+      request,
+      renderer: {
+        profile: "magickli-tree-image-outlines-v1" as const,
+        resvg: "2.6.2",
+        wasmSha256: hash("synthetic WASM"),
+        fonts: [{ file: "synthetic-font.ttf", sha256: hash("synthetic font") }],
+        defaultFontSize: 16,
+      },
+    };
+  });
+  const identity = {
+    profile: "magickli-generated-image-catalog-v1" as const,
+    validationSha256: catalog.metadata.validationSha256,
+    entries,
+  };
+  const captured = new Map(
+    entries.map((entry) => [
+      entry.referenceSha256,
+      new Uint8Array(entry.request.format === "svg" ? Buffer.from(svg) : png),
+    ]),
+  );
+  const result = {
+    metadata: { ...identity, sha256: hash(JSON.stringify(identity)) },
+    copyBytes(referenceSha256: string) {
+      const bytes = captured.get(referenceSha256);
+      return bytes ? new Uint8Array(bytes) : null;
+    },
+    dispose() {
+      for (const bytes of captured.values()) bytes.fill(0);
+      captured.clear();
+    },
+  };
+  generatedCatalogs.push(result);
+  return result;
+}
+
 it("resolves exact references without rewriting query spelling, fragments, paths or archived JSON", async () => {
   const source = doc(
     "/pics/image.png?x=%20&x=+&y=1#first",
@@ -273,7 +340,7 @@ it("resolves legacy public snapshots while retaining exact query spelling, origi
     "/pics/image.png",
   );
   const result = await plan(source, { legacyCatalog });
-  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v3");
+  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v4");
   expect(result.metadata.legacyCatalogSha256).toBe(
     legacyCatalog.metadata.sha256,
   );
@@ -476,7 +543,7 @@ it("resolves external captures by the exact original network reference and prese
   const result = await plan(doc(reference + "#one", reference + "#two"), {
     externalCatalog,
   });
-  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v3");
+  expect(result.metadata.profile).toBe("magickli-ritual-asset-plan-v4");
   expect(result.metadata.externalCatalogSha256).toBe(
     externalCatalog.metadata.sha256,
   );
@@ -658,12 +725,327 @@ it("charges external copies against the same aggregate budget as static and inli
   expect(copies[0].every((byte) => byte === 0)).toBe(true);
 });
 
+it("resolves exact generated aliases while retaining source URLs, fragments and full provenance", async () => {
+  const refs = [
+    "/api/treeOfLife?fmt=png&field=name.roman",
+    "/api/render/tree-of-life?fmt=png&field=name.roman",
+    "https://magick.ly/api/render/tree-of-life?fmt=png&field=name.roman",
+    "/api/render/tree-of-life?field=name.roman&fmt=svg",
+  ];
+  const generatedCatalog = generated(refs),
+    source = JSON.stringify({
+      type: "doc",
+      children: [...refs, refs[1]].map((ref, index) => ({
+        type: "img",
+        src: ref + "#" + index,
+        width: 450,
+        height: 300,
+      })),
+    }),
+    original = source,
+    copyBytes = vi.fn(generatedCatalog.copyBytes),
+    result = await plan(source, {
+      generatedCatalog: { ...generatedCatalog, copyBytes },
+    });
+  expect(result.metadata).toMatchObject({
+    profile: "magickli-ritual-asset-plan-v4",
+    inventoryProfile: "magickli-jrt-assets-v2",
+    generatedCatalogSha256: generatedCatalog.metadata.sha256,
+    resolutionComplete: true,
+  });
+  expect(result.metadata.occurrences.map((row) => row.assetIndex)).toEqual([
+    0, 1, 2, 3, 1,
+  ]);
+  expect(result.metadata.occurrences.map((row) => row.displayFragment)).toEqual(
+    ["#0", "#1", "#2", "#3", "#4"],
+  );
+  expect(copyBytes.mock.calls.map(([reference]) => reference)).toEqual(
+    refs.map(hash),
+  );
+  for (const [index, reference] of refs.entries()) {
+    const entry = generatedCatalog.metadata.entries[index];
+    if (entry.kind !== "available") throw Error("Missing fixture image");
+    expect(result.metadata.assets[index]).toMatchObject({
+      networkReference: reference,
+      sha256: entry.sha256,
+      bytes: entry.bytes,
+      provenance: {
+        kind: "generated",
+        referenceSha256: hash(reference),
+        sourceSha256: entry.sourceSha256,
+        request: entry.request,
+        renderer: entry.renderer,
+      },
+      validationKind: index === 3 ? "svg" : "raster",
+      mime: index === 3 ? "image/svg+xml" : "image/png",
+    });
+    expect(result.copyBytes(index)).toEqual(
+      new Uint8Array(index === 3 ? Buffer.from(svg) : png),
+    );
+  }
+  expect(result.metadata.occurrences[0].src).toBe(refs[0] + "#0");
+  expect(source).toBe(original);
+  expect(result.metadata.contentSha256).toBe(hash(original));
+  expect(JSON.parse(source).children[0]).toMatchObject({
+    width: 450,
+    height: 300,
+  });
+});
+
+it("does not substitute equivalent query spelling, order, route alias or another origin for a generated capture", async () => {
+  const reference = "/api/render/tree-of-life?fmt=png&field=name%2Eroman",
+    generatedCatalog = generated([reference]),
+    copyBytes = vi.fn(generatedCatalog.copyBytes);
+  const result = await plan(
+    doc(
+      reference,
+      reference.replace("%2E", "."),
+      reference.replace(
+        "fmt=png&field=name%2Eroman",
+        "field=name%2Eroman&fmt=png",
+      ),
+      reference.replace("/render/tree-of-life", "/treeOfLife"),
+      "https://magick.ly" + reference,
+      "https://other.example" + reference,
+      "/api/render/rose-sigil?fmt=png",
+    ),
+    { generatedCatalog: { ...generatedCatalog, copyBytes } },
+  );
+  expect(result.metadata.occurrences.map((row) => row.assetIndex)).toEqual([
+    0,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+  ]);
+  expect(result.metadata.issues.map((row) => row.code)).toEqual([
+    "unrecognized-local-reference",
+    ...Array(4).fill("generated-unavailable"),
+    "external-pending",
+    "unresolved-reference",
+  ]);
+  expect(copyBytes).toHaveBeenCalledExactlyOnceWith(hash(reference));
+});
+
+it("owns generated byte and nested metadata snapshots independently of both catalog and plan disposal", async () => {
+  const reference = "/api/render/tree-of-life?fmt=png&field=name.roman",
+    generatedCatalog = generated(),
+    expected = structuredClone(generatedCatalog.metadata),
+    pending = plan(doc(reference), { generatedCatalog });
+  const entry = generatedCatalog.metadata.entries[0];
+  if (entry.kind !== "available") throw Error("Missing fixture image");
+  entry.request.props.field = "changed after call";
+  entry.renderer.fonts[0].sha256 = "changed after call";
+  Object.assign(generatedCatalog.metadata, { sha256: "changed", entries: [] });
+  const result = await pending;
+  const expectedEntry = expected.entries[0];
+  if (expectedEntry.kind !== "available") throw Error("Missing fixture image");
+  expect(result.metadata.generatedCatalogSha256).toBe(expected.sha256);
+  expect(result.metadata.assets[0].provenance).toMatchObject({
+    request: expectedEntry.request,
+    renderer: expectedEntry.renderer,
+  });
+  const provenance = result.metadata.assets[0].provenance;
+  if (provenance.kind !== "generated")
+    throw Error("Missing generated provenance");
+  expect(Object.isFrozen(provenance.request.props)).toBe(true);
+  expect(Object.isFrozen(provenance.renderer.fonts[0])).toBe(true);
+  expect(Object.isFrozen(entry.request.props)).toBe(false);
+  generatedCatalog.dispose();
+  const one = result.copyBytes(0)!;
+  one.fill(0);
+  const retained = result.copyBytes(0)!;
+  expect(retained).toEqual(new Uint8Array(png));
+  result.dispose();
+  expect(result.copyBytes(0)).toBeNull();
+  expect(retained).toEqual(new Uint8Array(png));
+});
+
+it("binds generated catalog identity even when unused and distinguishes absence from changed metadata", async () => {
+  const generatedCatalog = generated(),
+    without = await plan(doc()),
+    first = await plan(doc(), { generatedCatalog });
+  expect(without.metadata.generatedCatalogSha256).toBeNull();
+  expect(first.metadata.generatedCatalogSha256).toBe(
+    generatedCatalog.metadata.sha256,
+  );
+  expect(first.metadata.sha256).not.toBe(without.metadata.sha256);
+  Object.assign(generatedCatalog.metadata, {
+    sha256: hash("new capture metadata"),
+  });
+  const changed = await plan(doc(), { generatedCatalog });
+  expect(changed.metadata.generatedCatalogSha256).toBe(
+    generatedCatalog.metadata.sha256,
+  );
+  expect(changed.metadata.sha256).not.toBe(first.metadata.sha256);
+});
+
+it.each(["missing", "unresolved", "disposed", "copy-error"])(
+  "keeps a %s generated capture unavailable without leaking internal details",
+  async (mode) => {
+    const generatedCatalog = generated(),
+      reference = "/api/render/tree-of-life?fmt=png&field=name.roman";
+    if (mode === "missing")
+      Object.assign(generatedCatalog.metadata, { entries: [] });
+    if (mode === "unresolved")
+      Object.assign(generatedCatalog.metadata, {
+        entries: [
+          {
+            kind: "unresolved",
+            referenceSha256: hash(reference),
+            reason: "render-unavailable",
+          },
+        ],
+      });
+    if (mode === "disposed") generatedCatalog.dispose();
+    const copyBytes = vi.fn(
+      mode === "copy-error"
+        ? () => {
+            throw Error("private-renderer-detail");
+          }
+        : generatedCatalog.copyBytes,
+    );
+    const result = await plan(doc(reference + "#one", reference + "#two"), {
+      generatedCatalog: { ...generatedCatalog, copyBytes },
+    });
+    expect(result.metadata.resolutionComplete).toBe(false);
+    expect(result.metadata.assets).toEqual([]);
+    expect(result.metadata.issues.map((row) => row.code)).toEqual([
+      "generated-unavailable",
+      "generated-unavailable",
+    ]);
+    expect(JSON.stringify(result.metadata.issues)).not.toContain(
+      "private-renderer-detail",
+    );
+    expect(copyBytes).toHaveBeenCalledTimes(
+      mode === "missing" || mode === "unresolved" ? 0 : 1,
+    );
+  },
+);
+
+it.each(["profile", "validationSha256"] as const)(
+  "rejects incompatible generated %s before copying or resolving any occurrence",
+  async (field) => {
+    const generatedCatalog = generated(),
+      copyBytes = vi.fn(generatedCatalog.copyBytes);
+    Object.assign(generatedCatalog.metadata, { [field]: "unsupported" });
+    await expect(
+      plan(doc(), { generatedCatalog: { ...generatedCatalog, copyBytes } }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    expect(copyBytes).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["size", "digest"])(
+  "rejects copied generated %s mismatch and wipes its allocation",
+  async (mismatch) => {
+    const generatedCatalog = generated(),
+      bytes = new Uint8Array(png.length + (mismatch === "size" ? 1 : 0)).fill(
+        1,
+      );
+    const result = await plan(
+      doc("/api/render/tree-of-life?fmt=png&field=name.roman"),
+      {
+        generatedCatalog: { ...generatedCatalog, copyBytes: () => bytes },
+      },
+    );
+    expect(result.metadata.resolutionComplete).toBe(false);
+    expect(result.metadata.assets).toEqual([]);
+    expect(result.metadata.issues[0].code).toBe("generated-snapshot-mismatch");
+    expect(bytes.every((byte) => byte === 0)).toBe(true);
+  },
+);
+
+it("charges generated snapshots before copying, deduplicates only fragments and wipes prior captures on failure", async () => {
+  const refs = [
+      "/api/render/tree-of-life?fmt=png&field=name.roman",
+      "/api/treeOfLife?fmt=png&field=name.roman",
+    ],
+    generatedCatalog = generated(refs),
+    copies: Uint8Array[] = [],
+    copyBytes = vi.fn((referenceSha256: string) => {
+      const bytes = generatedCatalog.copyBytes(referenceSha256)!;
+      copies.push(bytes);
+      return bytes;
+    }),
+    wrapped = { ...generatedCatalog, copyBytes };
+  await expect(
+    plan(doc(refs[0]), {
+      generatedCatalog: wrapped,
+      limits: { capturedBytes: 1 },
+    }),
+  ).rejects.toMatchObject({ code: "CAPTURE_LIMIT" });
+  expect(copyBytes).not.toHaveBeenCalled();
+  const exact = await plan(doc(refs[0] + "#one", refs[0] + "#two"), {
+    generatedCatalog: wrapped,
+    limits: { capturedBytes: png.length },
+  });
+  expect(exact.metadata.resolutionComplete).toBe(true);
+  expect(copyBytes).toHaveBeenCalledTimes(1);
+  exact.dispose();
+  copies.length = 0;
+  copyBytes.mockClear();
+  await expect(
+    plan(doc(...refs), {
+      generatedCatalog: wrapped,
+      limits: { capturedBytes: png.length },
+    }),
+  ).rejects.toMatchObject({ code: "CAPTURE_LIMIT" });
+  expect(copyBytes).toHaveBeenCalledTimes(1);
+  expect(copies[0].every((byte) => byte === 0)).toBe(true);
+});
+
+it.each(["static", "inline"])(
+  "shares the capture budget with an earlier %s image",
+  async (kind) => {
+    const generatedCatalog = generated(),
+      copyBytes = vi.fn(generatedCatalog.copyBytes);
+    await expect(
+      plan(
+        doc(
+          kind === "static" ? "/pics/image.png" : data(png, "image/png"),
+          "/api/render/tree-of-life?fmt=png&field=name.roman",
+        ),
+        {
+          generatedCatalog: { ...generatedCatalog, copyBytes },
+          limits: { capturedBytes: png.length },
+        },
+      ),
+    ).rejects.toMatchObject({ code: "CAPTURE_LIMIT" });
+    expect(copyBytes).not.toHaveBeenCalled();
+  },
+);
+
+it("releases a generated copy when cancellation happens during the capability call", async () => {
+  const generatedCatalog = generated(),
+    controller = new AbortController(),
+    returned = generatedCatalog.copyBytes(
+      hash("/api/render/tree-of-life?fmt=png&field=name.roman"),
+    )!;
+  await expect(
+    plan(doc("/api/render/tree-of-life?fmt=png&field=name.roman"), {
+      signal: controller.signal,
+      generatedCatalog: {
+        ...generatedCatalog,
+        copyBytes: () => {
+          controller.abort();
+          return returned;
+        },
+      },
+    }),
+  ).rejects.toMatchObject({ code: "ABORTED" });
+  expect(returned.every((byte) => byte === 0)).toBe(true);
+});
+
 it("keeps absent/static, protected legacy, external and generated sources explicitly incomplete", async () => {
   const source = doc(
     "/pics/missing.png",
     "/api/file2?sha256=" + "a".repeat(64),
     "https://remote.invalid/private-name.png",
     "/api/treeOfLife?field=name.roman",
+    "/api/render/tree-of-life?field=name.roman",
     "/unknown",
     "javascript:invalid",
   );

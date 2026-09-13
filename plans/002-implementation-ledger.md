@@ -611,3 +611,15 @@ present for both routes. No Magickly deployment or private-data change occurred.
 Generated asset-plan integration remains next. See the
 [rendering record](009-ritual-image-acquisition.md#shared-component-image-renderer)
 and `/tmp/magickli-tree-render-{coverage,types,biome,loom,build}.log`.
+
+Generated image capture and plan v4 complete image resolution for all five
+archived rituals (17/17 occurrences) and all three built-ins. Independent
+adversarial review covers actual renderer/validator output, ownership, mutation,
+identity, budgets and cancellation. The default suite passes 2,310 tests (82 new;
+14 opt-in Mongo cases skipped). All 63-module coverage gates pass at 98.27%
+statements, 96.93% branches, 99.88% functions and 99.34% lines. Types, Biome,
+ordinary Loom check and production build pass. Actual read-only corpus acceptance
+preserves every backup and source/image hash and matches the built-route generated
+image digest. Durable authorized publication and private runtime activation
+remain pending. See the [acquisition record](009-ritual-image-acquisition.md#generated-capture-and-complete-image-plans)
+and `/tmp/magickli-generated-{coverage,types,biome,loom,build}.log`.

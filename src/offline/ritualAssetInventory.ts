@@ -1,5 +1,5 @@
 /** Reachability/classification contract for the current app blocks plus JRT 1.3.1. */
-export const RITUAL_ASSET_INVENTORY_PROFILE = "magickli-jrt-assets-v1";
+export const RITUAL_ASSET_INVENTORY_PROFILE = "magickli-jrt-assets-v2";
 export const RITUAL_ASSET_INVENTORY_LIMITS = Object.freeze({
   jsonBytes: 4 * 1024 * 1024,
   nodes: 20_000,
@@ -259,7 +259,10 @@ function classify(
       return { kind: "unresolved", reason: "unsupported-legacy-file-query" };
     return { kind: "legacy-file2", sha256: pairs[0][1] };
   }
-  if (url.pathname === "/api/treeOfLife")
+  if (
+    url.pathname === "/api/treeOfLife" ||
+    url.pathname === "/api/render/tree-of-life"
+  )
     return { kind: "generated-tree-of-life" };
   if (paths.has(rawPath)) return { kind: "local-static", pathname: rawPath };
   return { kind: "unresolved", reason: "unrecognized-local-reference" };

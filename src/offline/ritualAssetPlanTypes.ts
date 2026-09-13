@@ -1,3 +1,4 @@
+import type { GeneratedRitualImageProvenance } from "../files/generatedRitualImageCatalogTypes";
 import type {
   StaticRitualRasterFacts,
   StaticRitualSvgFacts,
@@ -5,14 +6,15 @@ import type {
 
 /** Server resolution evidence only; this is neither an authorization grant nor a download manifest. */
 export interface RitualAssetPlanMetadata {
-  readonly profile: "magickli-ritual-asset-plan-v3";
+  readonly profile: "magickli-ritual-asset-plan-v4";
   readonly sha256: string;
   readonly contentSha256: string;
-  readonly inventoryProfile: "magickli-jrt-assets-v1";
+  readonly inventoryProfile: "magickli-jrt-assets-v2";
   readonly staticCatalogSha256: string;
   /** Null means no legacy capability was supplied; either way the exact identity is part of the plan hash. */
   readonly legacyCatalogSha256: string | null;
   readonly externalCatalogSha256: string | null;
+  readonly generatedCatalogSha256: string | null;
   readonly validationSha256: string;
   readonly limits: Readonly<{
     capturedBytes: number;
@@ -62,6 +64,7 @@ export type RitualResolvedAsset = Readonly<{
         acquisitionReferenceSha256: string;
         representation: "original" | "same-file-standard-thumbnail";
         policySha256: string;
-      }>;
+      }>
+    | (Readonly<{ kind: "generated" }> & GeneratedRitualImageProvenance);
 }> &
   (StaticRitualRasterFacts | StaticRitualSvgFacts);
