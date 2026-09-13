@@ -585,3 +585,32 @@ transport, legacy recovery migration, private shell/cache policy and end-to-end
 reader/editor acceptance remain required. JRT's weak cache and the editor's owned
 handle cleanup are now verified separately above; the future private renderer
 must still clear its own live trees and references on closure.
+
+## Legacy browser preservation acceptance
+
+`src/offline/legacyBrowserRecovery.ts` now copies pending ritual and study
+operations, anonymous or untrusted-owner study rows, and exact existing recovery
+strings into Dexie quarantine. It waits for Gongo population, keeps identities
+unassigned, uses SuperJSON for supported data/reference types and verifies each
+copy after commit. Corrupt recovery strings remain opaque. Unsupported in-memory
+values fail before pausing or removing anything; only proven React DOM refs are
+omitted. Ordinary Gongo updates with shared `__pendingBase` children retain their
+values and dates. Existing verified quarantine entries are immutable.
+
+`fenceLegacyNetworkForSql()` blocks future polls synchronously, settles any old
+request, preserves recovery, pauses old ritual mutations, verifies the resulting
+recovery again, then stops ritual subscriptions and persists network-off state.
+An archive/storage failure leaves the network blocked and allows retry. A failed
+old network request cannot permanently prevent that retry. SQL UUIDs cannot
+adopt anonymous study rows through the old ObjectId transport. Normal legacy
+polling still operates until the explicit fence is activated during cutover.
+
+Thirty-seven scoped tests pass, including seven adapter/real-transport cases.
+An isolated checkout containing only this unit also passes the complete
+typecheck, targeted Biome and a production build with synthetic credentials and
+closed-loopback service endpoints. Root adversarial review corrected owned-study
+omissions, serialization loss, shared-reference rejection, unsafe object-key
+copying and failed-poll retry behavior before accepting the unit. Evidence is
+in `/tmp/magickli-recovery-{final-tests,isolated-types,isolated-build}.log`.
+This does not activate SQL authentication or expose legacy bytes as a valid
+offline download; all old private downloads remain unleased during integration.
