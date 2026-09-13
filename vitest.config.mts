@@ -47,6 +47,7 @@ export default defineConfig({
         "src/files/r2RitualStorage.ts",
         "src/files/staticRitualImageCatalog.ts",
         "src/files/dataImage.ts",
+        "src/files/validateRitualSvg.ts",
         "src/app/geomancy/tetragrams.ts",
         "src/app/chat/train/access.ts",
         "src/app/chat/train/ingestPdf.ts",

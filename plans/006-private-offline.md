@@ -266,6 +266,54 @@ Evidence: `/tmp/magickli-data-image-acceptance.mjs`, its aggregate JSON report a
 `/tmp/magickli-data-image-{coverage,types,biome,loom}.log`. No framework or dependency
 change occurred, so this unit uses the preceding successful production build.
 
+## Implemented SVG image compatibility
+
+`src/files/validateRitualSvg.ts` validates the static dependency profile of
+existing SVG images and retains an owned copy of the exact original bytes. It
+checks XML namespaces, UTF-8, a closed graphics/presentation subset, parsed CSS,
+unique XML names (including Unicode), exact internal targets, dependency cycles
+and excessive reference expansion. Inherited paints, use shadow content and
+marker context paints are conservatively included. It fully decodes embedded
+rasters through the existing validator. Scripts, event handlers, DTDs, processing
+instructions, foreignObject and unresolved external dependencies never yield a
+validated result. Unsupported constructs stay incomplete; nothing is sanitized.
+
+Limits include 4 MiB SVG input, 20,000 elements, depth 128, 100,000 attributes,
+256 KiB aggregate CSS, 2,000 lexical/applied/inherited references, 100,000 expanded
+dependency elements, 64 embedded rasters, 4 MiB embedded compressed bytes and
+64 million embedded decoded pixels, with a cooperative 15-second deadline.
+These bound parsing/dependencies and embedded raster decoding; they do not bound
+SVG geometry, filter allocations or final painted pixels. Browser image-context
+checks and complete authorized bundle integration remain separate requirements.
+New uploads remain PNG/JPEG/GIF/WebP only.
+
+Exact runtime dependencies are css-tree 3.2.1, saxes 6.0.0 and xmlchars 2.2.0;
+all three were already in the dependency graph. Only css-tree development types
+3.2.0 add a package. XML name validation reuses the parser's Unicode rules.
+[Saxes upstream](https://github.com/lddubeau/saxes) is archived; its strict XML and
+namespace behavior was retained with explicit corpus tests. A parser upgrade
+must repeat this compatibility review. The profile is not a general SVG sanitizer.
+
+All 102 new cases pass. The full suite passes 1,891 tests (14 opt-in Mongo cases
+skipped), 54-module coverage, types, Biome, ordinary Loom checks and production
+build. All six public SVGs, seven legacy uploaded SVGs and the backed-up 899-byte
+inline SVG validate with original-byte parity. Legacy object streams stayed in
+memory, matched the backup sizes/checksums and left all 21 backup fingerprints
+unchanged. Two legacy files exposed valid Unicode IDs that the initial ASCII
+subset rejected; the final profile preserves their exact spelling. No stored
+objects, ritual sources or public links changed.
+
+Chromium 152 renders all six public files identically from their HTTP URL and
+offline Blob bytes with the HTTP cache cleared/disabled and service workers
+blocked. No external request attempts or page errors occurred. This uses the same
+installed system fonts; it does not prove cross-device font parity or the private
+reader's lifecycle integration. Public screenshot and safe reports:
+`/tmp/magickli-svg-browser-public.png`, `/tmp/magickli-svg-browser.json`,
+`/tmp/magickli-legacy-svg-preflight.json`, `/tmp/magickli-inline-svg-acceptance.json`.
+The staged source manifest is `/tmp/magickli-svg-validator/manifest.json`; full
+root checks are `/tmp/magickli-svg-{coverage,types,biome,loom,build}.log`.
+Static catalog and complete asset-plan integration remain separate units.
+
 ## Lifecycle, timing and draft locks
 
 The pure module derives a conservative local deadline from local request-start plus the **remaining** server lease at response assembly. Server preparation and network/download latency never restart a 14-day clock. It persists observed wall-clock time and latches expiry/observed rollback. Only a new successful permission check clears such a latch. Inspect stored records at cold start, `pageshow`/resume, visibility change and every protected source/export operation; missing or malformed state requires an online check. Schedule normal expiry and bounded active-window checks too; timers alone are insufficient.

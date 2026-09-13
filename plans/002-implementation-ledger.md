@@ -490,6 +490,15 @@ recovery remains unchanged; private offline runtime integration is still pending
 See the [offline record](006-private-offline.md) for the separate unit/browser
 evidence and the corrected same-document browser harness.
 
+The SVG compatibility profile now validates all six public files, seven legacy
+uploaded files and the backed-up inline SVG while retaining exact original bytes.
+Unicode IDs, parsed CSS and inherited paint dependencies are covered; new SVG
+uploads remain unsupported. All 1,891 tests, expanded coverage, types, Biome,
+ordinary Loom checks and production build pass. Six public images also preserve
+pixels when rendered from offline Blob bytes in Chromium. Complete asset-plan
+and private runtime integration remain pending; see the
+[offline record](006-private-offline.md).
+
 Inline-image transport now preserves decoded bytes under finite size limits,
 with 90 new cases and exact-byte acceptance for both backed-up inline images and
 the four PNGs embedded in public SVGs. All 1,789 tests, expanded coverage, types,
