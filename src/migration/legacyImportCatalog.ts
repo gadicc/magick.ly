@@ -353,11 +353,17 @@ export async function verifyLegacyImportCatalog(
   tx: Transaction,
   expected: LegacyImportCatalog,
 ): Promise<string> {
-  const saved = copy(expected);
-  exact(saved, ["profile", "snapshot", "sha256"]);
-  const baseline = evidence(saved.snapshot);
-  if (saved.profile !== profile || saved.sha256 !== baseline.sha256) fail();
+  const baseline = readLegacyImportCatalog(expected);
   const current = await captureLegacyImportCatalog(tx);
   if (current.sha256 !== baseline.sha256) fail("CATALOG_MISMATCH");
   return baseline.sha256;
+}
+
+/** Validate and own a reviewed catalog artifact before opening a SQL transaction. */
+export function readLegacyImportCatalog(input: unknown): LegacyImportCatalog {
+  const saved = copy(input);
+  const row = exact(saved, ["profile", "snapshot", "sha256"]);
+  const baseline = evidence(row.snapshot);
+  if (row.profile !== profile || row.sha256 !== baseline.sha256) fail();
+  return baseline;
 }

@@ -2,8 +2,9 @@ The importer now verifies backup files/BSON, prepares exact protected checkpoint
 and applies their saved rows in one fenced SQL transaction. It allocates every
 canonical, alias-row and email-provenance UUID before serialization. Schema
 catalog and complete migration-history checks protect the prepared destination.
-The trusted maintenance command and live runtime/cutover integration remain
-pending. No runtime route uses this code.
+The [reviewed maintenance command](012-legacy-import-command.md) now joins these
+pieces and has passed a synthetic Neon rehearsal. Live runtime/cutover integration
+remains pending. No runtime route uses this code.
 
 ## Preparation and source accounting
 

@@ -834,3 +834,21 @@ removed and main's catalog, original journal and empty alias table match before
 and after. Production still has only migrations 0000–0001 and no private import.
 The initial failure was a locally reproduced Neon CLI stdin-argument bug,
 resolved with `--data=-`; no plan or permission rejection was established.
+
+The [reviewed import command](012-legacy-import-command.md) now persists all local
+allocations before SQL and resumes without rereading the source backup. It pins
+the reviewed implementation, configuration, catalog and fresh Neon identity;
+actual SQL checks remain inside the existing fenced service. Independent tests
+and review cover publication races, partial filesystem failure, target/artifact
+drift and safe recovery, including an acknowledged result followed by failed
+connection cleanup.
+
+All 3,860 default tests (101 new; 14 opt-in Mongo skipped), 85-module coverage
+gates, types, Biome and ordinary Loom check pass. The real command also passes a
+fresh Neon 18 rehearsal: prepare, delete the synthetic backup, resume/apply in
+new processes, rerun unchanged migrations and replay the saved completed run.
+All 77 source fingerprints and the immutable local run remain unchanged. The
+owned branch was removed; main still has its original catalog, two migration
+records and empty alias table. No private corpus or runtime was activated.
+Evidence: `/tmp/magickli-import-command-neon/README.md`. Provider/Preview gates,
+private storage, authentication/runtime integration and the final cutover remain.
