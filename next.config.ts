@@ -1,3 +1,5 @@
+import { realpathSync } from "node:fs";
+import path from "node:path";
 import JSON5 from "json5";
 import type { NextConfig } from "next";
 import {
@@ -7,11 +9,23 @@ import {
 import { legacyStaticImageAliases } from "./src/files/legacyStaticImages";
 import { RITUAL_PUBLICATION_STATIC_PATHS } from "./src/files/ritualPublicationStaticPaths";
 
+// Vercel standalone can retain this package symlink while dropping a file traced
+// through it. Trace the physical target while the runtime keeps the stable alias.
+const resvgWasmTraceFile = `./${path
+  .relative(
+    process.cwd(),
+    realpathSync(
+      path.join(process.cwd(), "node_modules/@resvg/resvg-wasm/index_bg.wasm"),
+    ),
+  )
+  .split(path.sep)
+  .join("/")}`;
+
 const ritualPublicationTraceFiles = [
   // Next 16 resolves include values from the project root and route keys with picomatch.
   ...RITUAL_PUBLICATION_STATIC_PATHS.map((pathname) => `./public${pathname}`),
   "./public/fonts/*.ttf",
-  "./node_modules/@resvg/resvg-wasm/index_bg.wasm",
+  resvgWasmTraceFile,
 ];
 
 export default async function (phase: string): Promise<NextConfig> {
@@ -26,14 +40,8 @@ export default async function (phase: string): Promise<NextConfig> {
     // https://stackoverflow.com/a/77722836/1839099
     serverExternalPackages: ["pdf-parse", "@resvg/resvg-wasm"],
     outputFileTracingIncludes: {
-      "/api/treeOfLife": [
-        "./public/fonts/*.ttf",
-        "./node_modules/@resvg/resvg-wasm/index_bg.wasm",
-      ],
-      "/api/render/*": [
-        "./public/fonts/*.ttf",
-        "./node_modules/@resvg/resvg-wasm/index_bg.wasm",
-      ],
+      "/api/treeOfLife": ["./public/fonts/*.ttf", resvgWasmTraceFile],
+      "/api/render/*": ["./public/fonts/*.ttf", resvgWasmTraceFile],
       "/api/rituals/publication": [...ritualPublicationTraceFiles],
       "/api/rituals/publication/backfill": [...ritualPublicationTraceFiles],
     },
