@@ -29,9 +29,16 @@ legacy file relocation/retirement preparation. The exact Trusted Sources rule
 and R2 settings were applied and verified on 14 September. GitHub Production
 now permits only `master` and has a verified project-scoped deployment token
 expiring 13 December. Shared credential/trust improvements shipped in Loom 1.26.0;
-Magickly pins that release. Full deployment acceptance remains pending. Saved Preview
-branching/readiness settings and the deployment's effective database destination
-still need evidence. See [the completion decisions](022-release-and-storage-completion.md).
+Magickly pins that release. Full deployment acceptance remains pending. On 14
+September the operator saved deployment readiness enabled and branch deployment
+enabled for Preview only on the existing connection; fresh API metadata confirms
+both settings. The deployment's effective database destination and sanitized
+Preview ancestry still need runtime evidence. Saving also made both database
+URLs Sensitive, so the readable migration fallback is no longer available.
+Install and verify GitHub `MIGRATION_DATABASE_URL_UNPOOLED` from authenticated
+Neon access before release; GitHub currently has only the `VERCEL_TOKEN` secret
+in its protected Production environment. See
+[the completion decisions](022-release-and-storage-completion.md).
 
 After the relocation unit and Loom 1.26.0 adoption, the integrated candidate
 passes 4,255 tests (14 opt-in Mongo tests skipped), with 158 passing test files.

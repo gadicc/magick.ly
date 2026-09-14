@@ -30,10 +30,11 @@ verified access to Magickly and denial of team-level access, and installed it as
 `VERCEL_TOKEN`. Non-secret token metadata records expiry
 `2026-12-13T10:06:28.427Z`. A complete deployment workflow still needs acceptance;
 these credential checks alone do not prove every release command works.
-An identical setup rerun preserved the same token and expiry. The network check
-finds the GitHub release variables/secret, with the existing advisory that a
-dedicated migration secret is not installed; the readable Vercel direct URL
-remains supported. The overall network check is not yet green: the app has not
+An identical setup rerun preserved the same token and expiry. At that checkpoint,
+the network check found the GitHub release variables/secret and advised that a
+dedicated migration secret was not installed; the then-readable Vercel direct URL
+provided the supported fallback. The later Sensitive change below removes that
+fallback. The overall network check is not yet green: the app has not
 recorded the final R2 provider policy in `loom.json`. Its exact Preview upload
 origin and CORS still need to be settled with the Preview deployment.
 
@@ -141,7 +142,33 @@ reversible fence before the final consistent backup, import and reconciliation.
 Historic deployments and in-flight external writes must be covered; see
 [the writer review](020-cutover-writers.md).
 
-Preview database ancestry, deployment overrides and readiness still need proof.
+On 14 September the operator found the existing Vercel resource connection,
+enabled deployment readiness, selected Preview only for branch deployment, and
+saved the changes. A subsequent authenticated Vercel resource read confirms
+`deployments.required: true` and the `Neon` action scoped to `preview` only on
+the same connection. This verifies saved configuration, not a successful
+deployment-action or effective-connection probe. The earlier attempt
+to add a connection was rejected as already connected; no replacement connection
+was needed.
+
+Saving the connection also enabled `makeEnvVarsSensitive`; fresh variable
+metadata confirms both database URLs are Sensitive in Production and Preview.
+The earlier recommendation to leave Sensitive off during credential setup was
+not the resulting provider state. A fresh GitHub Production secret-name check
+found only `VERCEL_TOKEN`. Retrieve the direct connection through authenticated
+Neon access and install/verify the protected migration secret before release;
+there is no longer a readable Vercel database fallback.
+The workflow already preserves the untouched Vercel pull snapshot, supplies
+build-only placeholders for unreadable Sensitive values, rejects placeholder
+leakage, and binds `MIGRATION_DATABASE_URL_UNPOOLED` only to verification and
+migrations. Independent review confirms the Loom support and unit coverage;
+the complete GitHub/Vercel Sensitive-database flow still needs live acceptance.
+Provision and verify the migration credential before any release. Do not
+expect `vercel pull` or `vercel env run` on GitHub to recover Sensitive values.
+Credential-free evidence is `/tmp/magickli-preview-settings/saved-20260914.json`.
+
+Preview database ancestry and the actual deployment overrides/readiness action
+still need proof.
 Use a schema-only or sanitized preview dataset and isolate external writes before
 preview acceptance. No private production import or application deployment has
 occurred. The reusable modernization skill remains an unpublished draft until
