@@ -197,6 +197,20 @@ stored secret for read-back: live credential verification preceded installation,
 while a complete Actions run still must prove the stored-secret, generated
 placeholder, build/artifact, migration and staged-runtime path.
 
+A subsequent isolated build closes the local placeholder/artifact check. The
+unchanged application source from `994d476` used Loom's actual preparation command
+with a synthetic metadata fixture matching the two newly Sensitive database
+variables. It generated exactly two unique PostgreSQL placeholders; Vercel
+59.13.1 built the production artifact with Node 24.19.0 and pnpm 10.18.0, and
+Loom's artifact scan found neither marker. All 776 archived source files remained
+unchanged. Evidence is
+`/tmp/magickli-sensitive-placeholder-build/evidence/{source-binding,result}.json`.
+This used synthetic values, offline Vercel settings and the already verified
+dependencies; it did not query providers, deploy or exercise the GitHub secret.
+An initial Next/TypeScript child-process failure was specific to the restricted
+local sandbox; the unchanged build passed outside it. No application workaround
+was needed.
+
 Preview database ancestry and the actual deployment overrides/readiness action
 still need proof.
 Use a schema-only or sanitized preview dataset and isolate external writes before

@@ -39,7 +39,8 @@ GitHub Production now contains the verified direct
 `MIGRATION_DATABASE_URL_UNPOOLED` secret and its expected-role metadata, installed
 through Loom from authenticated Neon access. It uses the existing database owner
 transitionally; a separate role needs a reviewed ownership/grants migration.
-The complete Sensitive-variable external build and release still need acceptance. See
+The isolated Vercel build with Loom-generated database placeholders passes its
+artifact leakage check. The complete GitHub release still needs acceptance. See
 [the completion decisions](022-release-and-storage-completion.md).
 
 After the relocation unit and Loom 1.26.0 adoption, the integrated candidate
