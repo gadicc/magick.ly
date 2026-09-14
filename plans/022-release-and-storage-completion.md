@@ -388,3 +388,73 @@ Public renderer smoke checks then found HTTP 500 with empty bodies for canonical
 SVG, canonical PNG and the legacy Tree of Life URL, while an unregistered slug
 was rejected with HTTP 400. This is a deployed acceptance defect under active
 diagnosis, not a passing renderer checkpoint. Evidence is `public-render-http.json`.
+
+
+Loom 1.26.1 subsequently published from
+`3ff7266a0fe17e747ff52f1310fe6d9dbcc70a40`. Tag, origin/main and npm gitHead
+match; GitHub release run `34865897483` passed. Magickly's isolated adoption
+commit `ea50786` pins that exact release and adds `--standalone` to its Vercel
+release build. Frozen pnpm installation, Loom production check and the installed
+verifier against the reviewed eight-marker Preview artifact pass. The lockfile
+changes only Loom references and integrity; unrelated consumers remain unchanged.
+
+The operator added the exact Preview Google callback, preserving existing
+redirects, and reported successful real Google sign-in on the stable Preview.
+This is manual OAuth acceptance; two-account permission and offline testing is
+still being arranged, and renderer acceptance is still blocked on its missing
+packaged WASM asset.
+
+
+The exact-child read-only acceptance query confirms four users, four accounts and
+two sessions against the imported baseline of two users, two accounts and no
+sessions. The two new account/session sets correlate with the operator's two
+successful Google logins. The QA temple was created exactly once as
+`01a0a0ac-ff8c-70c5-b3dd-9ca4532eea70`, together with creator membership
+`01a0a0ac-ff8c-70c5-b3dd-a0dbecc30107` (grade zero, administrator).
+No creation retry is needed. The sanitized evidence is
+`/tmp/magickli-preview-acceptance/preview-auth-query-result.json`.
+
+The redirected temple page logged an RSC serialization error for the MUI
+IconButton's `component={Link}` prop, even though HTTP transport status was 200.
+Fix `47d521d` removes that function prop on all five affected server-rendered
+pages, retaining the existing hrefs with native MUI anchors. The client app bar
+retains its valid client-only Link integration. Types, Biome, native-anchor
+rendering and the 4,255-test suite pass. Actual authenticated page acceptance
+follows the next deployment; an HTTP 200 alone is insufficient for an RSC page.
+Sanitized runtime diagnosis is `/tmp/magickli-temple-diagnosis/runtime-sanitized.json`.
+
+Renderer fix `e8dcfcc` changes only trace configuration and its coverage:
+Vercel standalone kept the pnpm package symlink but dropped WASM listed only via
+that alias. Tracing its physical target preserves the stable runtime path.
+A fresh diagnostic standalone build contains and initializes the 2,478,606-byte
+WASM and serves canonical SVG, PNG and legacy SVG with HTTP 200; an unknown slug
+still returns 400. Evidence is
+`/tmp/magickli-render-runtime-repro-evidence/render-built-runtime-proof.json`.
+That diagnostic used Loom 1.26.0 plus the exact renderer patch. The final
+candidate must rebuild frozen source `47d521d` with Loom 1.26.1 and both fixes
+before uploading. No modernized Production promotion has occurred.
+
+The final clean `47d521d` candidate with published Loom 1.26.1 passed its
+standalone build and complete eight-marker scan. Independent artifact review
+confirmed 306 existing contained file references, 485 contained symlinks, zero
+`filePathMap` entries and no function/project environment overrides. The
+authenticated dry run listed only `.vercel/output` for upload and explicitly
+excluded `.vercel/.env.preview.local`.
+
+Preview `dpl_5PJAB3NodZAdquB9bgwTDRmvF7nq` reached READY in `lhr1`, with the
+exact source/ref and required integration ready. Live canonical SVG, PNG and
+legacy SVG now return 200 with hashes matching the built-route proof; unknown
+slugs return 400. The guarded auth endpoint authenticates with SQL and returns
+anonymous `null`, `/api/session` returns 401, and POST `/api/gongoPoll` returns
+410. Production remains `dpl_9m7ojZk6FZMJoCKsELDe53qiQkRp`. Authenticated
+temple rendering and the remaining two-account flows still require browser
+acceptance. Evidence is under `/tmp/magickli-preview-acceptance-final/evidence`,
+including `candidate-summary.json`, `authenticated-dry-run-result.json` and
+`deployment-http.json`.
+
+The exact-child read-only query at 16:31:46 UTC found the same auth and QA temple
+state as before deployment. The stable Preview alias was then moved from
+`dpl_HSC6uXqHhZNPqMeUqnfZmmTf94ia` to `dpl_5PJAB3NodZAdquB9bgwTDRmvF7nq`;
+the alias binding and the same live route checks pass (`alias-result.json` and
+`stable-http.json`). The operator has been asked to reopen the existing temple
+and save its temporary join code. That authenticated UI result is still pending.

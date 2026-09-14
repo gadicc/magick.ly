@@ -5,9 +5,9 @@ retains historical checkpoints and their original limitations.
 
 | Area | Completed and verified | Remaining |
 | --- | --- | --- |
-| Tooling and framework | pnpm, Biome, Vitest, App Router, current React/MUI, Loom 1.26.0; final integrated tests, coverage, types, Biome and production build pass | Deployed acceptance |
+| Tooling and framework | pnpm, Biome, Vitest, App Router, current React/MUI, Loom 1.26.1; integrated tests, types, Biome and final standalone build pass; live SVG/PNG and legacy rendering pass | Remaining authenticated browser journeys |
 | Database and import | UUIDv7 schemas, 17 migrations rehearsed on Neon, protected resumable import and reconciliation; separate empty Preview root migrated through 0016, including the relocation schema | Final consistent production snapshot/import |
-| Authentication | Better Auth runtime, fresh SQL identity, import readiness gate, coordinated sign-out; committed `22ef750` | Real OAuth and deployed acceptance; one-time user reauthentication at cutover |
+| Authentication | Better Auth runtime, fresh SQL identity, import readiness gate, coordinated sign-out; two real Google sign-ins verified with new Preview SQL accounts/sessions | Two-account permissions/offline acceptance; one-time user reauthentication at cutover |
 | Administration and integrations | SQL temple/group administration and Discourse mapping; Pinecone remains authoritative | Deployed acceptance and retirement of unused credentials after checking scope |
 | Study | Durable account/anonymous projections and idempotent SQL receipts; cached identity cannot assign ownership | Integrated browser acceptance against the final runtime |
 | Private offline reading | Fourteen-day leases, source/draft locks, sign-out purge, image dependency handling, offline discovery | Full deployed/offline journey with published bundles |
@@ -29,8 +29,9 @@ legacy file relocation/retirement preparation. The exact Trusted Sources rule
 and R2 settings were applied and verified on 14 September. GitHub Production
 now permits only `master` and has a verified project-scoped deployment token
 expiring 13 December. Shared credential/trust improvements shipped in Loom 1.26.0;
-Magickly pins that release. Full deployment acceptance remains pending. The
-original `magickli-db` resource is now Production-only, and the distinct London
+Magickly subsequently adopted the 1.26.1 artifact-verifier fix. Full deployment
+acceptance remains pending. The original `magickli-db` resource is now
+Production-only, and the distinct London
 `magickli-preview-db` resource is connected only to Preview with Sensitive
 variables and the required Neon Preview action. An isolated native deployment
 created a child of the sanitized Preview root. Its runtime-reported pooled and
@@ -53,10 +54,22 @@ mapped references and symlinks and found no build-placeholder markers. Its
 prebuilt upload, `dpl_HSC6uXqHhZNPqMeUqnfZmmTf94ia`, reached `READY` in `lhr1`.
 The stable Preview alias is assigned. The home page loads and the guarded auth
 endpoint successfully reads SQL before returning the expected anonymous result.
-Real Google OAuth, upload/publication and offline acceptance remain outstanding.
+The operator added the exact Google callback and successfully signed in through
+real Google OAuth. Two-account permissions, upload/publication and offline
+acceptance remain outstanding.
 The native post-build error's underlying cause is still unproven. Deployed SVG
-and PNG renderer checks found HTTP 500 responses on both canonical and legacy
-URLs; diagnosis and a built-runtime regression check are in progress.
+and PNG requests exposed a missing packaged WASM asset. Fix `e8dcfcc` passes
+actual routes from a fresh standalone build. Creating the QA temple succeeded
+atomically, but its redirected page failed RSC serialization of a Next Link
+function passed to MUI. Fix `47d521d` removes that boundary error on five server
+pages; 4,255 tests, types and Biome pass. Both fixes are now in the frozen
+Loom 1.26.1 standalone build deployed as `dpl_5PJAB3NodZAdquB9bgwTDRmvF7nq`
+in London. Live canonical SVG, PNG and legacy SVG pass and match the local
+built-route hashes; unknown slugs still return 400. The stable Preview alias now
+points to this deployment and passes the same checks. Both OAuth sign-ins and
+the single QA temple/admin membership remain in the exact Preview child.
+Authenticated temple-page acceptance is next. Reopen the existing temple instead
+of creating it again.
 
 The earlier inert hash-only route proved injection of the intended Preview
 hosts and database name without opening PostgreSQL. The current app's guarded
@@ -73,9 +86,13 @@ transitionally; a separate role needs a reviewed ownership/grants migration.
 The earlier local build's marker check covered physical output but omitted
 externally mapped dependencies. That evidence is superseded by the fresh
 standalone artifact's complete-reference review and successful Preview upload.
-A shared Loom verifier fix adds mapped-file and symlink scanning; it is reviewed
-and committed locally. The operator explicitly approved publication and adoption
-after automatic approval review requested confirmation; release is in progress. The complete GitHub release still needs acceptance. See
+The shared Loom verifier fix adds mapped-file and symlink scanning. It shipped
+as 1.26.1 from `3ff7266` after explicit publication approval; Magickly adopted it
+and the standalone release-build flag in `ea50786`. Frozen installation, Loom's
+production check and the published verifier pass. The current
+1.26.1 candidate with both acceptance fixes passes the integrated suite, final
+standalone build and public deployed checks. Authenticated journeys and the
+complete GitHub release still need acceptance. See
 [the completion decisions](022-release-and-storage-completion.md).
 
 After the relocation unit and Loom 1.26.0 adoption, the integrated candidate
