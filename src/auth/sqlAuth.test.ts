@@ -176,6 +176,14 @@ describe("explicit SQL auth configuration", () => {
     expect(isUuidV7(context.generateId({ model: "user" }))).toBe(true);
     expect(isUuidV7(context.generateId({ model: "account" }))).toBe(true);
   });
+
+  it("enables credentials only through the explicit local runtime option", async () => {
+    const context = await createSqlAuth({
+      ...options(),
+      localTestLoginEnabled: true,
+    }).$context;
+    expect(context.options.emailAndPassword?.enabled).toBe(true);
+  });
 });
 
 describe("uncached SQL identity boundary", () => {

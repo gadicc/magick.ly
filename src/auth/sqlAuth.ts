@@ -15,6 +15,8 @@ export interface SqlAuthOptions {
   secret: string;
   googleClientId: string;
   googleClientSecret: string;
+  /** Enables email credentials only for the explicitly gated local dev route. */
+  localTestLoginEnabled?: boolean;
 }
 
 /**
@@ -86,7 +88,7 @@ export function createSqlAuth(options: SqlAuthOptions) {
         overrideUserInfo: false,
       },
     },
-    emailAndPassword: { enabled: false },
+    emailAndPassword: { enabled: options.localTestLoginEnabled === true },
     user: { deleteUser: { enabled: false } },
     logger: {
       level: "warn",

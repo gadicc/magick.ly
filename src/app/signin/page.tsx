@@ -1,3 +1,4 @@
+import { isBetterAuthLocalTestLoginEnabled } from "@gadicc/loom/next/auth";
 import { Container, Typography } from "@mui/material";
 import { safeAuthCallbackURL } from "@/auth/callbackURL";
 import SignInButton from "./SignInButton";
@@ -20,7 +21,10 @@ export default async function SignInPage({
         Use the same Google account as before to find your temples, rituals and
         study progress.
       </Typography>
-      <SignInButton callbackURL={callbackURL} />
+      <SignInButton
+        callbackURL={callbackURL}
+        localTestLoginEnabled={isBetterAuthLocalTestLoginEnabled(process.env)}
+      />
     </Container>
   );
 }

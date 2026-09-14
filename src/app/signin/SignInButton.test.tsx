@@ -45,4 +45,29 @@ describe("SQL sign-in gate", () => {
       }),
     );
   });
+
+  it("keeps fixed local identities behind the same recovery gate", () => {
+    const view = render(
+      <SignInButton callbackURL="/study" localTestLoginEnabled />,
+    );
+    const creator = screen.getByRole("button", { name: "Creator" });
+    const reader = screen.getByRole("button", { name: "Reader" });
+    const admin = screen.getByRole("button", { name: "Test admin" });
+    expect((creator as HTMLButtonElement).disabled).toBe(true);
+    expect((reader as HTMLButtonElement).disabled).toBe(true);
+    expect((admin as HTMLButtonElement).disabled).toBe(true);
+
+    mocks.recoveryState = "ready";
+    view.rerender(<SignInButton callbackURL="/study" localTestLoginEnabled />);
+    expect((creator as HTMLButtonElement).form?.action).toBe(
+      "http://localhost:3000/api/dev/test-login",
+    );
+    expect((creator as HTMLButtonElement).value).toBe("creator");
+    expect((reader as HTMLButtonElement).value).toBe("reader");
+    expect((admin as HTMLButtonElement).value).toBe("admin");
+    expect(
+      (creator as HTMLButtonElement).form?.elements.namedItem("callbackURL"),
+    ).toMatchObject({ value: "/study" });
+    expect((creator as HTMLButtonElement).disabled).toBe(false);
+  });
 });

@@ -1,5 +1,8 @@
 import "server-only";
-import { requireBetterAuthSecret } from "@gadicc/loom/next/auth";
+import {
+  isBetterAuthLocalTestLoginEnabled,
+  requireBetterAuthSecret,
+} from "@gadicc/loom/next/auth";
 import { db } from "../db/neonFull";
 import { createSqlAuth } from "./sqlAuth";
 
@@ -12,4 +15,5 @@ export const sqlAuth = createSqlAuth({
   secret: requireBetterAuthSecret(),
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  localTestLoginEnabled: isBetterAuthLocalTestLoginEnabled(process.env),
 });
