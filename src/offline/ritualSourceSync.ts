@@ -22,9 +22,12 @@ export async function syncOfflineRitualSource(
   ritualId: string,
   fetcher: typeof fetch = fetch,
   onInstalled?: (value: { title: string; snapshot: SourceSnapshot }) => void,
+  /** Retry hint only when lifecycle invalidation aborts before acceptPermission commits. */
+  onInterrupted?: () => void,
 ): Promise<{ title: string; snapshot: SourceSnapshot } | null> {
   const operation = registration.beginPermissionCheck();
   if (!operation) return null;
+  let permissionAccepted = false;
   try {
     const pending = await runtime.repository.beginCheck(
       operation.account,
@@ -55,6 +58,7 @@ export async function syncOfflineRitualSource(
         : undefined,
     );
     if (outcome !== "accepted") return null;
+    permissionAccepted = true;
     await runtime.coordinator.changed();
     if (
       delivery.permission.kind !== "granted" ||
@@ -78,6 +82,12 @@ export async function syncOfflineRitualSource(
     await runtime.coordinator.changed();
     return installed;
   } finally {
+    if (!permissionAccepted && operation.signal.aborted)
+      try {
+        onInterrupted?.();
+      } catch {
+        // Retry scheduling cannot replace the permission operation's cleanup.
+      }
     runtime.coordinator.finish(operation);
   }
 }

@@ -105,9 +105,11 @@ export default function PrivateRitualReader({
     }
     let loadSequence = 0;
     let refreshing = false;
+    let refreshPending = false;
     let id: string | null = null;
     let registration: ReturnType<typeof runtime.coordinator.register> | null =
       null;
+    let unsubscribeState = () => {};
 
     const load = async () => {
       const sequence = ++loadSequence;
@@ -153,6 +155,7 @@ export default function PrivateRitualReader({
           ...(identity.kind === "legacy-objectid"
             ? { routeAlias: identity.legacyId }
             : {}),
+          onInterrupted: requestRefresh,
         });
       } catch {
         // Account/epoch changes and storage failures are ordinary closed states.
@@ -164,10 +167,30 @@ export default function PrivateRitualReader({
           !showingProtectedContent.current
         )
           setState({ routeKey, kind: "unavailable", title: null, doc: null });
+        if (refreshPending) queueMicrotask(attemptPendingRefresh);
       }
     };
-    refreshRef.current = () => void refresh();
-    const online = () => void refresh();
+    const attemptPendingRefresh = () => {
+      if (
+        !refreshPending ||
+        refreshing ||
+        disposed ||
+        !registration ||
+        !id ||
+        document.visibilityState !== "visible" ||
+        runtime.coordinator.state.phase !== "ready" ||
+        !runtime.coordinator.state.account
+      )
+        return;
+      refreshPending = false;
+      void refresh();
+    };
+    const requestRefresh = () => {
+      refreshPending = true;
+      queueMicrotask(attemptPendingRefresh);
+    };
+    refreshRef.current = requestRefresh;
+    const online = requestRefresh;
     window.addEventListener("online", online);
     void (async () => {
       try {
@@ -197,10 +220,14 @@ export default function PrivateRitualReader({
           return;
         }
         setRitual({ routeKey, id });
+        unsubscribeState = runtime.subscribeState(() => {
+          attemptPendingRefresh();
+        });
         registration = runtime.coordinator.register({
           ritualId: id,
           capability: "read",
-          hide: () => {
+          hide: (reason) => {
+            if (reason === "account") refreshPending = true;
             loadSequence++;
             showingProtectedContent.current = false;
             if (!disposed)
@@ -208,7 +235,7 @@ export default function PrivateRitualReader({
           },
           available: () => void load(),
         });
-        await refresh();
+        requestRefresh();
       } catch {
         if (!disposed) {
           setRitual({ routeKey, id: null });
@@ -218,8 +245,10 @@ export default function PrivateRitualReader({
     })();
     return () => {
       disposed = true;
+      refreshPending = false;
       refreshRef.current = () => {};
       window.removeEventListener("online", online);
+      unsubscribeState();
       registration?.dispose();
     };
   }, [resolvedRitualId, routeAlias, routeId, routeKey]);

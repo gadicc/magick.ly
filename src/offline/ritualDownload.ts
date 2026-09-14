@@ -30,11 +30,17 @@ export async function refreshOfflineRitual(
   runtime: DownloadRuntime,
   registration: PermissionRegistration,
   ritualId: string,
-  options: { fetcher?: typeof fetch; routeAlias?: string } = {},
+  options: {
+    fetcher?: typeof fetch;
+    routeAlias?: string;
+    /** Retry hint only when lifecycle invalidation aborts before acceptPermission commits. */
+    onInterrupted?: () => void;
+  } = {},
 ): Promise<boolean> {
   const fetcher = options.fetcher ?? fetch;
   const operation = registration.beginPermissionCheck();
   if (!operation) return false;
+  let permissionAccepted = false;
   try {
     const pending = await runtime.repository.beginCheck(
       operation.account,
@@ -67,6 +73,7 @@ export async function refreshOfflineRitual(
       binding,
     );
     if (outcome !== "accepted") return false;
+    permissionAccepted = true;
     await runtime.coordinator.changed();
     if (
       delivery.permission.kind !== "granted" ||
@@ -150,6 +157,12 @@ export async function refreshOfflineRitual(
       unsubscribe();
     }
   } finally {
+    if (!permissionAccepted && operation.signal.aborted)
+      try {
+        options.onInterrupted?.();
+      } catch {
+        // Retry scheduling cannot replace the permission operation's cleanup.
+      }
     runtime.coordinator.finish(operation);
   }
 }

@@ -524,29 +524,81 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
     }
     let registration: ReturnType<typeof runtime.coordinator.register> | null =
       null;
-    const sync = async () => {
-      if (!registration || disposed) return;
-      const result = await syncOfflineRitualSource(
-        runtime,
-        registration,
-        ritualId,
-        fetch,
-        (installed) => {
-          if (disposed || installed.snapshot.ritualId !== ritualId) return;
-          sourceRef.current = installed.snapshot;
-          titleRef.current = installed.snapshot.title;
-        },
-      );
-      if (!result && !disposed && !visibleRef.current)
-        setDisplay({ kind: "unavailable", ritualId });
+    let activeSync: Promise<void> | null = null;
+    let syncPending = false;
+    let unsubscribeState = () => {};
+    const runSync = () => {
+      if (!registration || disposed) return Promise.resolve();
+      if (activeSync) return activeSync;
+      const operation = (async () => {
+        try {
+          const result = await syncOfflineRitualSource(
+            runtime,
+            registration,
+            ritualId,
+            fetch,
+            (installed) => {
+              if (disposed || installed.snapshot.ritualId !== ritualId) return;
+              sourceRef.current = installed.snapshot;
+              titleRef.current = installed.snapshot.title;
+            },
+            requestSync,
+          );
+          if (!result && !disposed && !visibleRef.current)
+            setDisplay({ kind: "unavailable", ritualId });
+        } catch {
+          if (!disposed && !visibleRef.current)
+            setDisplay({ kind: "unavailable", ritualId });
+        } finally {
+          activeSync = null;
+          if (syncPending) queueMicrotask(attemptPendingSync);
+        }
+      })();
+      activeSync = operation;
+      return operation;
     };
-    syncRef.current = sync;
+    const attemptPendingSync = () => {
+      if (
+        !syncPending ||
+        activeSync ||
+        disposed ||
+        !registration ||
+        document.visibilityState !== "visible" ||
+        runtime.coordinator.state.phase !== "ready" ||
+        !runtime.coordinator.state.account
+      )
+        return;
+      syncPending = false;
+      void runSync();
+    };
+    const requestSync = () => {
+      syncPending = true;
+      queueMicrotask(attemptPendingSync);
+    };
+    const syncAfterSave = async () => {
+      // A pre-existing check may reflect the source before this save. Await it,
+      // then make one fresh attempt before publication when the account is ready.
+      if (activeSync) await activeSync;
+      if (disposed || !registration) return;
+      if (
+        runtime.coordinator.state.phase !== "ready" ||
+        !runtime.coordinator.state.account
+      ) {
+        requestSync();
+        return;
+      }
+      await runSync();
+    };
+    syncRef.current = syncAfterSave;
     void (async () => {
       try {
         await runtime.start();
         if (disposed) return;
         await runtime.refreshVerifiedAccount();
         if (disposed) return;
+        unsubscribeState = runtime.subscribeState(() => {
+          attemptPendingSync();
+        });
         registration = runtime.coordinator.register({
           ritualId,
           capability: "source",
@@ -561,7 +613,8 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
               },
             };
           },
-          hide: () => {
+          hide: (reason) => {
+            if (reason === "account") syncPending = true;
             visibleRef.current = false;
             generation.current++;
             compilationGeneration.current++;
@@ -594,21 +647,23 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
           },
         });
         registrationRef.current = registration;
-        await sync();
+        requestSync();
       } catch {
         if (!disposed) setDisplay({ kind: "unavailable", ritualId });
       }
     })();
-    const online = () => void sync();
+    const online = requestSync;
     window.addEventListener("online", online);
     return () => {
       disposed = true;
+      syncPending = false;
       visibleRef.current = false;
       generation.current++;
       compilationGeneration.current++;
       clearTimeout(compileTimer.current);
       clearTimeout(persistTimer.current);
       window.removeEventListener("online", online);
+      unsubscribeState();
       registration?.dispose();
       registrationRef.current = null;
       syncRef.current = async () => {};
@@ -965,11 +1020,9 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
         publishAfterSave = publication !== null;
       });
       if (operation.signal.aborted) return;
-      try {
-        await syncRef.current();
-      } catch {
-        // The source save is acknowledged; online refresh remains independently retryable.
-      }
+      // Refresh the acknowledged source before publication. A failure is caught
+      // by the refresh and the durable publication remains independently retryable.
+      await syncRef.current();
     } catch (failure) {
       runtime.coordinator.commit(operation, () =>
         setError(

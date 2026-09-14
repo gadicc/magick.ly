@@ -120,6 +120,14 @@ function withUrl(response: Response, url: string) {
   return response;
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 function transport() {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input);
@@ -183,12 +191,15 @@ function transport() {
 it("installs a validated delivery atomically under the active epoch", async () => {
   vi.stubGlobal("location", new URL("https://synthetic.example/doc/" + RITUAL));
   const fixture = await setup();
+  const interrupted = vi.fn();
   expect(
     await refreshOfflineRitual(fixture.runtime, fixture.registration, RITUAL, {
       fetcher: transport() as typeof fetch,
       routeAlias: ALIAS,
+      onInterrupted: interrupted,
     }),
   ).toBe(true);
+  expect(interrupted).not.toHaveBeenCalled();
   expect(
     await fixture.repository.readBundle(fixture.account, RITUAL),
   ).toMatchObject({
@@ -209,5 +220,128 @@ it("installs a validated delivery atomically under the active epoch", async () =
     )?.text(),
   ).toBe("synthetic image");
   fixture.registration.dispose();
+  fixture.coordinator.dispose();
+});
+
+it("reports a real coordinator interruption before permission acceptance", async () => {
+  vi.stubGlobal("location", new URL("https://synthetic.example/doc/" + RITUAL));
+  const fixture = await setup();
+  const started = deferred<void>();
+  const interrupted = vi.fn();
+  const fetcher = vi.fn(
+    async (_input: RequestInfo | URL, init?: RequestInit) =>
+      await new Promise<Response>((_resolve, reject) => {
+        started.resolve();
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("Aborted", "AbortError")),
+        );
+      }),
+  );
+  const pending = refreshOfflineRitual(
+    fixture.runtime,
+    fixture.registration,
+    RITUAL,
+    { fetcher: fetcher as typeof fetch, onInterrupted: interrupted },
+  );
+  await started.promise;
+
+  await fixture.coordinator.changed();
+  await expect(pending).resolves.toBe(false);
+  expect(interrupted).toHaveBeenCalledOnce();
+  fixture.registration.dispose();
+  fixture.coordinator.dispose();
+});
+
+it("retries after cached registration discovery aborts the first check before transport", async () => {
+  vi.stubGlobal("location", new URL("https://synthetic.example/doc/" + RITUAL));
+  const fixture = await setup();
+  expect(
+    await refreshOfflineRitual(fixture.runtime, fixture.registration, RITUAL, {
+      fetcher: transport() as typeof fetch,
+    }),
+  ).toBe(true);
+  fixture.registration.dispose();
+  await fixture.coordinator.changed();
+
+  const cached = await fixture.repository.runtimeState([RITUAL]);
+  const discovery = deferred<typeof cached>();
+  const beginStarted = deferred<void>();
+  const releaseBegin = deferred<void>();
+  const actualRuntimeState = fixture.repository.runtimeState.bind(
+    fixture.repository,
+  );
+  const actualBeginCheck = fixture.repository.beginCheck.bind(
+    fixture.repository,
+  );
+  let discoveryPending = true;
+  vi.spyOn(fixture.repository, "runtimeState").mockImplementation(
+    async (ritualIds, observation) => {
+      if (discoveryPending && ritualIds.length === 1) {
+        discoveryPending = false;
+        return await discovery.promise;
+      }
+      return await actualRuntimeState(ritualIds, observation);
+    },
+  );
+  let beginPending = true;
+  vi.spyOn(fixture.repository, "beginCheck").mockImplementation(
+    async (...args) => {
+      if (beginPending) {
+        beginPending = false;
+        beginStarted.resolve();
+        await releaseBegin.promise;
+      }
+      return await actualBeginCheck(...args);
+    },
+  );
+
+  const registration = fixture.coordinator.register({
+    ritualId: RITUAL,
+    capability: "read",
+    hide: () => {},
+    available: () => {},
+  });
+  expect(fixture.coordinator.state.phase).toBe("ready");
+  let firstSignal: AbortSignal | undefined;
+  const observedRegistration = {
+    beginPermissionCheck() {
+      const operation = registration.beginPermissionCheck();
+      firstSignal ??= operation?.signal;
+      return operation;
+    },
+  };
+  const interrupted = vi.fn();
+  const dispatched = transport();
+  const fetcher = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.signal?.aborted)
+        throw new DOMException("Aborted", "AbortError");
+      return await dispatched(input, init);
+    },
+  );
+  const first = refreshOfflineRitual(
+    fixture.runtime,
+    observedRegistration,
+    RITUAL,
+    { fetcher: fetcher as typeof fetch, onInterrupted: interrupted },
+  );
+  await beginStarted.promise;
+
+  discovery.resolve(cached);
+  await vi.waitFor(() => expect(firstSignal?.aborted).toBe(true));
+  releaseBegin.resolve();
+  await expect(first).resolves.toBe(false);
+  expect(interrupted).toHaveBeenCalledOnce();
+  expect(dispatched).not.toHaveBeenCalled();
+
+  await expect(
+    refreshOfflineRitual(fixture.runtime, observedRegistration, RITUAL, {
+      fetcher: fetcher as typeof fetch,
+      onInterrupted: interrupted,
+    }),
+  ).resolves.toBe(true);
+  expect(dispatched).toHaveBeenCalled();
+  expect(interrupted).toHaveBeenCalledOnce();
+  registration.dispose();
   fixture.coordinator.dispose();
 });

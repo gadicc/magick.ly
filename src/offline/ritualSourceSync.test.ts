@@ -67,7 +67,7 @@ function fixture() {
   const registration = {
     beginPermissionCheck: vi.fn(() => ({ account, signal: abort.signal })),
   };
-  return { repository, coordinator, registration };
+  return { abort, repository, coordinator, registration };
 }
 
 it("installs one source snapshot only from its matching fresh source envelope", async () => {
@@ -155,8 +155,52 @@ it("applies the latest denial but never installs source bytes", async () => {
 it("drops a response when the coordinator identity changed during fetch", async () => {
   const f = fixture();
   f.coordinator.currentPermissionCheck.mockReturnValue(false);
+  f.abort.abort();
   const fetcher = vi.fn().mockResolvedValue(response({}));
-  await syncOfflineRitualSource(f as never, f.registration, ritualId, fetcher);
+  const interrupted = vi.fn();
+  await syncOfflineRitualSource(
+    f as never,
+    f.registration,
+    ritualId,
+    fetcher,
+    undefined,
+    interrupted,
+  );
   expect(f.repository.acceptPermission).not.toHaveBeenCalled();
   expect(f.repository.installSource).not.toHaveBeenCalled();
+  expect(interrupted).toHaveBeenCalledOnce();
+});
+
+it("does not report its own accepted permission change as an interruption", async () => {
+  const f = fixture();
+  f.coordinator.changed.mockImplementation(async () => {
+    f.abort.abort();
+  });
+  const permission = granted();
+  const fetcher = vi.fn().mockResolvedValue(
+    response({
+      version: 1,
+      requestId: pending.requestId,
+      ownerId,
+      ritualId,
+      permission,
+      source: {
+        title: "Protected title",
+        revisionId,
+        parentVersion: 4,
+        source: "p Exact source",
+      },
+    }),
+  );
+  const interrupted = vi.fn();
+  await syncOfflineRitualSource(
+    f as never,
+    f.registration,
+    ritualId,
+    fetcher,
+    undefined,
+    interrupted,
+  );
+  expect(f.repository.acceptPermission).toHaveBeenCalledOnce();
+  expect(interrupted).not.toHaveBeenCalled();
 });

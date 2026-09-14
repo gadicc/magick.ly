@@ -67,16 +67,40 @@ const mock = vi.hoisted(() => ({
 let recoveryQueue = new LockedRecoveryQueue();
 
 const account = { ownerId: ids.owner, epoch: ids.epoch };
+type RuntimeState = {
+  phase: "checking" | "ready";
+  generation: number;
+  account: typeof account;
+};
+let runtimeState: RuntimeState = {
+  phase: "ready",
+  generation: 1,
+  account,
+};
+const runtimeStateListeners = new Set<(state: RuntimeState) => void>();
+
+function emitRuntimePhase(phase: RuntimeState["phase"]) {
+  runtimeState = { ...runtimeState, phase };
+  for (const listener of runtimeStateListeners) listener(runtimeState);
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((done, fail) => {
     resolve = done;
+    reject = fail;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 }
 const runtime = {
   start: vi.fn().mockResolvedValue(undefined),
   refreshVerifiedAccount: vi.fn().mockResolvedValue(true),
+  subscribeState: vi.fn((listener: (state: RuntimeState) => void) => {
+    runtimeStateListeners.add(listener);
+    listener(runtimeState);
+    return () => runtimeStateListeners.delete(listener);
+  }),
   repository: {
     readInstalledSource: (...args: unknown[]) => mock.source(...args),
     listDrafts: (...args: unknown[]) => mock.drafts(...args),
@@ -100,7 +124,9 @@ const runtime = {
     exportDraft: (...args: unknown[]) => mock.exportDraft(...args),
   },
   coordinator: {
-    state: { account },
+    get state() {
+      return runtimeState;
+    },
     register: (...args: unknown[]) => mock.register(...args),
     commit: vi.fn((_operation: unknown, work: () => void) => {
       if (!mock.commitAllowed) return false;
@@ -200,6 +226,8 @@ beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
   recoveryQueue = new LockedRecoveryQueue();
+  runtimeState = { phase: "ready", generation: 1, account };
+  runtimeStateListeners.clear();
   mock.commitAllowed = true;
   mock.registered = null;
   runtime.start.mockResolvedValue(undefined);
@@ -290,6 +318,82 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   delete (window as Window & { doc?: unknown }).doc;
+});
+
+it("runs one initial source check when account activation becomes ready", async () => {
+  runtimeState = { ...runtimeState, phase: "checking" };
+  mock.sync.mockImplementation(async () => {
+    mock.registered?.hide("change", { retainUncapturedDraft: false });
+    return null;
+  });
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  expect(await screen.findByText("Protected A")).toBeDefined();
+  expect(mock.sync).not.toHaveBeenCalled();
+
+  await act(async () => emitRuntimePhase("ready"));
+  expect(
+    await screen.findByText(/Ritual source is locked or unavailable/i),
+  ).toBeDefined();
+  expect(mock.sync).toHaveBeenCalledOnce();
+
+  await act(async () => emitRuntimePhase("ready"));
+  expect(mock.sync).toHaveBeenCalledOnce();
+});
+
+it("retries when registration refresh interrupts source sync before permission acceptance", async () => {
+  mock.sync
+    .mockImplementationOnce(async (...args: unknown[]) => {
+      const onInterrupted = args[5] as () => void;
+      onInterrupted();
+      return null;
+    })
+    .mockResolvedValueOnce(null);
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  expect(await screen.findByText("Protected A")).toBeDefined();
+
+  await waitFor(() => expect(mock.sync).toHaveBeenCalledTimes(2));
+  await act(async () => emitRuntimePhase("ready"));
+  expect(mock.sync).toHaveBeenCalledTimes(2);
+});
+
+it("retains already gated source when a readiness-triggered refresh rejects", async () => {
+  const sync = deferred<null>();
+  mock.sync.mockReturnValue(sync.promise);
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  expect(await screen.findByText("Protected A")).toBeDefined();
+  expect(mock.sync).toHaveBeenCalledOnce();
+
+  await act(async () => sync.reject(new Error("sanitized provider failure")));
+  expect(screen.getByText("Protected A")).toBeDefined();
+  expect(screen.getByLabelText("Ritual source")).toBeDefined();
+});
+
+it("retries an active source check invalidated by account activation without looping on its own change", async () => {
+  const first = deferred<null>();
+  const second = deferred<null>();
+  mock.sync
+    .mockReturnValueOnce(first.promise)
+    .mockReturnValueOnce(second.promise);
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  expect(await screen.findByText("Protected A")).toBeDefined();
+  expect(mock.sync).toHaveBeenCalledOnce();
+
+  act(() => {
+    emitRuntimePhase("checking");
+    mock.registered?.hide("account", { retainUncapturedDraft: false });
+  });
+  await act(async () => first.resolve(null));
+  expect(mock.sync).toHaveBeenCalledOnce();
+
+  await act(async () => emitRuntimePhase("ready"));
+  await waitFor(() => expect(mock.sync).toHaveBeenCalledTimes(2));
+  act(() => {
+    emitRuntimePhase("checking");
+    mock.registered?.hide("change", { retainUncapturedDraft: false });
+    emitRuntimePhase("ready");
+  });
+  await act(async () => second.resolve(null));
+  expect(mock.sync).toHaveBeenCalledTimes(2);
 });
 
 it("clears source, title, preview, and script access when the capability locks", async () => {
@@ -521,6 +625,128 @@ it("publishes an acknowledged save with its original write identity without clai
     expect.any(AbortSignal),
   );
   expect(screen.queryByText(/offline ready/i)).toBeNull();
+});
+
+it("waits for the post-save source refresh before publishing", async () => {
+  const refreshed = deferred<null>();
+  mock.sync.mockResolvedValueOnce(null).mockReturnValueOnce(refreshed.promise);
+  mock.send.mockResolvedValue({
+    ok: true,
+    replayed: false,
+    ritualId: ids.ritualA,
+    revisionId: ids.nextRevision,
+    version: 5,
+    updatedAt: "2026-09-13T12:00:00.000Z",
+  });
+  mock.publication.mockImplementation(() => {
+    const write = mock.send.mock.calls[0]?.[0];
+    return Promise.resolve(
+      write
+        ? {
+            parentWriteOperationId: write.operationId,
+            request: {
+              version: 1,
+              operationId: write.operationId,
+              expectedActorId: ids.owner,
+              ritualId: ids.ritualA,
+              expectedRevisionId: ids.nextRevision,
+              expectedVersion: 5,
+            },
+          }
+        : null,
+    );
+  });
+  mock.sendPublication.mockResolvedValue({
+    ok: true,
+    state: "completed",
+    replayed: false,
+    receipt: {
+      operationId: ids.createOperation,
+      bundleId: ids.bundle,
+      ritualId: ids.ritualA,
+      publishedAtMs: 1,
+    },
+  });
+
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  await waitFor(() => expect(mock.sync).toHaveBeenCalledOnce());
+  fireEvent.input(source, { target: { value: "p Ordered" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save ritual" }));
+
+  await waitFor(() => expect(mock.sync).toHaveBeenCalledTimes(2));
+  expect(mock.sendPublication).not.toHaveBeenCalled();
+  await act(async () => refreshed.resolve(null));
+  await waitFor(() => expect(mock.sendPublication).toHaveBeenCalledOnce());
+});
+
+it("retains the publication retry when the post-save refresh rejects", async () => {
+  mock.sync
+    .mockResolvedValueOnce(null)
+    .mockRejectedValueOnce(new Error("sanitized refresh failure"));
+  mock.send.mockResolvedValue({
+    ok: true,
+    replayed: false,
+    ritualId: ids.ritualA,
+    revisionId: ids.nextRevision,
+    version: 5,
+    updatedAt: "2026-09-13T12:00:00.000Z",
+  });
+  mock.publication.mockImplementation(() => {
+    const write = mock.send.mock.calls[0]?.[0];
+    return Promise.resolve(
+      write
+        ? {
+            parentWriteOperationId: write.operationId,
+            request: {
+              version: 1,
+              operationId: write.operationId,
+              expectedActorId: ids.owner,
+              ritualId: ids.ritualA,
+              expectedRevisionId: ids.nextRevision,
+              expectedVersion: 5,
+            },
+          }
+        : null,
+    );
+  });
+  mock.sendPublication
+    .mockResolvedValueOnce(null)
+    .mockImplementationOnce((request) =>
+      Promise.resolve({
+        ok: true,
+        state: "completed",
+        replayed: false,
+        receipt: {
+          operationId: request.operationId,
+          bundleId: ids.bundle,
+          ritualId: request.ritualId,
+          publishedAtMs: 1,
+        },
+      }),
+    );
+
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  await waitFor(() => expect(mock.sync).toHaveBeenCalledOnce());
+  fireEvent.input(source, { target: { value: "p Retryable" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save ritual" }));
+
+  const retry = await screen.findByRole("button", {
+    name: "Retry publication",
+  });
+  expect(mock.sync).toHaveBeenCalledTimes(2);
+  expect(mock.sendPublication).toHaveBeenCalledOnce();
+  const retainedRequest = mock.sendPublication.mock.calls[0][0];
+
+  fireEvent.click(retry);
+  await screen.findByText(/published for download/i);
+  expect(mock.sendPublication).toHaveBeenCalledTimes(2);
+  expect(mock.sendPublication.mock.calls[1][0]).toEqual(retainedRequest);
 });
 
 it("offers explicit renewal only after an exact expired publication result", async () => {
