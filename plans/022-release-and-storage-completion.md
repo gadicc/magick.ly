@@ -129,8 +129,9 @@ Canonical Files credentials can serve all relocated objects without the old
 variables. The import command includes the new migration and requires this table
 to be empty during import; final import reconciliation precedes mapping activation.
 The foundation passes 453 focused tests, TypeScript, generated-schema refresh,
-Biome and Loom checks. The previous live Neon rehearsal covers only 0000–0015;
-refresh it after the final dependency pin before production use.
+Biome and Loom checks. The refreshed live Neon rehearsal now covers 0000–0016 with Loom 1.26.0,
+including durable source-free import/retry and verified owned-branch cleanup.
+See [the final rehearsal evidence](023-final-migration-rehearsal.md).
 
 ## Write pause and outstanding operational evidence
 

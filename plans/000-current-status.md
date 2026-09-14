@@ -6,7 +6,7 @@ retains historical checkpoints and their original limitations.
 | Area | Completed and verified | Remaining |
 | --- | --- | --- |
 | Tooling and framework | pnpm, Biome, Vitest, App Router, current React/MUI, Loom 1.26.0; final integrated tests, coverage, types, Biome and production build pass | Deployed acceptance |
-| Database and import | UUIDv7 schemas, 16 migrations rehearsed on Neon, protected resumable import and reconciliation; migration 0016 adds verified file relocations | Refresh final rehearsal for the new migration, then final consistent production snapshot/import |
+| Database and import | UUIDv7 schemas, 17 migrations rehearsed on Neon, protected resumable import and reconciliation; migration 0016 adds verified file relocations | Final consistent production snapshot/import |
 | Authentication | Better Auth runtime, fresh SQL identity, import readiness gate, coordinated sign-out; committed `22ef750` | Real OAuth and deployed acceptance; one-time user reauthentication at cutover |
 | Administration and integrations | SQL temple/group administration and Discourse mapping; Pinecone remains authoritative | Deployed acceptance and retirement of unused credentials after checking scope |
 | Study | Durable account/anonymous projections and idempotent SQL receipts; cached identity cannot assign ownership | Integrated browser acceptance against the final runtime |
@@ -39,7 +39,9 @@ Its production build, TypeScript and Biome pass in an isolated copy using
 synthetic build-only configuration. The earlier 4,238-test coverage run passed
 all existing per-module gates; its selected instrumented modules had 97.97% statement, 96.47% branch, 99.60% function and
 99.04% line coverage. This is not whole-application or browser-journey coverage.
-Loom's local production check passes with
+The [final live rehearsal](023-final-migration-rehearsal.md) also passes all
+17 migrations and source-free import/retry checks; its disposable branch was
+deleted and the main branch remained unchanged. Loom's local production check passes with
 pnpm-11 migration advice while this app remains pinned to pnpm 10.
 
 Current production is still deployment `dpl_9m7ojZk6FZMJoCKsELDe53qiQkRp`,
