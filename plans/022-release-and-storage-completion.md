@@ -34,10 +34,10 @@ An identical setup rerun preserved the same token and expiry. At that checkpoint
 the network check found the GitHub release variables/secret and advised that a
 dedicated migration secret was not installed; the then-readable Vercel direct URL
 provided the supported fallback. The later Sensitive change below removes that
-fallback. The overall network check is not yet green: the app has not recorded
-the final R2 provider policy in `loom.json`. The Preview upload origin has been
-selected and bucket CORS verified below; the provider contract still needs to be
-recorded in the manifest.
+fallback. The private R2 provider contract is now recorded in `loom.json`,
+including separate buckets and exact upload origins. Loom's read-only R2 check
+passes all 12 checks. The separate two-resource Neon topology and full deployment
+acceptance still require the evidence described below.
 
 The published trust planner/checker also verified the existing provider rule
 without changing it. Its complete-proposal approval digest is
@@ -281,6 +281,15 @@ changed. The sanitized result is
 `2b94625afa66dca4830f8efb59006a536d12243efd6104149031fc508ed0ddb0`.
 This verifies bucket configuration, while browser upload and application runtime
 acceptance remain pending.
+
+The Files manifest retains the custom adapter and records the verified account,
+private buckets, manual credentials, path-style addressing and exact presigned
+PUT policy. Local provider setup is disabled. Loom's production configuration
+check passes with only future pnpm-11 advice. Its R2 network check passes all 12
+checks, including private endpoints, both CORS policies, matching Production and
+Preview variables, and absence of Files credentials in Development. No setup or
+provider mutation was performed by those checks. Evidence is
+`/tmp/magickli-loom-files-policy-proposal/network-check.txt`.
 
 Native app deployments from `918eb883d6e9396f014b9ab0d90668aec8fbf457`, on ref
 `codex/preview-acceptance-9fd4f93a`, created and reused child

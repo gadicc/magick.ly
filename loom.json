@@ -42,7 +42,46 @@
           "hash": "f5d9773b3245df85231782ee42d292823bd6b474b406efa1c97a41bea7ac9bcf"
         },
         "storage": {
-          "adapter": "custom"
+          "adapter": "custom",
+          "provider": {
+            "accessMode": "private",
+            "accountId": "6fb830ebb3c8fed82a52524211d9c54e",
+            "buckets": {
+              "production": "magickli-files-production",
+              "preview": "magickli-files-preview"
+            },
+            "connectionStatus": "configured",
+            "credentialMode": "manual",
+            "directBrowserAccess": true,
+            "directUpload": {
+              "kind": "presigned-put",
+              "origins": {
+                "production": ["https://magick.ly"],
+                "preview": [
+                  "https://magickly-preview-9fd4f93a-wastelands.vercel.app"
+                ]
+              },
+              "allowedHeaders": [
+                "content-type",
+                "if-none-match",
+                "x-amz-checksum-sha256",
+                "x-amz-meta-magickli-file-id",
+                "x-amz-meta-magickli-operation-id",
+                "x-amz-meta-sha256"
+              ],
+              "maxAgeSeconds": 300
+            },
+            "forcePathStyle": true,
+            "endpoint": "https://6fb830ebb3c8fed82a52524211d9c54e.r2.cloudflarestorage.com",
+            "jurisdiction": "default",
+            "kind": "cloudflare-r2",
+            "localDevelopment": {
+              "kind": "none"
+            },
+            "locationHint": "weur",
+            "publicUrl": null,
+            "vercelEnvironments": ["production", "preview"]
+          }
         }
       },
       "activatedOn": "2026-09-13"
