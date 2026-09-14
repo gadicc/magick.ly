@@ -4,7 +4,11 @@ import { getCurrentSqlUserId } from "../auth/session";
 import { db } from "../db/neonFull";
 import type { SqlRitualReadDatabase } from "../doc/sqlReads";
 import { resolveRitualRouteId } from "../doc/sqlRitualRoute";
-import { createR2RitualBundleStorage } from "./r2RitualBundleStorage";
+import { readRitualStorageConfig } from "../files/ritualStorageConfig";
+import {
+  createMinioRitualBundleStorage,
+  createR2RitualBundleStorage,
+} from "./r2RitualBundleStorage";
 import { readRitualBundleAsset } from "./readRitualBundleAsset";
 import { isRitualBundlePublicationPolicyId } from "./ritualBundlePublication";
 import {
@@ -48,29 +52,18 @@ function publicationPolicies(environment: RuntimeEnvironment): string[] {
 }
 
 function bundleStorage(environment: RuntimeEnvironment) {
-  if (
-    environment.FILES_STORAGE_PROVIDER !== "cloudflare-r2" ||
-    environment.FILES_S3_REGION !== "auto" ||
-    environment.FILES_S3_FORCE_PATH_STYLE !== "true"
-  )
-    return null;
-  const endpoint = environment.FILES_S3_ENDPOINT;
-  const bucket = environment.FILES_S3_BUCKET;
-  const accessKeyId = environment.FILES_S3_ACCESS_KEY_ID;
-  const secretAccessKey = environment.FILES_S3_SECRET_ACCESS_KEY;
-  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) return null;
   try {
-    return createR2RitualBundleStorage({
-      kind: "r2",
-      endpoint,
-      bucket,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
+    const upload = readRitualStorageConfig(environment);
+    const config = {
+      endpoint: upload.endpoint,
+      bucket: upload.bucket,
+      credentials: upload.credentials,
       bundlePrefix: BUNDLE_PREFIX,
       reservedPrefixes: RESERVED_FILE_PREFIXES,
-    });
+    };
+    return upload.kind === "r2"
+      ? createR2RitualBundleStorage({ kind: "r2", ...config })
+      : createMinioRitualBundleStorage({ kind: "minio", ...config });
   } catch {
     return null;
   }

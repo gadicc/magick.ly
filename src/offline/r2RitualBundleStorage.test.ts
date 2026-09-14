@@ -9,7 +9,10 @@ import {
   type RitualBundlePublicationClaim,
 } from "@/offline/ritualBundlePublication";
 import type { SqlRitualBundleAsset } from "@/offline/sqlRitualBundleReads";
-import { createR2RitualBundleStorage } from "./r2RitualBundleStorage";
+import {
+  createMinioRitualBundleStorage,
+  createR2RitualBundleStorage,
+} from "./r2RitualBundleStorage";
 
 vi.mock("server-only", () => ({}));
 
@@ -52,6 +55,52 @@ beforeAll(async () => {
       '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0L3 2"/></svg>',
     ),
   );
+});
+
+describe("MinIO ritual bundle storage", () => {
+  it("uses a distinct endpoint-bound provider identity", () => {
+    const endpoint = "http://127.0.0.1:9125";
+    const api = createMinioRitualBundleStorage({
+      ...config(),
+      kind: "minio",
+      endpoint,
+    });
+    disposers.push(() => api.destroy());
+    expect(
+      api.locations({
+        operationId: createUuidV7(),
+        bundleId: createUuidV7(),
+        ritualId: createUuidV7(),
+        asset: {
+          key: createUuidV7(),
+          reference: "/pics/local.png",
+          sha256: "a".repeat(64),
+          mime: "image/png",
+          bytes: 4,
+          purpose: "read",
+        },
+      }),
+    ).toMatchObject({
+      storageProvider: `minio:${hash(endpoint)}`,
+      bucket: config().bucket,
+    });
+  });
+
+  it.each([
+    "http://localhost:9125",
+    "http://127.0.0.1.evil.test:9125",
+    "http://2130706433:9125",
+    "http://127.0.0.1:9125/path",
+    "https://127.0.0.1:9125",
+  ])("rejects noncanonical MinIO endpoint %s", (endpoint) => {
+    expect(() =>
+      createMinioRitualBundleStorage({
+        ...config(),
+        kind: "minio",
+        endpoint,
+      }),
+    ).toThrow("INVALID_CONFIGURATION");
+  });
 });
 const config = (): Config => ({
   kind: "r2",
@@ -283,6 +332,14 @@ function readDescriptor(f: ReturnType<typeof fixture>): SqlRitualBundleAsset {
 }
 
 describe("explicit closed configuration", () => {
+  it("projects null wrapper input as invalid configuration", () => {
+    expect(() => createR2RitualBundleStorage(null as never)).toThrow(
+      "INVALID_CONFIGURATION",
+    );
+    expect(() => createMinioRitualBundleStorage(null as never)).toThrow(
+      "INVALID_CONFIGURATION",
+    );
+  });
   it.each([
     [
       "scheme",

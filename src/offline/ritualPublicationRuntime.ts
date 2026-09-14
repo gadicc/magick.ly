@@ -3,9 +3,12 @@ import "server-only";
 import path from "node:path";
 import { getCurrentSqlUserId } from "../auth/session";
 import { db } from "../db/neonFull";
-import { readRitualUploadStorageConfig } from "../files/ritualUploadRuntime";
+import { readRitualStorageConfig } from "../files/ritualStorageConfig";
 import { readAuthorizedRitualFile } from "../files/runtime";
-import { createR2RitualBundleStorage } from "./r2RitualBundleStorage";
+import {
+  createMinioRitualBundleStorage,
+  createR2RitualBundleStorage,
+} from "./r2RitualBundleStorage";
 import { isRitualBundlePublicationPolicyId } from "./ritualBundlePublication";
 import { createRitualPublicationBackfillService } from "./ritualPublicationBackfill";
 import { createRitualPublicationPlanBuilder } from "./ritualPublicationPlan";
@@ -51,17 +54,23 @@ export function createRitualPublicationRuntime(
     readAuthorizedPrivateFile: typeof readAuthorizedRitualFile;
   },
 ) {
-  const upload = readRitualUploadStorageConfig(environment);
+  const upload = readRitualStorageConfig(environment);
   const policies = publicationPolicies(environment);
   const activePolicy = policies[0];
-  const storage = createR2RitualBundleStorage({
-    kind: "r2",
+  const storageConfig = {
     endpoint: upload.endpoint,
     bucket: upload.bucket,
     credentials: upload.credentials,
     bundlePrefix: "ritual-bundles",
     reservedPrefixes: [upload.stagingPrefix, upload.canonicalPrefix],
-  });
+  };
+  const storage =
+    upload.kind === "r2"
+      ? createR2RitualBundleStorage({ kind: "r2", ...storageConfig })
+      : createMinioRitualBundleStorage({
+          kind: "minio",
+          ...storageConfig,
+        });
   const publisher = createSqlRitualBundlePublisher(
     dependencies.database,
     dependencies.getVerifiedActorId,

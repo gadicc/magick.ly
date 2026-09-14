@@ -94,6 +94,41 @@ function receipt(value: unknown): value is RitualUploadReceipt {
   );
 }
 
+function exactLoopbackHttp(value: string) {
+  const authority =
+    /^http:\/\/(127\.0\.0\.1|\[::1\]):([1-9]\d{0,4})(?=\/|\?|$)/.exec(value);
+  if (!authority) return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  const port = Number(authority[2]);
+  if (
+    url.protocol !== "http:" ||
+    url.hostname !== authority[1] ||
+    url.port !== authority[2] ||
+    !Number.isSafeInteger(port) ||
+    port > 65_535 ||
+    url.username ||
+    url.password ||
+    url.hash
+  )
+    return null;
+  return { hostname: url.hostname };
+}
+
+function allowedUploadUrl(value: string) {
+  if (/^https:\/\//.test(value)) return true;
+  const upload = exactLoopbackHttp(value);
+  const page =
+    typeof globalThis.location?.origin === "string"
+      ? exactLoopbackHttp(globalThis.location.origin)
+      : null;
+  return !!upload && !!page && upload.hostname === page.hostname;
+}
+
 async function command(
   url: string,
   input: unknown,
@@ -166,7 +201,7 @@ export async function uploadRitualImage(input: {
     }
     if (
       initiated.upload.kind !== "presigned-put" ||
-      !/^https:\/\//.test(initiated.upload.url) ||
+      !allowedUploadUrl(initiated.upload.url) ||
       !Number.isSafeInteger(initiated.upload.expiresAtMs) ||
       initiated.upload.expiresAtMs <= Date.now() ||
       !initiated.upload.headers ||

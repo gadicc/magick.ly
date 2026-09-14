@@ -25,6 +25,17 @@ const configured = {
   FILES_S3_ACCESS_KEY_ID: "synthetic-access",
   FILES_S3_SECRET_ACCESS_KEY: "synthetic-secret",
 };
+const localMinio = {
+  ...configured,
+  NODE_ENV: "production",
+  MAGICKLI_LOCAL_ACCEPTANCE: "1",
+  BETTER_AUTH_URL: "http://127.0.0.1:3115",
+  DATABASE_URL:
+    "postgresql://local:synthetic@127.0.0.1:5432/magickli_acceptance_20260914",
+  FILES_STORAGE_PROVIDER: "minio",
+  FILES_S3_ENDPOINT: "http://127.0.0.1:9125",
+  FILES_S3_BUCKET: "magickli-local-acceptance",
+};
 
 describe("SQL ritual runtime composition", () => {
   it("stays unavailable without explicit policy and private storage settings", () => {
@@ -37,6 +48,24 @@ describe("SQL ritual runtime composition", () => {
     const runtime = createSqlRitualRuntime(configured, dependencies);
     expect(runtime.publicationPoliciesConfigured).toBe(true);
     expect(runtime.storageConfigured).toBe(true);
+  });
+
+  it("accepts explicit loopback MinIO without provider I/O", () => {
+    const runtime = createSqlRitualRuntime(localMinio, dependencies);
+    expect(runtime.publicationPoliciesConfigured).toBe(true);
+    expect(runtime.storageConfigured).toBe(true);
+  });
+
+  it.each([
+    { ...localMinio, VERCEL: "1" },
+    {
+      ...localMinio,
+      DATABASE_URL_UNPOOLED: "postgresql://remote.example:5432/magickli",
+    },
+  ])("keeps unsafe local storage unavailable", (environment) => {
+    const runtime = createSqlRitualRuntime(environment, dependencies);
+    expect(runtime.publicationPoliciesConfigured).toBe(true);
+    expect(runtime.storageConfigured).toBe(false);
   });
 
   it.each([

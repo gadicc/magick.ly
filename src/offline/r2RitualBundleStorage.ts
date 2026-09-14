@@ -71,6 +71,10 @@ export interface R2RitualBundleStorageConfig {
   /** Other configured namespaces in this bucket; empty only for a dedicated configuration. */
   reservedPrefixes: readonly string[];
 }
+export interface MinioRitualBundleStorageConfig
+  extends Omit<R2RitualBundleStorageConfig, "kind"> {
+  kind: "minio";
+}
 
 /** Safe diagnostics; no provider response, credentials, references or image bytes. */
 export class R2RitualBundleStorageError extends Error {
@@ -126,16 +130,29 @@ export interface R2RitualBundleStorage {
   ): Promise<Uint8Array | null>;
   destroy(): void;
 }
+export type MinioRitualBundleStorage = R2RitualBundleStorage;
+export type RitualBundleStorage = R2RitualBundleStorage;
 
-function configured(input: R2RitualBundleStorageConfig) {
+function configured(
+  input: R2RitualBundleStorageConfig | MinioRitualBundleStorageConfig,
+) {
   try {
+    const endpoint = new URL(input.endpoint);
+    const validEndpoint =
+      input.kind === "r2"
+        ? /^https:\/\/[a-f0-9]{32}\.r2\.cloudflarestorage\.com$/.test(
+            input.endpoint,
+          )
+        : input.kind === "minio" &&
+          endpoint.protocol === "http:" &&
+          ["127.0.0.1", "[::1]"].includes(endpoint.hostname) &&
+          Boolean(endpoint.port) &&
+          input.endpoint === endpoint.origin;
     if (
       !input ||
-      input.kind !== "r2" ||
+      (input.kind !== "r2" && input.kind !== "minio") ||
       typeof input.endpoint !== "string" ||
-      !/^https:\/\/[a-f0-9]{32}\.r2\.cloudflarestorage\.com$/.test(
-        input.endpoint,
-      ) ||
+      !validEndpoint ||
       typeof input.bucket !== "string" ||
       !/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(input.bucket) ||
       !namespace(input.bundlePrefix) ||
@@ -155,10 +172,11 @@ function configured(input: R2RitualBundleStorageConfig) {
     )
       fail("INVALID_CONFIGURATION");
     return {
+      kind: input.kind,
       endpoint: input.endpoint,
       bucket: input.bucket,
       bundlePrefix: input.bundlePrefix,
-      provider: `r2:${hash(input.endpoint)}`,
+      provider: `${input.kind}:${hash(input.endpoint)}`,
       credentials: {
         accessKeyId: input.credentials.accessKeyId,
         secretAccessKey: input.credentials.secretAccessKey,
@@ -238,8 +256,8 @@ async function collect(body: unknown, maxBytes: number, signal: AbortSignal) {
  * grants access. Unknown writes retain their exact key for later reconciliation.
  * Bounds cover owned captures and pending operations, not total SDK/process RSS.
  */
-export function createR2RitualBundleStorage(
-  input: R2RitualBundleStorageConfig,
+function createS3RitualBundleStorage(
+  input: R2RitualBundleStorageConfig | MinioRitualBundleStorageConfig,
   options: {
     /** Only tighten the per-asset transport budget; claim/credential expiry clips it further. */
     ioTimeoutMs?: number;
@@ -500,7 +518,12 @@ export function createR2RitualBundleStorage(
             return fail("UNAVAILABLE");
           }
         },
-        ...(requestHandler ? { requestHandler } : {}),
+        ...(requestHandler
+          ? { requestHandler }
+          : config.kind === "minio"
+            ? // A 412 closes MinIO's socket; immutable-object recheck needs a new one.
+              { requestHandler: { httpAgent: { keepAlive: false } } }
+            : {}),
       });
       operation = { client };
       running.add(operation);
@@ -745,4 +768,20 @@ export function createR2RitualBundleStorage(
       for (const operation of running) operation.client.destroy();
     },
   };
+}
+
+export function createR2RitualBundleStorage(
+  input: R2RitualBundleStorageConfig,
+  options: Parameters<typeof createS3RitualBundleStorage>[1] = {},
+): R2RitualBundleStorage {
+  if (!input || input.kind !== "r2") fail("INVALID_CONFIGURATION");
+  return createS3RitualBundleStorage(input, options);
+}
+
+export function createMinioRitualBundleStorage(
+  input: MinioRitualBundleStorageConfig,
+  options: Parameters<typeof createS3RitualBundleStorage>[1] = {},
+): MinioRitualBundleStorage {
+  if (!input || input.kind !== "minio") fail("INVALID_CONFIGURATION");
+  return createS3RitualBundleStorage(input, options);
 }

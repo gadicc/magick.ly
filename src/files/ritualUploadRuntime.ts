@@ -4,11 +4,15 @@ import { getCurrentSqlUserId } from "../auth/session";
 import { db } from "../db/neonFull";
 import { createRitualUploadFinalizer } from "./finalizeRitualUpload";
 import {
+  createMinioRitualStorage,
   createR2RitualStorage,
-  type R2RitualStorage,
-  type R2RitualStorageConfig,
-  validateR2RitualStorageConfig,
+  type RitualObjectStorage,
 } from "./r2RitualStorage";
+import {
+  type RitualStorageConfig,
+  type RuntimeEnvironment,
+  readRitualStorageConfig,
+} from "./ritualStorageConfig";
 import type { RitualUploadInitiateResult } from "./ritualUploadInitiateResult";
 import {
   type RitualUploadCode,
@@ -32,36 +36,15 @@ function outcome(error: unknown): Extract<RitualUploadResult, { ok: false }> {
   return { ok: false, code, retryable: RETRYABLE.has(code) };
 }
 
-type RuntimeEnvironment = Readonly<Record<string, string | undefined>>;
-
-function required(env: RuntimeEnvironment, key: string) {
-  const value = env[key]?.trim();
-  if (!value || value.includes("\0"))
-    throw new Error("Ritual upload storage is not configured");
-  return value;
-}
-
 /** Reads only Loom's canonical S3 variables; no ambient AWS credential fallback. */
 export function readRitualUploadStorageConfig(
   env: RuntimeEnvironment,
-): R2RitualStorageConfig {
-  if (
-    required(env, "FILES_STORAGE_PROVIDER") !== "cloudflare-r2" ||
-    required(env, "FILES_S3_REGION") !== "auto" ||
-    required(env, "FILES_S3_FORCE_PATH_STYLE") !== "true"
-  )
+): RitualStorageConfig {
+  try {
+    return readRitualStorageConfig(env);
+  } catch {
     throw new Error("Ritual upload storage is not configured");
-  return validateR2RitualStorageConfig({
-    kind: "r2",
-    endpoint: required(env, "FILES_S3_ENDPOINT"),
-    bucket: required(env, "FILES_S3_BUCKET"),
-    credentials: {
-      accessKeyId: required(env, "FILES_S3_ACCESS_KEY_ID"),
-      secretAccessKey: required(env, "FILES_S3_SECRET_ACCESS_KEY"),
-    },
-    stagingPrefix: "ritual-staging",
-    canonicalPrefix: "ritual-files",
-  });
+  }
 }
 
 export interface RitualUploadRuntime {
@@ -73,7 +56,7 @@ export interface RitualUploadRuntime {
 }
 
 export function composeRitualUploadRuntime(options: {
-  storage: R2RitualStorage;
+  storage: RitualObjectStorage;
   getCurrentActorId: () => Promise<string | null>;
 }): RitualUploadRuntime {
   const uploads = createSqlRitualUploads(db, options.getCurrentActorId, {
@@ -118,9 +101,11 @@ let runtime: RitualUploadRuntime | undefined;
 
 export function getRitualUploadRuntime() {
   if (!runtime) {
-    const storage = createR2RitualStorage(
-      readRitualUploadStorageConfig(process.env),
-    );
+    const config = readRitualUploadStorageConfig(process.env);
+    const storage =
+      config.kind === "r2"
+        ? createR2RitualStorage(config)
+        : createMinioRitualStorage(config);
     runtime = composeRitualUploadRuntime({
       storage,
       getCurrentActorId: getCurrentSqlUserId,

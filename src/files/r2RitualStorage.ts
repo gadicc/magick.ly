@@ -45,6 +45,11 @@ export interface R2RitualStorageConfig {
   stagingPrefix: string;
   canonicalPrefix: string;
 }
+/** Explicit loopback MinIO configuration; the app boundary supplies environment checks. */
+export interface MinioRitualStorageConfig
+  extends Omit<R2RitualStorageConfig, "kind"> {
+  kind: "minio";
+}
 /** Structural subset of the SQL RitualUploadIntentDescriptor, including its issued capability bound. */
 export type R2RitualStorageIntent = Pick<
   RitualUploadClaim,
@@ -72,6 +77,8 @@ export interface R2RitualStorage {
   storage: RitualUploadStorage;
   destroy(): void;
 }
+export type MinioRitualStorage = R2RitualStorage;
+export type RitualObjectStorage = R2RitualStorage;
 
 function fail(code: ConstructorParameters<typeof RitualUploadError>[0]): never {
   throw new RitualUploadError(code);
@@ -111,6 +118,57 @@ export function validateR2RitualStorageConfig(
     throw new Error("Invalid R2 ritual storage configuration");
   return {
     kind: "r2",
+    endpoint: input.endpoint,
+    bucket: input.bucket,
+    stagingPrefix: input.stagingPrefix,
+    canonicalPrefix: input.canonicalPrefix,
+    credentials: {
+      ...input.credentials,
+      ...(input.credentials.expiration
+        ? { expiration: new Date(input.credentials.expiration) }
+        : {}),
+    },
+  };
+}
+
+/** Validate the exact numeric-loopback origin before constructing a MinIO client. */
+export function validateMinioRitualStorageConfig(
+  input: MinioRitualStorageConfig,
+): MinioRitualStorageConfig {
+  let endpoint: URL;
+  try {
+    endpoint = new URL(input.endpoint);
+  } catch {
+    throw new Error("Invalid MinIO ritual storage configuration");
+  }
+  const namespace = /^[a-z0-9][a-z0-9_-]*(?:\/[a-z0-9][a-z0-9_-]*)*$/;
+  if (
+    !input ||
+    input.kind !== "minio" ||
+    endpoint.protocol !== "http:" ||
+    (endpoint.hostname !== "127.0.0.1" && endpoint.hostname !== "[::1]") ||
+    !endpoint.port ||
+    input.endpoint !== endpoint.origin ||
+    !/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(input.bucket) ||
+    !namespace.test(input.stagingPrefix) ||
+    !namespace.test(input.canonicalPrefix) ||
+    input.stagingPrefix.length > 512 ||
+    input.canonicalPrefix.length > 512 ||
+    input.stagingPrefix === input.canonicalPrefix ||
+    input.stagingPrefix.startsWith(`${input.canonicalPrefix}/`) ||
+    input.canonicalPrefix.startsWith(`${input.stagingPrefix}/`) ||
+    !input.credentials ||
+    !text(input.credentials.accessKeyId) ||
+    !text(input.credentials.secretAccessKey) ||
+    (input.credentials.sessionToken !== undefined &&
+      !text(input.credentials.sessionToken)) ||
+    (input.credentials.expiration !== undefined &&
+      (!(input.credentials.expiration instanceof Date) ||
+        !instant(input.credentials.expiration.getTime())))
+  )
+    throw new Error("Invalid MinIO ritual storage configuration");
+  return {
+    kind: "minio",
     endpoint: input.endpoint,
     bucket: input.bucket,
     stagingPrefix: input.stagingPrefix,
@@ -196,15 +254,15 @@ function matchesObject(
  * discovery, provisioning, policy changes, public URL generation or CopyObject.
  * Caller owns SQL authorization; only its persisted descriptor may be signed.
  */
-export function createR2RitualStorage(
-  input: R2RitualStorageConfig,
+function createS3RitualStorage(
+  config: R2RitualStorageConfig | MinioRitualStorageConfig,
   options: {
     /** SDK HTTP transport injection for providerless tests. Signing never calls it. */
     requestHandler?: S3ClientConfig["requestHandler"];
     ioTimeoutMs?: number;
   } = {},
 ): R2RitualStorage {
-  const config = validateR2RitualStorageConfig(input);
+  const provider = config.kind;
   const timeoutMs = options.ioTimeoutMs ?? 30_000;
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000)
     throw new Error("Invalid storage timeout");
@@ -221,7 +279,11 @@ export function createR2RitualStorage(
     responseChecksumValidation: "WHEN_REQUIRED",
     ...(options.requestHandler
       ? { requestHandler: options.requestHandler }
-      : {}),
+      : provider === "minio"
+        ? // MinIO closes a failed conditional-write socket; reconciliation must
+          // open a new connection rather than inherit its ECONNRESET.
+          { requestHandler: { httpAgent: { keepAlive: false } } }
+        : {}),
   };
   const client = new S3Client(sdk);
   // Provider clock-skew retries must never mutate the signing clock/configuration.
@@ -242,12 +304,12 @@ export function createR2RitualStorage(
       fail("INVALID_REQUEST");
     return {
       staging: {
-        provider: "r2",
+        provider,
         bucket: config.bucket,
         objectKey: `${config.stagingPrefix}/${request.operationId}`,
       },
       canonical: {
-        provider: "r2",
+        provider,
         bucket: config.bucket,
         objectKey: `${config.canonicalPrefix}/${fileId}/${request.sha256}`,
       },
@@ -439,7 +501,7 @@ export function createR2RitualStorage(
         const claim = snapshotClaim(value),
           signal = signalOf(parent);
         return {
-          provider: "r2",
+          provider,
           bucket: config.bucket,
           async putObject(value) {
             assertClaim(claim);
@@ -462,7 +524,7 @@ export function createR2RitualStorage(
             const active = scope(signal, timeoutMs);
             const shared = createS3FileStorage({
               bucket: config.bucket,
-              provider: "r2",
+              provider,
               preventOverwrite: true,
               commands: { GetObjectCommand, PutObjectCommand },
               client: {
@@ -510,7 +572,7 @@ export function createR2RitualStorage(
                 return {
                   bucket: config.bucket,
                   objectKey: claim.canonical.objectKey,
-                  storageProvider: "r2",
+                  storageProvider: provider,
                 };
               } catch (error) {
                 if (active.signal.aborted) throw active.error();
@@ -532,4 +594,21 @@ export function createR2RitualStorage(
       signer.destroy();
     },
   };
+}
+
+export function createR2RitualStorage(
+  input: R2RitualStorageConfig,
+  options: Parameters<typeof createS3RitualStorage>[1] = {},
+): R2RitualStorage {
+  return createS3RitualStorage(validateR2RitualStorageConfig(input), options);
+}
+
+export function createMinioRitualStorage(
+  input: MinioRitualStorageConfig,
+  options: Parameters<typeof createS3RitualStorage>[1] = {},
+): MinioRitualStorage {
+  return createS3RitualStorage(
+    validateMinioRitualStorageConfig(input),
+    options,
+  );
 }

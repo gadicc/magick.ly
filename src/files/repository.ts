@@ -7,9 +7,10 @@ import type {
 } from "@gadicc/loom/files";
 import { and, eq, getTableColumns, isNotNull, isNull } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { db } from "../db/neon";
+import { db } from "../db/neonFull";
 import { loomFilesTable } from "../db/schema/loomFiles";
 import { ritualFileLinks, ritualUploadIntents } from "../db/schema/ritualFiles";
+import { readRitualStorageConfig } from "./ritualStorageConfig";
 import { isCanonicalUploadId, isRitualImageType } from "./ritualUploadProtocol";
 
 export interface RitualFileRecord extends LoomFileRecord {
@@ -30,7 +31,10 @@ const plain = (value: unknown): value is Record<string, unknown> =>
   !Array.isArray(value) &&
   Object.getPrototypeOf(value) === Object.prototype;
 
-function trusted(row: Record<string, unknown>): RitualFileRecord | null {
+function trusted(
+  row: Record<string, unknown>,
+  storageProvider: "r2" | "minio",
+): RitualFileRecord | null {
   const file = row.file as typeof loomFilesTable.$inferSelect | undefined;
   const link = row.link as
     | Pick<
@@ -90,7 +94,7 @@ function trusted(row: Record<string, unknown>): RitualFileRecord | null {
     file.ownerType !== "user" ||
     file.ownerId !== intent.actorId ||
     file.visibility !== "private" ||
-    file.storageProvider !== "r2" ||
+    file.storageProvider !== storageProvider ||
     file.storageProvider !== intent.canonicalProvider ||
     file.bucket !== intent.canonicalBucket ||
     file.objectKey !== intent.canonicalObjectKey ||
@@ -119,7 +123,9 @@ function trusted(row: Record<string, unknown>): RitualFileRecord | null {
 /** Finalized private ritual attachments only; legacy/public rows never enter this repository. */
 export function createSqlRitualFileRepository(
   database: ReadDatabase,
+  options: { storageProvider?: "r2" | "minio" } = {},
 ): RitualFileRepository {
+  const storageProvider = options.storageProvider ?? "r2";
   return {
     async findById(id) {
       if (!isCanonicalUploadId(id)) return null;
@@ -170,7 +176,10 @@ export function createSqlRitualFileRepository(
         .where(and(eq(loomFilesTable.id, id), isNull(loomFilesTable.deletedAt)))
         .limit(2);
       return rows.length === 1
-        ? trusted(rows[0] as unknown as Record<string, unknown>)
+        ? trusted(
+            rows[0] as unknown as Record<string, unknown>,
+            storageProvider,
+          )
         : null;
     },
     /** Digest lookup would make a private file portable across ritual associations. */
@@ -183,6 +192,23 @@ export function createSqlRitualFileRepository(
   };
 }
 
+let configured: RitualFileRepository | undefined;
+function runtimeRepository() {
+  configured ??= createSqlRitualFileRepository(db, {
+    storageProvider: readRitualStorageConfig(process.env).kind,
+  });
+  return configured;
+}
+
 /** Configured Loom repository; all reads retain finalized ritual association checks. */
-export const filesRepository: RitualFileRepository =
-  createSqlRitualFileRepository(db);
+export const filesRepository: RitualFileRepository = {
+  findById(id) {
+    return runtimeRepository().findById(id);
+  },
+  findBySha256(sha256) {
+    return runtimeRepository().findBySha256(sha256);
+  },
+  insert(input) {
+    return runtimeRepository().insert(input);
+  },
+};

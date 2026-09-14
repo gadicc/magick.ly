@@ -8,7 +8,7 @@ import { createUuidV7 } from "../lib/ids";
 import { createSqlRitualFileRepository } from "./repository";
 
 vi.mock("server-only", () => ({}));
-vi.mock("../db/neon", () => ({ db: {} }));
+vi.mock("../db/neonFull", () => ({ db: {} }));
 
 const h = await createMemoryPgliteHarness({ schema });
 const db = drizzle(h.client, { schema });
@@ -133,5 +133,27 @@ describe("SQL ritual file repository", () => {
       .where(eq(schema.ritualUploadIntents.operationId, ids.operation));
     await expect(repository.findById?.(ids.file)).resolves.toBeNull();
     await expect(repository.findById?.("invalid")).resolves.toBeNull();
+  });
+
+  it("accepts only the explicitly configured finalized provider", async () => {
+    await db
+      .update(schema.ritualUploadIntents)
+      .set({ stagingProvider: "minio", canonicalProvider: "minio" })
+      .where(eq(schema.ritualUploadIntents.operationId, ids.operation));
+    await db
+      .update(schema.loomFilesTable)
+      .set({ storageProvider: "minio" })
+      .where(eq(schema.loomFilesTable.id, ids.file));
+    await expect(
+      createSqlRitualFileRepository(db, {
+        storageProvider: "minio",
+      }).findById?.(ids.file),
+    ).resolves.toMatchObject({
+      id: ids.file,
+      storageProvider: "minio",
+    });
+    await expect(
+      createSqlRitualFileRepository(db).findById?.(ids.file),
+    ).resolves.toBeNull();
   });
 });

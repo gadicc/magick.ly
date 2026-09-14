@@ -9,7 +9,9 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createUuidV7 } from "../lib/ids";
 import {
+  createMinioRitualStorage,
   createR2RitualStorage,
+  type MinioRitualStorageConfig,
   type R2RitualStorageConfig,
 } from "./r2RitualStorage";
 import type { RitualUploadClaim } from "./ritualUploadContracts";
@@ -61,7 +63,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 async function fixture(
-  extra: { ioTimeoutMs?: number; config?: R2RitualStorageConfig } = {},
+  extra: {
+    ioTimeoutMs?: number;
+    config?: R2RitualStorageConfig | MinioRitualStorageConfig;
+  } = {},
 ) {
   const objects = new Map<string, ObjectValue>(),
     requests: Request[] = [];
@@ -124,10 +129,14 @@ async function fixture(
       throw new Error("Unexpected provider command");
     },
   );
-  const api = createR2RitualStorage(settings, {
+  const options = {
     requestHandler: { handle },
     ...(extra.ioTimeoutMs ? { ioTimeoutMs: extra.ioTimeoutMs } : {}),
-  });
+  };
+  const api =
+    settings.kind === "r2"
+      ? createR2RitualStorage(settings, options)
+      : createMinioRitualStorage(settings, options);
   closed.push(() => api.destroy());
   const bytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4]);
   const request = {
@@ -427,6 +436,42 @@ describe("closed R2 direct capability", () => {
     f.claim.request.byteSize = f.bytes.length;
     f.claim.attachmentId = "not-uuid";
     expect(() => f.api.locations(f.claim)).toThrow("INVALID_REQUEST");
+  });
+});
+
+describe("closed MinIO direct capability", () => {
+  it("retains the signed S3 contract with distinct MinIO locations", async () => {
+    const f = await fixture({
+      config: {
+        ...config(),
+        kind: "minio",
+        endpoint: "http://127.0.0.1:9125",
+      },
+    });
+    expect(f.claim.staging.provider).toBe("minio");
+    expect(f.claim.canonical.provider).toBe("minio");
+    const upload = await f.api.directUpload(f.claim, active());
+    if (upload.kind !== "presigned-put") throw new Error("wrong kind");
+    expect(new URL(upload.url).origin).toBe("http://127.0.0.1:9125");
+    expect(upload.headers["if-none-match"]).toBe("*");
+    expect(upload.headers["x-amz-checksum-sha256"]).toBeTruthy();
+    expect(f.handle).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "http://localhost:9125",
+    "http://127.0.0.1.evil.test:9125",
+    "http://2130706433:9125",
+    "http://127.0.0.1:9125/path",
+    "https://127.0.0.1:9125",
+  ])("rejects noncanonical MinIO endpoint %s", (endpoint) => {
+    expect(() =>
+      createMinioRitualStorage({
+        ...config(),
+        kind: "minio",
+        endpoint,
+      }),
+    ).toThrow("Invalid MinIO ritual storage configuration");
   });
 });
 

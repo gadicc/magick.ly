@@ -120,6 +120,124 @@ describe("private ritual image upload", () => {
     });
   });
 
+  it("uploads and finalizes an exact same-host numeric-loopback capability", async () => {
+    vi.stubGlobal(
+      "location",
+      new URL("http://127.0.0.1:3115/upload#selected-file"),
+    );
+    const capability = {
+      kind: "presigned-put" as const,
+      url: "http://127.0.0.1:9125/private/capability?signature=synthetic",
+      headers: { "content-type": "image/png" },
+      expiresAtMs: Date.now() + 60_000,
+    };
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            state: "upload",
+            replayed: false,
+            upload: capability,
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ ok: true, replayed: false, receipt: receipt() }),
+        ),
+      );
+
+    await expect(
+      uploadRitualImage({
+        expectedActorId: actorId,
+        ritualId,
+        operationId,
+        file: image(),
+        fetcher,
+      }),
+    ).resolves.toMatchObject({ ok: true });
+    expect(fetcher.mock.calls[1]?.[0]).toBe(capability.url);
+    expect(fetcher.mock.calls[1]?.[1]).toMatchObject({
+      method: "PUT",
+      credentials: "omit",
+      redirect: "error",
+    });
+    expect(fetcher.mock.calls[2]?.[0]).toBe("/api/files/ritual/finalize");
+  });
+
+  it.each([
+    [
+      "deployed page",
+      "https://magick.ly/upload",
+      "http://127.0.0.1:9125/private/capability",
+    ],
+    [
+      "named loopback page",
+      "http://localhost:3115/upload",
+      "http://127.0.0.1:9125/private/capability",
+    ],
+    [
+      "different loopback host",
+      "http://127.0.0.1:3115/upload",
+      "http://[::1]:9125/private/capability",
+    ],
+    [
+      "shorthand IP",
+      "http://127.0.0.1:3115/upload",
+      "http://127.1:9125/private/capability",
+    ],
+    [
+      "missing port",
+      "http://127.0.0.1:3115/upload",
+      "http://127.0.0.1/private/capability",
+    ],
+    [
+      "userinfo",
+      "http://127.0.0.1:3115/upload",
+      "http://user@127.0.0.1:9125/private/capability",
+    ],
+    [
+      "fragment",
+      "http://127.0.0.1:3115/upload",
+      "http://127.0.0.1:9125/private/capability#ignored",
+    ],
+  ])("rejects a local HTTP capability with %s", async (_case, page, url) => {
+    vi.stubGlobal("location", new URL(page));
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          state: "upload",
+          replayed: false,
+          upload: {
+            kind: "presigned-put",
+            url,
+            headers: {},
+            expiresAtMs: Date.now() + 60_000,
+          },
+        }),
+      ),
+    );
+
+    await expect(
+      uploadRitualImage({
+        expectedActorId: actorId,
+        ritualId,
+        operationId,
+        file: image(),
+        fetcher,
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      code: "UNAVAILABLE",
+      retryable: true,
+    });
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+
   it("continues to finalization after a conditional replay response", async () => {
     const fetcher = vi
       .fn<typeof fetch>()

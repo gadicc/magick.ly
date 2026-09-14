@@ -11,8 +11,8 @@ import {
   readLoomFileBodyBytes,
 } from "@gadicc/loom/files";
 import { createS3FileStorage } from "@gadicc/loom/files/s3";
+import { readRitualStorageConfig } from "./ritualStorageConfig";
 import { RITUAL_UPLOAD_MAX_BYTES } from "./ritualUploadProtocol";
-import { readRitualUploadStorageConfig } from "./ritualUploadRuntime";
 
 type RuntimeEnvironment = Readonly<Record<string, string | undefined>>;
 
@@ -39,11 +39,12 @@ function missing(error: unknown) {
 }
 
 /** Closed read-only Loom S3 adapter for finalized canonical ritual objects. */
-export function createRitualFileR2Storage(
+export function createRitualFileStorage(
   environment: RuntimeEnvironment,
   options: { requestHandler?: S3ClientConfig["requestHandler"] } = {},
 ) {
-  const config = readRitualUploadStorageConfig(environment);
+  const config = readRitualStorageConfig(environment);
+  const provider = config.kind;
   const client = new S3Client({
     region: "auto",
     endpoint: config.endpoint,
@@ -57,16 +58,19 @@ export function createRitualFileR2Storage(
     responseChecksumValidation: "WHEN_REQUIRED",
     ...(options.requestHandler
       ? { requestHandler: options.requestHandler }
-      : {}),
+      : provider === "minio"
+        ? // Match the MinIO writer's closed-socket boundary across reused readers.
+          { requestHandler: { httpAgent: { keepAlive: false } } }
+        : {}),
   });
   const storage: LoomFileStorageAdapter = {
-    provider: "r2",
+    provider,
     bucket: config.bucket,
     async getObject(input) {
       const record = input.record;
       if (
         !record ||
-        record.storageProvider !== "r2" ||
+        record.storageProvider !== provider ||
         record.bucket !== config.bucket ||
         input.bucket !== config.bucket ||
         input.objectKey !== record.objectKey ||
@@ -77,7 +81,7 @@ export function createRitualFileR2Storage(
         throw new Error("Ritual file unavailable");
       const signal = AbortSignal.timeout(30_000);
       const adapter = createS3FileStorage({
-        provider: "r2",
+        provider,
         bucket: config.bucket,
         commands: { GetObjectCommand, PutObjectCommand },
         client: {
@@ -118,16 +122,21 @@ export function createRitualFileR2Storage(
   return { storage, destroy: () => client.destroy() };
 }
 
+/** Compatibility export retained for existing R2 composition and tests. */
+export const createRitualFileR2Storage = createRitualFileStorage;
+
 let configured: ReturnType<typeof createRitualFileR2Storage> | undefined;
 
 function runtimeStorage() {
-  configured ??= createRitualFileR2Storage(process.env);
+  configured ??= createRitualFileStorage(process.env);
   return configured.storage;
 }
 
 /** Loom manifest entrypoint. Writes remain denied; upload uses its signer/finalizer. */
 export const filesStorage: LoomFileStorageAdapter = {
-  provider: "r2",
+  get provider() {
+    return runtimeStorage().provider;
+  },
   get bucket() {
     return runtimeStorage().bucket;
   },
