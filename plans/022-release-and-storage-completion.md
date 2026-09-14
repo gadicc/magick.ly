@@ -329,3 +329,62 @@ no workflow compatibility blocker. The integrated app passes 4,255 tests across
 Biome. Build verification used an isolated checkout with synthetic build-only
 values; it neither imported private data nor deployed the application. Logs are
 `/tmp/magickli-loom-126-{tests-2,build-3,types,biome}.log`.
+
+
+## Standalone Preview acceptance
+
+A fresh isolated dependency installation from source
+`918eb883d6e9396f014b9ab0d90668aec8fbf457` and tree
+`b46271758ca1e49aa7eb28ae6687bbca15582978` passed a Vercel 59.13.1
+`build --target preview --standalone` using synthetic build values only.
+Independent review checked 485 contained symlinks, 306 existing contained
+FileFsRef references, zero filePathMap entries and all eight placeholder markers.
+The output is 117,360,133 physical bytes; its largest function is 57,645,085 bytes.
+Vercel's prebuilt dry run excluded the synthetic environment file, and neither
+configuration nor command supplied runtime environment overrides.
+
+The first submission attempt stopped at the sandboxed account lookup. After
+network access was granted, the controlled prebuilt upload reached `READY` as
+`dpl_HSC6uXqHhZNPqMeUqnfZmmTf94ia`, in `lhr1`, with the exact reviewed source,
+Preview ref and project. The integration reports ready. The stable alias
+`https://magickly-preview-9fd4f93a-wastelands.vercel.app` was absent before
+assignment and now points to that deployment. The live legacy Production
+deployment was verified unchanged before and after assignment.
+
+Using an existing automation bypass without creating credentials or changing
+Deployment Protection, HTTP checks returned 200 for the home page and guarded
+`/api/auth/get-session`, with the latter returning JSON null after its SQL
+readiness query. Anonymous `/api/session` returned 401; the retired polling
+endpoint returned its expected 410 response to POST. The stable alias serves the
+Google sign-in page and service-worker script with HTTP 200. Requests without the
+bypass still hit Vercel protection. Real Google OAuth, private upload/publication
+and the full offline journey remain pending. A successful prebuilt upload
+provides a working path; it does not establish the underlying cause of the two
+native `patchBuild` failures.
+
+Evidence is under `/tmp/magickli-prebuilt-preview-experiment/evidence/`, including
+`output-inspection.json`, `dry-run-result.json`, `network-upload-result.json`,
+`provider-initial.json`, `http-readiness.json`, `stable-alias-http.json` and
+`alias-result.json`.
+The earlier build in `/tmp/magickli-sensitive-placeholder-build/` used an external
+dependency symlink and is unsuitable as a complete artifact proof. Loom 1.26.0's
+verifier scanned only regular physical files. The reviewed shared fix follows
+contained symlinks and function filePathMap targets, rejects incomplete graphs,
+and passes the generated npm verifier against this real standalone output.
+Its local commit is `3ff7266`; automatic approval review initially rejected the
+push. The operator subsequently explicitly approved publishing 1.26.1 and pinning
+it in Magickly. Release is in progress; no unrelated consumer app has been
+upgraded.
+
+
+The provider follow-up confirms the expected Preview-only Vercel store connection,
+ref-named child branch, parent and active endpoint. Deployment integration metadata
+exposes readiness but no resource or endpoint IDs; the guarded SQL query proves
+runtime database authentication without independently reporting the exact endpoint.
+Evidence is `prebuilt-provider-binding-dpl_HSC6uXqHhZNPqMeUqnfZmmTf94ia.json`
+in the same directory.
+
+Public renderer smoke checks then found HTTP 500 with empty bodies for canonical
+SVG, canonical PNG and the legacy Tree of Life URL, while an unregistered slug
+was rejected with HTTP 400. This is a deployed acceptance defect under active
+diagnosis, not a passing renderer checkpoint. Evidence is `public-render-http.json`.

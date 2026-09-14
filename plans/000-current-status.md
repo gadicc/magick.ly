@@ -47,21 +47,35 @@ its original two migrations. The native full-app build from `918eb883` passed
 compilation, TypeScript and output generation. Its deployment and same-source
 retry failed Vercel's post-build `patchBuild` step with `patch_build_4xx` and an
 internal-error reason.
-No Preview alias was assigned. Packaging diagnosis must finish before deployed
-OAuth, upload and offline acceptance; this is not a successful app deployment.
+A fresh isolated install and `vercel build --standalone` produced a complete,
+self-contained artifact from the same source. Independent review verified all
+mapped references and symlinks and found no build-placeholder markers. Its
+prebuilt upload, `dpl_HSC6uXqHhZNPqMeUqnfZmmTf94ia`, reached `READY` in `lhr1`.
+The stable Preview alias is assigned. The home page loads and the guarded auth
+endpoint successfully reads SQL before returning the expected anonymous result.
+Real Google OAuth, upload/publication and offline acceptance remain outstanding.
+The native post-build error's underlying cause is still unproven. Deployed SVG
+and PNG renderer checks found HTTP 500 responses on both canonical and legacy
+URLs; diagnosis and a built-runtime regression check are in progress.
 
-The hash-only runtime route proves Vercel injected the intended Preview hosts and
-database name. It did not authenticate to PostgreSQL from the deployed runtime,
-so actual application credential acceptance still belongs to full Preview
-acceptance. The operator also rotated the Production database password and the
+The earlier inert hash-only route proved injection of the intended Preview
+hosts and database name without opening PostgreSQL. The current app's guarded
+auth query now proves runtime SQL authentication and import readiness. Provider
+metadata confirms the expected Preview connection, branch ancestry and endpoint,
+but does not expose which exact endpoint credential was attached to this app
+deployment; that attribution remains a narrower evidence limit. The operator also rotated the Production database password and the
 protected GitHub migration secret has been refreshed through Loom. Both database
 URLs are Sensitive, so the readable migration fallback is no longer available.
 GitHub Production now contains the verified direct
 `MIGRATION_DATABASE_URL_UNPOOLED` secret and its expected-role metadata, installed
 through Loom from authenticated Neon access. It uses the existing database owner
 transitionally; a separate role needs a reviewed ownership/grants migration.
-The isolated Vercel build with Loom-generated database placeholders passes its
-artifact leakage check. The complete GitHub release still needs acceptance. See
+The earlier local build's marker check covered physical output but omitted
+externally mapped dependencies. That evidence is superseded by the fresh
+standalone artifact's complete-reference review and successful Preview upload.
+A shared Loom verifier fix adds mapped-file and symlink scanning; it is reviewed
+and committed locally. The operator explicitly approved publication and adoption
+after automatic approval review requested confirmation; release is in progress. The complete GitHub release still needs acceptance. See
 [the completion decisions](022-release-and-storage-completion.md).
 
 After the relocation unit and Loom 1.26.0 adoption, the integrated candidate
