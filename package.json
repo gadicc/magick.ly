@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "local-acceptance:seed": "loom env -- node --conditions=react-server --import tsx scripts/local-acceptance/seed.ts",
     "test:mongo": "MAGICKLI_RUN_MONGO_REHEARSAL=1 vitest run src/doc/writes.test.ts src/doc/gongoWrites.test.ts src/doc/writes.mongo.test.ts",
     "migration:legacy": "loom env -- node --import tsx scripts/legacy-import.ts",
     "db:fixtures": "loom db fixtures",

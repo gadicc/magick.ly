@@ -68,8 +68,10 @@ in London. Live canonical SVG, PNG and legacy SVG pass and match the local
 built-route hashes; unknown slugs still return 400. The stable Preview alias now
 points to this deployment and passes the same checks. Both OAuth sign-ins and
 the single QA temple/admin membership remain in the exact Preview child.
-Authenticated temple-page acceptance is next. Reopen the existing temple instead
-of creating it again.
+The operator confirmed that the existing temple page loads and its join code
+saves. The remaining permissions/offline journeys are moving to automated local
+production-build tests with synthetic sessions, with a smaller deployed
+integration acceptance pass retained.
 
 The earlier inert hash-only route proved injection of the intended Preview
 hosts and database name without opening PostgreSQL. The current app's guarded

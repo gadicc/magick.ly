@@ -456,5 +456,11 @@ The exact-child read-only query at 16:31:46 UTC found the same auth and QA templ
 state as before deployment. The stable Preview alias was then moved from
 `dpl_HSC6uXqHhZNPqMeUqnfZmmTf94ia` to `dpl_5PJAB3NodZAdquB9bgwTDRmvF7nq`;
 the alias binding and the same live route checks pass (`alias-result.json` and
-`stable-http.json`). The operator has been asked to reopen the existing temple
-and save its temporary join code. That authenticated UI result is still pending.
+`stable-http.json`). The operator subsequently confirmed that the existing
+temple loads and its temporary join code saves successfully.
+
+The operator requested local test-user automation for the longer acceptance
+journeys and explicit extraction of the reference apps' developer login flows
+into Loom. Real OAuth, Vercel packaging, provider configuration and a small
+deployed storage smoke test remain integration checks. Local offline checks use
+a production build because `next dev` disables this app's service worker.
