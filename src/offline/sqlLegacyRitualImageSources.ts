@@ -2,7 +2,10 @@ import "server-only";
 
 import { eq, getTableColumns, inArray } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { legacyFileSnapshots } from "../db/schema/legacyFiles";
+import {
+  legacyFileRelocations,
+  legacyFileSnapshots,
+} from "../db/schema/legacyFiles";
 import { loomFilesTable } from "../db/schema/loomFiles";
 import type { LegacyRitualImageSource } from "../files/legacyRitualImageCatalog";
 
@@ -30,11 +33,16 @@ export async function loadSqlLegacyRitualImageSources(
     .select({
       file: getTableColumns(loomFilesTable),
       snapshot: getTableColumns(legacyFileSnapshots),
+      relocation: getTableColumns(legacyFileRelocations),
     })
     .from(loomFilesTable)
     .innerJoin(
       legacyFileSnapshots,
       eq(legacyFileSnapshots.fileId, loomFilesTable.id),
+    )
+    .leftJoin(
+      legacyFileRelocations,
+      eq(legacyFileRelocations.fileId, loomFilesTable.id),
     )
     .where(inArray(loomFilesTable.sha256, [...input]))
     .limit(129);

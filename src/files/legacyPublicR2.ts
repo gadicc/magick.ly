@@ -7,6 +7,7 @@ import {
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import { createS3FileStorage } from "@gadicc/loom/files/s3";
+import { LEGACY_FILE_RELOCATION_BUCKET } from "./legacyFileLocation";
 import type { LegacyPublicFile } from "./legacyPublicFiles";
 
 export interface LegacyPublicObject {
@@ -83,6 +84,52 @@ export function readLegacyPublicR2Config(
   });
 }
 
+/** Canonical private Files configuration, accepted only for the fixed relocation bucket. */
+export function readLegacyRelocationR2Config(
+  env: Readonly<Record<string, string | undefined>>,
+): LegacyPublicR2Config | null {
+  const value = (key: string) => env[key]?.trim() ?? "";
+  if (value("FILES_S3_BUCKET") !== LEGACY_FILE_RELOCATION_BUCKET) return null;
+  if (
+    value("FILES_STORAGE_PROVIDER") !== "cloudflare-r2" ||
+    value("FILES_S3_REGION") !== "auto" ||
+    value("FILES_S3_FORCE_PATH_STYLE") !== "true" ||
+    value("FILES_S3_BUCKET") !== LEGACY_FILE_RELOCATION_BUCKET
+  )
+    throw new Error("Legacy relocated file storage is not configured");
+  try {
+    return configured({
+      kind: "r2",
+      endpoint: value("FILES_S3_ENDPOINT"),
+      region: "auto",
+      bucket: value("FILES_S3_BUCKET"),
+      credentials: {
+        accessKeyId: value("FILES_S3_ACCESS_KEY_ID"),
+        secretAccessKey: value("FILES_S3_SECRET_ACCESS_KEY"),
+      },
+    });
+  } catch {
+    throw new Error("Legacy relocated file storage is not configured");
+  }
+}
+
+/**
+ * Builds the closed set of configured legacy locations. Either credential
+ * family may be absent so a completed relocation can retire the old one.
+ */
+export function readLegacyPublicR2StorageConfigs(
+  env: Readonly<Record<string, string | undefined>>,
+) {
+  const configs: LegacyPublicR2Config[] = [];
+  if (env.AWS_S3_ENDPOINT_URL?.trim() || env.AWS_S3_DEFAULT_BUCKET?.trim())
+    configs.push(readLegacyPublicR2Config(env));
+  const relocation = readLegacyRelocationR2Config(env);
+  if (relocation) configs.push(relocation);
+  if (!configs.length)
+    throw new Error("Legacy public file storage is not configured");
+  return configs;
+}
+
 function missing(error: unknown) {
   if (!error || typeof error !== "object") return false;
   const value = error as {
@@ -95,33 +142,42 @@ function missing(error: unknown) {
   );
 }
 
-/** Read-only Loom S3 adapter closed over one verified legacy R2 bucket. */
+/** Read-only Loom S3 adapter closed over the configured legacy source set. */
 export function createLegacyPublicR2Storage(
-  input: LegacyPublicR2Config,
+  input: LegacyPublicR2Config | readonly LegacyPublicR2Config[],
   options: { requestHandler?: S3ClientConfig["requestHandler"] } = {},
 ) {
-  const config = configured(input);
-  const client = new S3Client({
-    region: config.region,
-    endpoint: config.endpoint,
-    credentials: config.credentials,
-    forcePathStyle: true,
-    maxAttempts: 1,
-    followRegionRedirects: false,
-    requestChecksumCalculation: "WHEN_REQUIRED",
-    responseChecksumValidation: "WHEN_REQUIRED",
-    ...(options.requestHandler
-      ? { requestHandler: options.requestHandler }
-      : {}),
-  });
+  const supplied = Array.isArray(input) ? input : [input];
+  if (supplied.length < 1 || supplied.length > 2)
+    throw new Error("Legacy public file storage is not configured");
+  const configs = supplied.map((value) => configured(value));
+  if (new Set(configs.map((config) => config.bucket)).size !== configs.length)
+    throw new Error("Legacy public file storage is not configured");
+  const providers = configs.map((config) => ({
+    config,
+    client: new S3Client({
+      region: config.region,
+      endpoint: config.endpoint,
+      credentials: config.credentials,
+      forcePathStyle: true,
+      maxAttempts: 1,
+      followRegionRedirects: false,
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
+      ...(options.requestHandler
+        ? { requestHandler: options.requestHandler }
+        : {}),
+    }),
+  }));
   const storage: LegacyPublicObjectStorage = {
     async read(file, signal) {
-      if (
-        signal.aborted ||
-        file.storageProvider !== "r2" ||
-        file.bucket !== config.bucket
-      )
+      const provider = providers.find(
+        ({ config }) =>
+          file.storageProvider === "r2" && file.bucket === config.bucket,
+      );
+      if (signal.aborted || !provider)
         throw new Error("Legacy public file unavailable");
+      const { client, config } = provider;
       const adapter = createS3FileStorage({
         provider: "r2",
         bucket: config.bucket,
@@ -152,5 +208,10 @@ export function createLegacyPublicR2Storage(
       }
     },
   };
-  return { storage, destroy: () => client.destroy() };
+  return {
+    storage,
+    destroy: () => {
+      for (const { client } of providers) client.destroy();
+    },
+  };
 }

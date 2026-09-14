@@ -3,9 +3,13 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { legacyFileSnapshots } from "../db/schema/legacyFiles";
+import {
+  legacyFileRelocations,
+  legacyFileSnapshots,
+} from "../db/schema/legacyFiles";
 import { loomFilesTable } from "../db/schema/loomFiles";
 import { isUuidV7 } from "../lib/ids";
+import { resolveLegacyFileStorageLocation } from "./legacyFileLocation";
 
 type ReadDatabase = Pick<PgDatabase<PgQueryResultHKT>, "select">;
 
@@ -53,6 +57,20 @@ const fields = {
   sourceBucket: legacyFileSnapshots.sourceBucket,
   sourceObjectKey: legacyFileSnapshots.sourceObjectKey,
   sourceObjectKeyPrefix: legacyFileSnapshots.sourceObjectKeyPrefix,
+  snapshotImportedAt: legacyFileSnapshots.importedAt,
+  relocationFileId: legacyFileRelocations.fileId,
+  relocationSourceStorageProvider: legacyFileRelocations.sourceStorageProvider,
+  relocationSourceBucket: legacyFileRelocations.sourceBucket,
+  relocationSourceObjectKey: legacyFileRelocations.sourceObjectKey,
+  relocationSourceMetadataSha256: legacyFileRelocations.sourceMetadataSha256,
+  relocationContentSha256: legacyFileRelocations.contentSha256,
+  relocationByteSize: legacyFileRelocations.byteSize,
+  relocationDestinationStorageProvider:
+    legacyFileRelocations.destinationStorageProvider,
+  relocationDestinationBucket: legacyFileRelocations.destinationBucket,
+  relocationDestinationObjectKey: legacyFileRelocations.destinationObjectKey,
+  relocationVerificationProfile: legacyFileRelocations.verificationProfile,
+  relocationVerifiedAt: legacyFileRelocations.verifiedAt,
 };
 
 function trusted(row: Record<string, unknown>): LegacyPublicFile | null {
@@ -92,7 +110,9 @@ function trusted(row: Record<string, unknown>): LegacyPublicFile | null {
     Buffer.byteLength(row.sourceEjson, "utf8") > 1024 * 1024 ||
     typeof row.sourceSha256 !== "string" ||
     createHash("sha256").update(row.sourceEjson, "utf8").digest("hex") !==
-      row.sourceSha256
+      row.sourceSha256 ||
+    !(row.snapshotImportedAt instanceof Date) ||
+    !Number.isFinite(row.snapshotImportedAt.getTime())
   )
     return null;
   let archived: unknown;
@@ -112,15 +132,45 @@ function trusted(row: Record<string, unknown>): LegacyPublicFile | null {
         row.originalFilename.length > 1024))
   )
     return null;
+  const relocation =
+    row.relocationFileId === null
+      ? null
+      : {
+          fileId: row.relocationFileId,
+          sourceStorageProvider: row.relocationSourceStorageProvider,
+          sourceBucket: row.relocationSourceBucket,
+          sourceObjectKey: row.relocationSourceObjectKey,
+          sourceMetadataSha256: row.relocationSourceMetadataSha256,
+          contentSha256: row.relocationContentSha256,
+          byteSize: row.relocationByteSize,
+          destinationStorageProvider: row.relocationDestinationStorageProvider,
+          destinationBucket: row.relocationDestinationBucket,
+          destinationObjectKey: row.relocationDestinationObjectKey,
+          verificationProfile: row.relocationVerificationProfile,
+          verifiedAt: row.relocationVerifiedAt,
+        };
+  const location = resolveLegacyFileStorageLocation(
+    { id: row.id, sha256: row.sha256, byteSize: row.byteSize },
+    {
+      fileId: row.snapshotFileId,
+      sourceStorageProvider: row.sourceStorageProvider,
+      sourceBucket: row.sourceBucket,
+      sourceObjectKey: row.sourceObjectKey,
+      sourceSha256: row.sourceSha256,
+      importedAt: row.snapshotImportedAt,
+    },
+    relocation as Parameters<typeof resolveLegacyFileStorageLocation>[2],
+  );
+  if (!location) return null;
   return {
     id: row.id,
     sha256: row.sha256,
     byteSize: row.byteSize,
     contentType: row.contentType,
     originalFilename: row.originalFilename,
-    storageProvider: row.storageProvider,
-    bucket: row.bucket,
-    objectKey: row.objectKey,
+    storageProvider: location.storageProvider,
+    bucket: location.bucket,
+    objectKey: location.objectKey,
   };
 }
 
@@ -134,6 +184,10 @@ export function createSqlLegacyPublicFileReader(database: ReadDatabase) {
       .innerJoin(
         legacyFileSnapshots,
         eq(legacyFileSnapshots.fileId, loomFilesTable.id),
+      )
+      .leftJoin(
+        legacyFileRelocations,
+        eq(legacyFileRelocations.fileId, loomFilesTable.id),
       )
       .where(
         and(

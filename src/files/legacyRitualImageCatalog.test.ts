@@ -6,6 +6,11 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createUuidV7 } from "../lib/ids";
 import { planLegacyFileImport } from "../migration/planLegacyFileImport";
 import {
+  LEGACY_FILE_RELOCATION_BUCKET,
+  LEGACY_FILE_RELOCATION_PREFIX,
+  LEGACY_FILE_RELOCATION_PROFILE,
+} from "./legacyFileLocation";
+import {
   createLegacyRitualImageCatalog,
   type LegacyRitualImageSource,
   type LegacyRitualImageStorage,
@@ -46,6 +51,14 @@ const storage = (): LegacyRitualImageStorage => ({
   endpoint: "https://00000000000000000000000000000000.r2.cloudflarestorage.com",
   bucket: "synthetic-legacy-public",
   credentials: { accessKeyId: "EXAMPLE", secretAccessKey: "synthetic-only" },
+});
+const relocatedStorage = (): LegacyRitualImageStorage => ({
+  ...storage(),
+  bucket: LEGACY_FILE_RELOCATION_BUCKET,
+  credentials: {
+    accessKeyId: "NEWEXAMPLE",
+    secretAccessKey: "new-synthetic-only",
+  },
 });
 let png: Uint8Array;
 const svg = new TextEncoder().encode(
@@ -95,6 +108,23 @@ function source(
     file: plan.files[0],
     snapshot: plan.snapshots[0],
   } as LegacyRitualImageSource;
+}
+function relocated(input = source()): LegacyRitualImageSource {
+  input.relocation = {
+    fileId: input.file.id,
+    sourceStorageProvider: input.snapshot.sourceStorageProvider,
+    sourceBucket: input.snapshot.sourceBucket,
+    sourceObjectKey: input.snapshot.sourceObjectKey,
+    sourceMetadataSha256: input.snapshot.sourceSha256,
+    contentSha256: input.file.sha256,
+    byteSize: input.file.byteSize,
+    destinationStorageProvider: "r2",
+    destinationBucket: LEGACY_FILE_RELOCATION_BUCKET,
+    destinationObjectKey: `${LEGACY_FILE_RELOCATION_PREFIX}${input.file.sha256}`,
+    verificationProfile: LEGACY_FILE_RELOCATION_PROFILE,
+    verifiedAt: new Date("2026-09-13T00:00:00.000Z"),
+  };
+  return input;
 }
 type Request = {
   method: string;
@@ -155,6 +185,51 @@ async function rejectedSource(
 }
 
 describe("closed legacy public image capture", () => {
+  it("captures a verified relocation while retaining the original import rows", async () => {
+    const input = relocated();
+    const original = structuredClone({
+      file: input.file,
+      snapshot: input.snapshot,
+    });
+    const io = transport();
+    const catalog = await capture([input], io, {
+      storage: [storage(), relocatedStorage()],
+    });
+
+    expect(io.handle.mock.calls[0]?.[0]).toMatchObject({
+      path: `/${LEGACY_FILE_RELOCATION_BUCKET}/${LEGACY_FILE_RELOCATION_PREFIX}${input.file.sha256}`,
+    });
+    expect(catalog.metadata.entries[0]).toMatchObject({
+      kind: "available",
+      sha256: input.file.sha256,
+    });
+    expect(input.file).toEqual(original.file);
+    expect(input.snapshot).toEqual(original.snapshot);
+  });
+
+  it.each([
+    "sourceMetadataSha256",
+    "contentSha256",
+    "byteSize",
+    "destinationBucket",
+    "destinationObjectKey",
+    "verificationProfile",
+    "verifiedAt",
+  ] as const)("rejects relocation %s drift before any GET", async (key) => {
+    const input = relocated();
+    Object.assign(input.relocation!, {
+      [key]:
+        key === "byteSize"
+          ? 1
+          : key === "verifiedAt"
+            ? new Date(0)
+            : "different",
+    });
+    await rejectedSource([input], {
+      storage: [storage(), relocatedStorage()],
+    });
+  });
+
   it("reads only the exact recorded bucket-prefixed key, preserves served MIME, and validates actual dimensions", async () => {
     const input = source(),
       io = transport();

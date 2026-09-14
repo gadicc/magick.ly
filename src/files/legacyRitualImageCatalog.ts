@@ -8,9 +8,13 @@ import {
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import { EJSON } from "bson";
-import type { legacyFileSnapshots } from "../db/schema/legacyFiles";
+import type {
+  legacyFileRelocations,
+  legacyFileSnapshots,
+} from "../db/schema/legacyFiles";
 import type { loomFilesTable } from "../db/schema/loomFiles";
 import { planLegacyFileImport } from "../migration/planLegacyFileImport";
+import { resolveLegacyFileStorageLocation } from "./legacyFileLocation";
 import type {
   LegacyRitualImageCatalogMetadata,
   LegacyRitualImageEntry,
@@ -49,6 +53,7 @@ export interface LegacyRitualImageSource {
     | "deletedAt"
   >;
   snapshot: typeof legacyFileSnapshots.$inferSelect;
+  relocation?: typeof legacyFileRelocations.$inferSelect | null;
 }
 /** Only an explicitly configured account origin and static credentials can be used. */
 export type LegacyRitualImageStorage = Pick<
@@ -130,9 +135,41 @@ function configured(input: LegacyRitualImageStorage): LegacyRitualImageStorage {
     },
   };
 }
+function configurations(
+  input: LegacyRitualImageStorage | readonly LegacyRitualImageStorage[],
+) {
+  const values = Array.isArray(input) ? input : [input];
+  if (values.length < 1 || values.length > 2)
+    throw new LegacyRitualImageCatalogError("INVALID_CONFIGURATION");
+  const result = values.map((value) => configured(value));
+  if (
+    new Set(result.map((value) => `${value.kind}\0${value.bucket}`)).size !==
+    result.length
+  )
+    throw new LegacyRitualImageCatalogError("INVALID_CONFIGURATION");
+  return result;
+}
+function relocationEvidence(
+  relocation: typeof legacyFileRelocations.$inferSelect,
+) {
+  return {
+    fileId: relocation.fileId,
+    sourceStorageProvider: relocation.sourceStorageProvider,
+    sourceBucket: relocation.sourceBucket,
+    sourceObjectKey: relocation.sourceObjectKey,
+    sourceMetadataSha256: relocation.sourceMetadataSha256,
+    contentSha256: relocation.contentSha256,
+    byteSize: relocation.byteSize,
+    destinationStorageProvider: relocation.destinationStorageProvider,
+    destinationBucket: relocation.destinationBucket,
+    destinationObjectKey: relocation.destinationObjectKey,
+    verificationProfile: relocation.verificationProfile,
+    verifiedAt: relocation.verifiedAt.toISOString(),
+  };
+}
 function sources(
   input: readonly LegacyRitualImageSource[],
-  config: LegacyRitualImageStorage,
+  configs: readonly LegacyRitualImageStorage[],
   limits: Limits,
 ) {
   const invalid = () => new LegacyRitualImageCatalogError("INVALID_SOURCE");
@@ -157,9 +194,7 @@ function sources(
         size > limits.sourceBytes ||
         total > limits.totalSourceBytes ||
         hash(snapshot.sourceEjson) !== snapshot.sourceSha256 ||
-        snapshot.sourceSystem !== "mongodb" ||
-        snapshot.sourceStorageProvider !== config.kind ||
-        snapshot.sourceBucket !== config.bucket
+        snapshot.sourceSystem !== "mongodb"
       )
         throw invalid();
       // Reuse the import contract, including BSON identity and lossless EJSON.
@@ -198,6 +233,18 @@ function sources(
         "deletedAt",
       ] as const)
         if (!isDeepStrictEqual(expected[key], file[key])) throw invalid();
+      const location = resolveLegacyFileStorageLocation(
+        file,
+        snapshot,
+        input.relocation,
+      );
+      if (!location) throw invalid();
+      const config = configs.find(
+        (candidate) =>
+          candidate.kind === location.storageProvider &&
+          candidate.bucket === location.bucket,
+      );
+      if (!config) throw invalid();
       const identity = JSON.stringify([
         snapshot.sourceSystem,
         snapshot.legacyIdType,
@@ -218,9 +265,19 @@ function sources(
         byteSize: file.byteSize,
         contentType: file.contentType,
         kind: file.kind,
-        objectKey: file.objectKey,
+        objectKey: location.objectKey,
+        config,
         sourceSha256: snapshot.sourceSha256,
-        provenanceSha256: hash(JSON.stringify(archive)),
+        provenanceSha256: hash(
+          JSON.stringify(
+            input.relocation
+              ? {
+                  source: archive,
+                  relocation: relocationEvidence(input.relocation),
+                }
+              : archive,
+          ),
+        ),
       });
     } catch {
       throw invalid();
@@ -371,7 +428,7 @@ function reason(error: unknown): Reason {
  * storage or grant private access. Late/stalled I/O is closed on a fixed deadline.
  */
 export async function createLegacyRitualImageCatalog(options: {
-  storage: LegacyRitualImageStorage;
+  storage: LegacyRitualImageStorage | readonly LegacyRitualImageStorage[];
   sources: readonly LegacyRitualImageSource[];
   signal?: AbortSignal;
   limits?: Partial<Limits>;
@@ -379,7 +436,7 @@ export async function createLegacyRitualImageCatalog(options: {
   requestHandler?: S3ClientConfig["requestHandler"];
 }): Promise<LegacyRitualImageCatalog> {
   const started = performance.now();
-  const config = configured(options.storage);
+  const configs = configurations(options.storage);
   const limits: Limits = { ...LEGACY_IMAGE_CATALOG_LIMITS, ...options.limits };
   for (const [key, value] of Object.entries(limits))
     if (
@@ -389,7 +446,7 @@ export async function createLegacyRitualImageCatalog(options: {
       value > LEGACY_IMAGE_CATALOG_LIMITS[key as keyof Limits]
     )
       throw new LegacyRitualImageCatalogError("INVALID_CONFIGURATION");
-  const selected = sources(options.sources, config, limits);
+  const selected = sources(options.sources, configs, limits);
   const requestHandler = options.requestHandler,
     caller = options.signal;
   const deadline = new AbortController();
@@ -449,7 +506,7 @@ export async function createLegacyRitualImageCatalog(options: {
         if (capturedBytes > limits.capturedBytes)
           throw new LegacyRitualImageCatalogError("CAPTURE_LIMIT");
         bytes = await read(
-          config,
+          entry.config,
           entry,
           signal,
           limits.ioTimeoutMs,

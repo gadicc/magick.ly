@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { readLegacyPublicR2Config } from "./legacyPublicR2";
+import {
+  readLegacyPublicR2Config,
+  readLegacyPublicR2StorageConfigs,
+  readLegacyRelocationR2Config,
+} from "./legacyPublicR2";
 import { readRitualUploadStorageConfig } from "./ritualUploadRuntime";
 
 vi.mock("server-only", () => ({}));
@@ -83,6 +87,41 @@ describe("file runtime configuration", () => {
         AWS_REGION_APP: "weur",
         AWS_ACCESS_KEY_ID_APP: "LEGACYEXAMPLE",
         AWS_SECRET_ACCESS_KEY_APP: "legacy-synthetic-only",
+      }),
+    ).toThrow("not configured");
+  });
+
+  it("accepts the canonical private credentials only for the fixed relocation bucket", () => {
+    const relocated = {
+      FILES_STORAGE_PROVIDER: "cloudflare-r2",
+      FILES_S3_REGION: "auto",
+      FILES_S3_FORCE_PATH_STYLE: "true",
+      FILES_S3_ENDPOINT: endpoint,
+      FILES_S3_BUCKET: "magickli-files-production",
+      FILES_S3_ACCESS_KEY_ID: "NEWEXAMPLE",
+      FILES_S3_SECRET_ACCESS_KEY: "new-synthetic-only",
+    };
+    expect(readLegacyRelocationR2Config(relocated)).toEqual({
+      kind: "r2",
+      endpoint,
+      region: "auto",
+      bucket: "magickli-files-production",
+      credentials: {
+        accessKeyId: "NEWEXAMPLE",
+        secretAccessKey: "new-synthetic-only",
+      },
+    });
+    expect(readLegacyPublicR2StorageConfigs(relocated)).toHaveLength(1);
+    expect(
+      readLegacyRelocationR2Config({
+        ...relocated,
+        FILES_S3_BUCKET: "magickli-files-preview",
+      }),
+    ).toBeNull();
+    expect(() =>
+      readLegacyRelocationR2Config({
+        ...relocated,
+        FILES_S3_ACCESS_KEY_ID: "",
       }),
     ).toThrow("not configured");
   });

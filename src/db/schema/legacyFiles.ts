@@ -87,3 +87,55 @@ export const legacyFileSnapshots = pgTable(
     ),
   ],
 );
+
+/**
+ * Evidence that one immutable legacy object was copied and byte-verified at a
+ * closed replacement location. The original snapshot remains the source of
+ * import provenance and is never rewritten during relocation.
+ */
+export const legacyFileRelocations = pgTable(
+  "legacy_file_relocations",
+  {
+    fileId: uuid("file_id")
+      .primaryKey()
+      .references(() => loomFilesTable.id),
+    sourceStorageProvider: text("source_storage_provider").notNull(),
+    sourceBucket: text("source_bucket").notNull(),
+    sourceObjectKey: text("source_object_key").notNull(),
+    sourceMetadataSha256: text("source_metadata_sha256").notNull(),
+    contentSha256: text("content_sha256").notNull(),
+    byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+    destinationStorageProvider: text("destination_storage_provider").notNull(),
+    destinationBucket: text("destination_bucket").notNull(),
+    destinationObjectKey: text("destination_object_key").notNull(),
+    verificationProfile: text("verification_profile").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("legacy_file_relocation_destination_unique").on(
+      table.destinationStorageProvider,
+      table.destinationBucket,
+      table.destinationObjectKey,
+    ),
+    check(
+      "legacy_file_relocation_file_id_v7",
+      sql`substring(${table.fileId}::text from 15 for 1) = '7' and substring(${table.fileId}::text from 20 for 1) in ('8','9','a','b')`,
+    ),
+    check(
+      "legacy_file_relocation_source",
+      sql`length(btrim(${table.sourceStorageProvider})) > 0 and length(btrim(${table.sourceBucket})) > 0 and length(${table.sourceObjectKey}) > 0 and ${table.sourceMetadataSha256} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "legacy_file_relocation_content",
+      sql`${table.contentSha256} ~ '^[0-9a-f]{64}$' and ${table.byteSize} between 1 and 20971520`,
+    ),
+    check(
+      "legacy_file_relocation_destination",
+      sql`${table.destinationStorageProvider} = 'r2' and ${table.destinationBucket} = 'magickli-files-production' and ${table.destinationObjectKey} = 'legacy-file2/' || ${table.contentSha256} and (${table.sourceStorageProvider}, ${table.sourceBucket}, ${table.sourceObjectKey}) <> (${table.destinationStorageProvider}, ${table.destinationBucket}, ${table.destinationObjectKey})`,
+    ),
+    check(
+      "legacy_file_relocation_verification",
+      sql`${table.verificationProfile} = 'magickli-legacy-file-relocation-v1' and ${table.verifiedAt} >= '1970-01-01T00:00:00Z'::timestamptz and isfinite(${table.verifiedAt})`,
+    ),
+  ],
+);

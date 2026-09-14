@@ -3,7 +3,7 @@ import "server-only";
 import path from "node:path";
 import { createExternalRitualImageCatalog } from "../files/externalRitualImageCatalog";
 import { createGeneratedRitualImageCatalog } from "../files/generatedRitualImageCatalog";
-import { readLegacyPublicR2Config } from "../files/legacyPublicR2";
+import { readLegacyPublicR2StorageConfigs } from "../files/legacyPublicR2";
 import type { LegacyRitualImageSource } from "../files/legacyRitualImageCatalog";
 import { createLegacyRitualImageCatalog } from "../files/legacyRitualImageCatalog";
 import { legacyStaticImageAliases } from "../files/legacyStaticImages";
@@ -128,10 +128,13 @@ export function createRitualPublicationPlanBuilder(
           })
         : undefined;
       if (generatedCatalog) catalogs.push(generatedCatalog);
-      const legacyCatalog = legacyDigests.length
+      const legacySources = legacyDigests.length
+        ? await dependencies.loadLegacySources(legacyDigests)
+        : [];
+      const legacyCatalog = legacySources.length
         ? await createLegacyRitualImageCatalog({
-            storage: readLegacyPublicR2Config(dependencies.environment),
-            sources: await dependencies.loadLegacySources(legacyDigests),
+            storage: readLegacyPublicR2StorageConfigs(dependencies.environment),
+            sources: legacySources,
             signal,
           })
         : undefined;
