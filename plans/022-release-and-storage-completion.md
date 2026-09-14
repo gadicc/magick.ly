@@ -259,6 +259,44 @@ pause, final private import, staged Production acceptance and controlled cutover
 also remain; no modernized Production deployment has occurred. The reusable
 modernization skill remains unpublished until the modernization finishes.
 
+## Full application Preview checkpoint
+
+The reviewed Preview-only environment changes were applied on 14 September.
+Shared legacy/service variables lost only their Preview target; their Production
+and Development targets were preserved. Sensitive database and R2 credentials
+and existing Google configuration were retained. A fresh Preview-only Better Auth
+secret, exact Preview origin and publication policy are configured. Sensitive
+values remain unreadable through external pulls; metadata checks do not replace
+runtime authentication tests.
+
+Native app deployments from `918eb883d6e9396f014b9ab0d90668aec8fbf457`, on ref
+`codex/preview-acceptance-9fd4f93a`, created and reused child
+`br-snowy-thunder-za04f8ck` of sanitized root `br-polished-morning-zazqd31j` in
+Preview project `small-wave-96978226`. The exact endpoint is
+`ep-dark-sea-za57lxrs` in London. Fresh read-only SQL confirmed 17 migrations,
+36 ordinary application tables and zero rows before the import.
+
+The 83-file frozen importer graph produced a review for invented fixtures only.
+Review digest
+`73a0737aae656d8a2fe04d8e690d64ec0853f9d44ade5f51ca00b4b31cdd3e1a`
+binds that exact child, schema and source. Run
+`01a0a082-a829-76af-bdcc-91565b8150b8` completed; subsequent inspection and
+identical apply returned the same completed receipt. Both roots retain their
+expected baselines: Preview has 17 migrations and zero application rows;
+Production has two migrations and zero legacy aliases. Evidence is under
+`/tmp/magickli-full-preview/importer/`, including `verification.json` and
+`roots-unchanged.json`. This proves the operator import path, not deployed
+application authentication.
+
+The first full app deployment, `dpl_8qN642wPorfzXwZRgVG9CUUPaSVE`, logged
+successful Next compilation, TypeScript, postbuild and output generation. It and
+retry `dpl_8Wa15wV4kUMYAtKrHFSb4nA9dsrN` both failed Vercel's
+`patchBuild` step with `patch_build_4xx` and the provider's internal-error reason.
+Their runtime region metadata is `lhr1`; build compute was `iad1`. No stable
+Preview alias was assigned and no Production promotion occurred. Further blind
+retries are stopped while output packaging is investigated. Sanitized provider
+and build evidence is under `/tmp/magickli-full-preview/`.
+
 ## Published package adoption validation
 
 Magickly pins Loom 1.26.0 with only the corresponding lockfile entry changed.

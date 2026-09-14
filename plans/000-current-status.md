@@ -40,6 +40,16 @@ child and root. Production remained at two migrations and zero aliases. The
 temporary deployment, child branch and endpoint were then confirmed absent;
 both roots and the live Production deployment remained unchanged.
 
+The full app Preview environment has since been configured and an isolated
+child imported with invented fixtures. Prepare, apply, reconciliation and an
+identical retry pass; the sanitized root remains empty and Production retains
+its original two migrations. The native full-app build from `918eb883` passed
+compilation, TypeScript and output generation. Its deployment and same-source
+retry failed Vercel's post-build `patchBuild` step with `patch_build_4xx` and an
+internal-error reason.
+No Preview alias was assigned. Packaging diagnosis must finish before deployed
+OAuth, upload and offline acceptance; this is not a successful app deployment.
+
 The hash-only runtime route proves Vercel injected the intended Preview hosts and
 database name. It did not authenticate to PostgreSQL from the deployed runtime,
 so actual application credential acceptance still belongs to full Preview
