@@ -17,8 +17,32 @@ for these already authorized steps.
 - Implement shared Loom improvements: explicit scope/expiry and rotation,
   preservation of existing credentials on rerun, safe partial-failure handling,
   branch-policy verification, and shared Trusted Sources planning/checks.
+  These shipped in Loom 1.26.0 from commit
+  `53d38019c2102bcc40d4eb9ab77b7c562f7c1404`; GitHub publication succeeded.
+  Independent review found and closed a target-binding defect: the approved
+  digest now covers the complete destination, expected state and patch.
 - Validate through Magickly first. Other consumers adopt through their own
   reviewed workflows and dependency changes.
+
+GitHub's `Production` environment now has exactly one custom deployment policy:
+branch `master`. The published Loom CLI created a project-scoped deployment token,
+verified access to Magickly and denial of team-level access, and installed it as
+`VERCEL_TOKEN`. Non-secret token metadata records expiry
+`2026-12-13T10:06:28.427Z`. A complete deployment workflow still needs acceptance;
+these credential checks alone do not prove every release command works.
+An identical setup rerun preserved the same token and expiry. The network check
+finds the GitHub release variables/secret, with the existing advisory that a
+dedicated migration secret is not installed; the readable Vercel direct URL
+remains supported. The overall network check is not yet green: the app has not
+recorded the final R2 provider policy in `loom.json`. Its exact Preview upload
+origin and CORS still need to be settled with the Preview deployment.
+
+The published trust planner/checker also verified the existing provider rule
+without changing it. Its complete-proposal approval digest is
+`e62bd6b1c6e77b2ad653460f3ad273b4fc15bc1114c82b4a40340a90194006f0`.
+The proposal is `/tmp/magickli-loom-1.26-trust.json`. Earlier patch-only
+fingerprints below describe the original provider operation, not this stronger
+approval envelope.
 
 Trusted Sources grants HTTP access through Deployment Protection. Deployment API
 credentials remain a separate permission. Applying the trust rule did not
@@ -121,3 +145,14 @@ Use a schema-only or sanitized preview dataset and isolate external writes befor
 preview acceptance. No private production import or application deployment has
 occurred. The reusable modernization skill remains an unpublished draft until
 the complete modernization actually finishes.
+
+## Published package adoption validation
+
+Magickly pins Loom 1.26.0 with only the corresponding lockfile entry changed.
+Installed package provenance matches source commit
+`53d38019c2102bcc40d4eb9ab77b7c562f7c1404`. Independent adoption review found
+no workflow compatibility blocker. The integrated app passes 4,255 tests across
+158 files (14 opt-in Mongo tests skipped), a production build, TypeScript and
+Biome. Build verification used an isolated checkout with synthetic build-only
+values; it neither imported private data nor deployed the application. Logs are
+`/tmp/magickli-loom-126-{tests-2,build-3,types,biome}.log`.
