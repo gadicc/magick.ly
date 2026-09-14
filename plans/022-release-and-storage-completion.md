@@ -211,12 +211,33 @@ An initial Next/TypeScript child-process failure was specific to the restricted
 local sandbox; the unchanged build passed outside it. No application workaround
 was needed.
 
-Preview database ancestry and the actual deployment overrides/readiness action
-still need proof.
-Use a schema-only or sanitized preview dataset and isolate external writes before
-preview acceptance. No private production import or application deployment has
-occurred. The reusable modernization skill remains an unpublished draft until
-the complete modernization actually finishes.
+An inert native Preview deployment subsequently verified the actual integration.
+Deployment `dpl_77LZxULUk2HeLyDJ7KAroApk36ep` ran in `lhr1`, reached `READY`,
+and reported the integration ready. Its endpoint returned only SHA-256 hashes of
+the parsed database hosts and names. Both runtime URLs matched fresh Neon
+pooled/direct connection identities for branch `br-green-star-zacq6jov` and
+endpoint `ep-gentle-sea-za11tx75`; the direct host also matched that branch's
+independently listed endpoint. No SQL was executed by the probe.
+
+The new branch was `preview/codex/preview-db-probe-2198b31e`, with main as its
+parent and `init_source: parent-data`. This proves working deployment overrides
+and also proves that native branching copies the parent's data. Before importing
+private production records, establish a durable sanitized Preview source and
+separate credential scope; a different host alone is insufficient.
+
+The exact temporary deployment had no aliases and was removed with Vercel's
+`--safe` guard. Neon automatically removed its branch and endpoint. Fresh provider
+reads confirm only main remains and the old production deployment is unchanged.
+Evidence is `/tmp/magickli-preview-db-probe-run/`, especially
+`runtime-verification.json`, `cleanup-intent.json` and
+`cleanup-verification.json`. The first CLI submission was rejected locally
+because `--skip-domain` is production-only; later preflight corrections also
+stopped before mutation. The successful probe used the corrected Preview command.
+
+Full application Preview acceptance still needs isolated external services,
+OAuth, uploads/publication and offline journeys. No private production import or
+modernized application deployment has occurred. The reusable modernization skill
+remains an unpublished draft until the complete modernization actually finishes.
 
 ## Published package adoption validation
 

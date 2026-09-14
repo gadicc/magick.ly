@@ -207,10 +207,11 @@ The operator saved deployment readiness enabled and branch deployment enabled fo
 Preview only on the existing `magickly` connection. The Vercel add-connection
 dialog had correctly refused a duplicate connection. A fresh authenticated API
 read confirms `deployments.required: true` and the `Neon` action scoped to
-`preview` only on the same connection. The next runtime probe must still verify that
-provisioning completes before the Preview build and that the deployed runtime
-receives the new branch's connection. Sanitized Preview ancestry remains a gate
-before importing private production data.
+`preview` only on the same connection. That settings read alone did not prove
+provisioning order or the runtime's connection. The canary below later verified
+the runtime override; readiness ordering for the full application build remains
+part of Preview acceptance. Sanitized Preview ancestry remains a gate before
+importing private production data.
 
 Saving also enabled Sensitive for the database connection, confirmed by fresh
 metadata for both database URLs. A verified protected GitHub
@@ -218,3 +219,11 @@ metadata for both database URLs. A verified protected GitHub
 retrieve it through authenticated Neon access. The external release build cannot
 obtain Sensitive values with `vercel pull`; see the current transition record in
 [the completion decisions](022-release-and-storage-completion.md).
+
+The subsequent native Preview probe passed both runtime database identity checks
+in London. Its new branch reported `init_source: parent-data` from main; a durable
+sanitized Preview source remains necessary before the private import. Removing
+the exact temporary deployment also automatically removed its branch and
+endpoint, with production unchanged. The GitHub migration secret and an isolated
+placeholder/artifact build check are now verified as recorded in the completion
+decisions. Full application and release acceptance remain outstanding.

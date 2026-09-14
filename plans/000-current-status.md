@@ -32,8 +32,10 @@ expiring 13 December. Shared credential/trust improvements shipped in Loom 1.26.
 Magickly pins that release. Full deployment acceptance remains pending. On 14
 September the operator saved deployment readiness enabled and branch deployment
 enabled for Preview only on the existing connection; fresh API metadata confirms
-both settings. The deployment's effective database destination and sanitized
-Preview ancestry still need runtime evidence. Saving also made both database
+both settings. A temporary deployment verified effective pooled/direct Preview
+database overrides in London and automatic branch cleanup. It also confirmed
+that the branch inherits main's data; establish a durable sanitized Preview
+source before importing private records. Saving also made both database
 URLs Sensitive, so the readable migration fallback is no longer available.
 GitHub Production now contains the verified direct
 `MIGRATION_DATABASE_URL_UNPOOLED` secret and its expected-role metadata, installed
