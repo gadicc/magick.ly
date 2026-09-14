@@ -111,11 +111,7 @@ export default async function TemplesAdminEditMembershipPage({
             <Button type="submit" variant="contained">
               Save membership
             </Button>
-            <Button
-              component={Link}
-              href={`/temples/admin/${temple.id}`}
-              variant="outlined"
-            >
+            <Button href={`/temples/admin/${temple.id}`} variant="outlined">
               Cancel
             </Button>
           </Stack>

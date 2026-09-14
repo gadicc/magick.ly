@@ -65,7 +65,7 @@ export default async function TemplesJoinPage({
               <Button type="submit" variant="contained">
                 Confirm and join
               </Button>
-              <Button component={Link} href="/temples" variant="outlined">
+              <Button href="/temples" variant="outlined">
                 Cancel
               </Button>
             </Stack>

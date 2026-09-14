@@ -98,7 +98,7 @@ export default async function TemplePage({
             Creating a temple starts a new organization that you administer. It
             does not request membership in an existing organization.
           </Typography>
-          <Button component={Link} href="/temples/admin" variant="outlined">
+          <Button href="/temples/admin" variant="outlined">
             Create or manage temples
           </Button>
         </>

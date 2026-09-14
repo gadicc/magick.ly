@@ -1,5 +1,4 @@
 import { Alert, Container, Link as MuiLink, Typography } from "@mui/material";
-import Link from "next/link";
 import { getCurrentSqlUserId } from "@/auth/session";
 import { sqlRitualReader } from "@/doc/sqlRuntime";
 import Upload from "@/lib/upload";
@@ -16,7 +15,6 @@ export default async function UploadFilePage() {
         </Typography>
         <Alert severity="info">
           <MuiLink
-            component={Link}
             href={`/signin?callbackURL=${encodeURIComponent("/upload")}`}
           >
             Sign in

@@ -95,7 +95,6 @@ export default async function AdminTemplePage({
                 <TableCell>{date.format(member.addedAt)}</TableCell>
                 <TableCell>
                   <IconButton
-                    component={Link}
                     size="small"
                     aria-label={`Edit ${member.displayName}`}
                     href={`/temples/admin/${temple.id}/membership/${member.membershipId}`}
