@@ -234,6 +234,38 @@ Evidence is `/tmp/magickli-preview-db-probe-run/`, especially
 because `--skip-domain` is production-only; later preflight corrections also
 stopped before mutation. The successful probe used the corrected Preview command.
 
+A separate Vercel-managed Neon resource named `magickli-preview-db`, store
+`store_mtqKLpJtiM70K3hX`, was then provisioned under the approved isolation work.
+It uses the free `free_v3` plan in `lhr1` / `aws-eu-west-2`, has Neon Auth
+disabled, and owns the distinct PostgreSQL 18 project `small-wave-96978226`. Its root branch
+`br-polished-morning-zazqd31j` has no parent. The store remains unconnected with
+zero connected projects, so this step added no Vercel application environment
+variables and did not change the existing Production connection.
+
+A source- and target-bound runner from app commit `dfaa0c2` applied the 17
+reviewed migrations to that empty root. The result verifies 17 migration journal
+entries, 36 public application tables, and zero application rows. Production
+retained its two-entry journal, zero legacy aliases, and exact before/after
+catalog hash. The reviewed approval digest is
+`511912b08cb8b34eea6bbdce7743317e2ab1b40c7039d766fa823072aed8114f`;
+the migration source manifest is
+`7017e67fe95d8d2f14f78ea29c2249e658932a10fb97a13ecb577dcd30710142`.
+Evidence is `/tmp/magickli-preview-ancestry-run/{created,neon-target}.json` and
+`/tmp/magickli-preview-base-migration/result.json`, whose SHA-256 is
+`90804b7e77b20641cae4c7e0d6034275c40efe03d71217760a6a27319df0be04`.
+
+The original resource still needs to be restricted to Production only, followed
+by rotation of the inherited Production credentials. The new resource must then
+be connected only to Preview with Sensitive variables and the required Preview
+deployment action before another canary and the full application journey. No
+private import or modernized application deployment occurred in these creation
+and schema-migration steps.
+
+Loom 1.26.0 models one database resource name, so its current network check does
+not prove this intended two-resource environment topology. Reconcile `loom.json`
+with the verified connections when they change, without inventing unsupported
+fields; exact provider metadata and the follow-up canary remain the topology gate.
+
 Full application Preview acceptance still needs isolated external services,
 OAuth, uploads/publication and offline journeys. No private production import or
 modernized application deployment has occurred. The reusable modernization skill

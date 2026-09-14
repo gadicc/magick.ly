@@ -6,7 +6,7 @@ retains historical checkpoints and their original limitations.
 | Area | Completed and verified | Remaining |
 | --- | --- | --- |
 | Tooling and framework | pnpm, Biome, Vitest, App Router, current React/MUI, Loom 1.26.0; final integrated tests, coverage, types, Biome and production build pass | Deployed acceptance |
-| Database and import | UUIDv7 schemas, 17 migrations rehearsed on Neon, protected resumable import and reconciliation; migration 0016 adds verified file relocations | Final consistent production snapshot/import |
+| Database and import | UUIDv7 schemas, 17 migrations rehearsed on Neon, protected resumable import and reconciliation; separate empty Preview root migrated through 0016, including the relocation schema | Final consistent production snapshot/import |
 | Authentication | Better Auth runtime, fresh SQL identity, import readiness gate, coordinated sign-out; committed `22ef750` | Real OAuth and deployed acceptance; one-time user reauthentication at cutover |
 | Administration and integrations | SQL temple/group administration and Discourse mapping; Pinecone remains authoritative | Deployed acceptance and retirement of unused credentials after checking scope |
 | Study | Durable account/anonymous projections and idempotent SQL receipts; cached identity cannot assign ownership | Integrated browser acceptance against the final runtime |
@@ -34,9 +34,13 @@ September the operator saved deployment readiness enabled and branch deployment
 enabled for Preview only on the existing connection; fresh API metadata confirms
 both settings. A temporary deployment verified effective pooled/direct Preview
 database overrides in London and automatic branch cleanup. It also confirmed
-that the branch inherits main's data; establish a durable sanitized Preview
-source before importing private records. Saving also made both database
-URLs Sensitive, so the readable migration fallback is no longer available.
+that the existing resource's Preview branch inherits Production main's data. A
+separate free London resource, `magickli-preview-db`, now provides an unconnected
+sanitized root: all 17 migrations are applied, its 36 application tables have
+zero rows, and the Production baseline is unchanged. Restrict the original
+resource to Production, rotate its inherited credentials, and connect the new
+resource to Preview before application acceptance. Saving also made both
+database URLs Sensitive, so the readable migration fallback is no longer available.
 GitHub Production now contains the verified direct
 `MIGRATION_DATABASE_URL_UNPOOLED` secret and its expected-role metadata, installed
 through Loom from authenticated Neon access. It uses the existing database owner
