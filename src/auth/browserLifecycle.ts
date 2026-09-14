@@ -96,7 +96,7 @@ export const sqlBrowserLifecycle = createSqlBrowserLifecycle({
   },
   activateStudy: activateStudyAccount,
   prepareStudySignOut,
-  preparePrivateSignOut: () => getBrowserOfflineRuntime().coordinator.signOut(),
+  preparePrivateSignOut: () => getBrowserOfflineRuntime().signOut(),
   async signOutAuth() {
     const result = await authClient.signOut();
     return !result.error;

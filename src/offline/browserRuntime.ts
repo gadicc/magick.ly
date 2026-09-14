@@ -18,6 +18,7 @@ export interface BrowserOfflineRuntime {
   recovery: LockedRecoveryQueue;
   start(): Promise<void>;
   refreshVerifiedAccount(fetcher?: typeof fetch): Promise<boolean>;
+  signOut(): Promise<boolean>;
   subscribeState(listener: (state: OfflineLifecycleState) => void): () => void;
 }
 
@@ -88,6 +89,60 @@ export function createBrowserOfflineRuntime(
     },
   );
   let started: Promise<void> | undefined;
+  // Every caller gets a fresh session read after the preceding coordinator
+  // transition. Explicit sign-out permanently cancels this instance's queue.
+  let accountRefreshFenced = false;
+  let accountRefreshTransition: Promise<void> = Promise.resolve();
+  const performVerifiedAccountRefresh = async (fetcher: typeof fetch) => {
+    const baseline = coordinator.state;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      SESSION_CHECK_TIMEOUT_MS,
+    );
+    try {
+      const response = await fetcher("/api/session", {
+        method: "GET",
+        credentials: "same-origin",
+        redirect: "error",
+        cache: "no-store",
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      });
+      const policy = response.headers.get("cache-control")?.toLowerCase();
+      const mediaType = response.headers
+        .get("content-type")
+        ?.split(";", 1)[0]
+        .trim()
+        .toLowerCase();
+      const url = new URL(response.url);
+      if (
+        response.status !== 200 ||
+        response.redirected ||
+        url.origin !== location.origin ||
+        url.pathname !== "/api/session" ||
+        url.search !== "" ||
+        mediaType !== "application/json" ||
+        !policy?.split(",").some((value) => value.trim() === "no-store")
+      )
+        return false;
+      const ownerId = exactSessionUser(await response.json());
+      const current = coordinator.state;
+      if (
+        !ownerId ||
+        current.generation !== baseline.generation ||
+        current.account?.ownerId !== baseline.account?.ownerId ||
+        current.account?.epoch !== baseline.account?.epoch
+      )
+        return false;
+      return coordinator.activateVerifiedAccount(ownerId);
+    } catch {
+      // Offline, anonymous and expired-session results never clear a local account.
+      return false;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  };
   const runtime: BrowserOfflineRuntime = {
     repository,
     coordinator,
@@ -98,55 +153,22 @@ export function createBrowserOfflineRuntime(
         .catch(() => {})
         .then(() => coordinator.start()));
     },
-    async refreshVerifiedAccount(fetcher = fetch) {
-      const baseline = coordinator.state;
-      const controller = new AbortController();
-      const timeout = window.setTimeout(
-        () => controller.abort(),
-        SESSION_CHECK_TIMEOUT_MS,
+    refreshVerifiedAccount(fetcher = fetch) {
+      if (accountRefreshFenced) return Promise.resolve(false);
+      const work = () =>
+        accountRefreshFenced
+          ? Promise.resolve(false)
+          : performVerifiedAccountRefresh(fetcher);
+      const result = accountRefreshTransition.then(work, work);
+      accountRefreshTransition = result.then(
+        () => undefined,
+        () => undefined,
       );
-      try {
-        const response = await fetcher("/api/session", {
-          method: "GET",
-          credentials: "same-origin",
-          redirect: "error",
-          cache: "no-store",
-          signal: controller.signal,
-          headers: { Accept: "application/json" },
-        });
-        const policy = response.headers.get("cache-control")?.toLowerCase();
-        const mediaType = response.headers
-          .get("content-type")
-          ?.split(";", 1)[0]
-          .trim()
-          .toLowerCase();
-        const url = new URL(response.url);
-        if (
-          response.status !== 200 ||
-          response.redirected ||
-          url.origin !== location.origin ||
-          url.pathname !== "/api/session" ||
-          url.search !== "" ||
-          mediaType !== "application/json" ||
-          !policy?.split(",").some((value) => value.trim() === "no-store")
-        )
-          return false;
-        const ownerId = exactSessionUser(await response.json());
-        const current = coordinator.state;
-        if (
-          !ownerId ||
-          current.generation !== baseline.generation ||
-          current.account?.ownerId !== baseline.account?.ownerId ||
-          current.account?.epoch !== baseline.account?.epoch
-        )
-          return false;
-        return coordinator.activateVerifiedAccount(ownerId);
-      } catch {
-        // Offline, anonymous and expired-session results never clear a local account.
-        return false;
-      } finally {
-        window.clearTimeout(timeout);
-      }
+      return result;
+    },
+    signOut() {
+      accountRefreshFenced = true;
+      return coordinator.signOut();
     },
     subscribeState(listener) {
       listeners.add(listener);
