@@ -142,30 +142,20 @@ reversible fence before the final consistent backup, import and reconciliation.
 Historic deployments and in-flight external writes must be covered; see
 [the writer review](020-cutover-writers.md).
 
-On 14 September the operator found the existing Vercel resource connection,
-enabled deployment readiness, selected Preview only for branch deployment, and
-saved the changes. A subsequent authenticated Vercel resource read confirms
-`deployments.required: true` and the `Neon` action scoped to `preview` only on
-the same connection. This verifies saved configuration, not a successful
-deployment-action or effective-connection probe. The earlier attempt
-to add a connection was rejected as already connected; no replacement connection
-was needed.
+The database resources now have separate, verified project connections. Original
+store `store_rjlna7Me15XXCA25` uses connection `spc_XDFrBMjdzJtxpNow` for
+Production only, with Sensitive variables and no deployment action. Preview store
+`store_mtqKLpJtiM70K3hX` uses connection `spc_TrPb70tlUSASUwi4` for Preview only,
+with Sensitive variables and the required `Neon` action scoped to Preview. No
+Development database connection exists. Credential-free before/after evidence is
+in `/tmp/magickli-isolated-preview-probe-run/{baseline,cleanup-verification}.json`.
 
-Saving the connection also enabled `makeEnvVarsSensitive`; fresh variable
-metadata confirms both database URLs are Sensitive in Production and Preview.
-The earlier recommendation to leave Sensitive off during credential setup was
-not the resulting provider state. A fresh GitHub Production secret-name check
-found only `VERCEL_TOKEN`. Retrieve the direct connection through authenticated
-Neon access and install/verify the protected migration secret before release;
-there is no longer a readable Vercel database fallback.
-The workflow already preserves the untouched Vercel pull snapshot, supplies
+Sensitive database URLs are not readable through `vercel pull` or
+`vercel env run`. The workflow preserves the untouched Vercel pull snapshot, supplies
 build-only placeholders for unreadable Sensitive values, rejects placeholder
 leakage, and binds `MIGRATION_DATABASE_URL_UNPOOLED` only to verification and
 migrations. Independent review confirms the Loom support and unit coverage;
 the complete GitHub/Vercel Sensitive-database flow still needs live acceptance.
-Provision and verify the migration credential before any release. Do not
-expect `vercel pull` or `vercel env run` on GitHub to recover Sensitive values.
-Credential-free evidence is `/tmp/magickli-preview-settings/saved-20260914.json`.
 
 The protected migration credential was subsequently installed through Loom 1.26.0
 at `2026-09-14T11:18:14Z`. A guarded read-only preflight used authenticated Neon
@@ -211,93 +201,63 @@ An initial Next/TypeScript child-process failure was specific to the restricted
 local sandbox; the unchanged build passed outside it. No application workaround
 was needed.
 
-An inert native Preview deployment subsequently verified the actual integration.
-Deployment `dpl_77LZxULUk2HeLyDJ7KAroApk36ep` ran in `lhr1`, reached `READY`,
-and reported the integration ready. Its endpoint returned only SHA-256 hashes of
-the parsed database hosts and names. Both runtime URLs matched fresh Neon
-pooled/direct connection identities for branch `br-green-star-zacq6jov` and
-endpoint `ep-gentle-sea-za11tx75`; the direct host also matched that branch's
-independently listed endpoint. No SQL was executed by the probe.
+An earlier inert probe against the original resource established why isolation
+was required: native Preview branches inherit their root's data. Its disposable
+deployment, branch and endpoint were removed before the separate Preview resource
+was connected.
 
-The new branch was `preview/codex/preview-db-probe-2198b31e`, with main as its
-parent and `init_source: parent-data`. This proves working deployment overrides
-and also proves that native branching copies the parent's data. Before importing
-private production records, establish a durable sanitized Preview source and
-separate credential scope; a different host alone is insufficient.
+The free London resource `magickli-preview-db`, store
+`store_mtqKLpJtiM70K3hX`, owns distinct PostgreSQL 18 project
+`small-wave-96978226`. Neon Auth is disabled, and root branch
+`br-polished-morning-zazqd31j` has no parent. The reviewed migration runner
+applied all 17 migrations; the root has 36 public application tables and zero
+application rows. Production retained its two-entry journal and zero legacy
+aliases. Creation and migration evidence remains under
+`/tmp/magickli-preview-ancestry-run/` and
+`/tmp/magickli-preview-base-migration/`.
 
-The exact temporary deployment had no aliases and was removed with Vercel's
-`--safe` guard. Neon automatically removed its branch and endpoint. Fresh provider
-reads confirm only main remains and the old production deployment is unchanged.
-Evidence is `/tmp/magickli-preview-db-probe-run/`, especially
-`runtime-verification.json`, `cleanup-intent.json` and
-`cleanup-verification.json`. The first CLI submission was rejected locally
-because `--skip-domain` is production-only; later preflight corrections also
-stopped before mutation. The successful probe used the corrected Preview command.
+The original resource is now Production-only. After its `neondb_owner` password
+was reset, Vercel replaced the project connection with
+`spc_XDFrBMjdzJtxpNow` and synchronized its Sensitive Production variables while
+leaving the store, Neon project and live legacy deployment unchanged. The
+refreshed credential passed the exact-target read-only check, and Loom refreshed
+GitHub Production's protected `MIGRATION_DATABASE_URL_UNPOOLED` without exposing
+the value. Evidence is under `/tmp/magickli-production-only-verification/`,
+`/tmp/magickli-neon-rotation-verification/`, and
+`/tmp/magickli-migration-secret-refresh/`. The live legacy deployment does not
+use Neon and must not be redeployed merely because this credential changed.
 
-A separate Vercel-managed Neon resource named `magickli-preview-db`, store
-`store_mtqKLpJtiM70K3hX`, was then provisioned under the approved isolation work.
-It uses the free `free_v3` plan in `lhr1` / `aws-eu-west-2`, has Neon Auth
-disabled, and owns the distinct PostgreSQL 18 project `small-wave-96978226`. Its root branch
-`br-polished-morning-zazqd31j` has no parent. The store remains unconnected with
-zero connected projects, so this step added no Vercel application environment
-variables and did not change the existing Production connection.
+The Preview resource is connected to exact project `magickly` through
+`spc_TrPb70tlUSASUwi4`, scoped only to Preview, with unprefixed Sensitive
+variables and the required `Neon` action scoped only to Preview. A bound inert
+deployment from commit `4acbcf157e851c3d40c8d94a8b97632751e599d9`
+reached `READY` in `lhr1`; the integration created child branch
+`br-mute-sky-zasb4heu` from the sanitized root and endpoint
+`ep-curly-moon-zapdaa40`.
 
-A source- and target-bound runner from app commit `dfaa0c2` applied the 17
-reviewed migrations to that empty root. The result verifies 17 migration journal
-entries, 36 public application tables, and zero application rows. Production
-retained its two-entry journal, zero legacy aliases, and exact before/after
-catalog hash. The reviewed approval digest is
-`511912b08cb8b34eea6bbdce7743317e2ab1b40c7039d766fa823072aed8114f`;
-the migration source manifest is
-`7017e67fe95d8d2f14f78ea29c2249e658932a10fb97a13ecb577dcd30710142`.
-Evidence is `/tmp/magickli-preview-ancestry-run/{created,neon-target}.json` and
-`/tmp/magickli-preview-base-migration/result.json`, whose SHA-256 is
-`90804b7e77b20641cae4c7e0d6034275c40efe03d71217760a6a27319df0be04`.
+The deployment's hash-only route returned HTTP 200. Its pooled and direct host
+hashes matched the exact child connection identities, and both database-name
+hashes matched `neondb`. Separate read-only external SQL verification found 17
+migration journal entries, 36 application tables and zero rows on both the child
+and root; Production remained at two migrations and zero aliases. This proves
+the native action, ancestry, environment injection and external database state.
+The deployed route did not open a PostgreSQL connection, so it does not yet prove
+that the application runtime can authenticate with the injected credentials.
 
-The operator subsequently saved the original resource's Production-only policy.
-Fresh metadata confirms its connection and both Sensitive database variables are
-Production-only, with no Preview deployment action. The storage response does
-not expose the resource-wide policy itself; that setting is operator-reported.
-Evidence is `/tmp/magickli-production-only-verification/20260914T133013.json`.
+The disposable deployment `dpl_GAyWfYDijvxkrRBrZUzdT3fSzZDK`, child branch and
+endpoint were deleted. Fresh provider reads confirm all three exact identities
+are absent, only each resource's root branch remains, both connection policies
+remain intact, and live Production deployment
+`dpl_9m7ojZk6FZMJoCKsELDe53qiQkRp` is unchanged. Evidence is
+`/tmp/magickli-isolated-preview-probe-run/{baseline,provider-status,runtime-and-data-verification,cleanup-verification}.json`.
 
-After the operator reset `neondb_owner` on the same Neon project and main branch,
-Vercel replaced its connection ID with `spc_XDFrBMjdzJtxpNow` and updated both
-Sensitive Production variables. The store, Neon project and live deployment
-remained unchanged. Metadata in
-`/tmp/magickli-neon-rotation-verification/vercel-metadata.json` confirms that
-update, but cannot prove the unreadable values work in a deployment.
-
-The refreshed credential passed the exact-target read-only database probe and
-Loom's connected migration permission check. The unchanged two-entry journal,
-empty alias table and catalog hash were verified before the GitHub write. Loom
-then refreshed `MIGRATION_DATABASE_URL_UNPOOLED` in GitHub Production at
-`2026-09-14T13:40:55Z`; the role, master-only policy and other secret metadata
-remained unchanged. The runner passed five focused offline tests and independent
-review before execution. No credential was printed or saved locally.
-Evidence is `/tmp/magickli-migration-secret-refresh/{plan,result}.json`; the
-reviewed proposal digest is
-`5b96f6461538ad0ea80a0358c437df1a90c7c9bf2bcdd94b3b974863331324c6`
-and the result SHA-256 is
-`ad5ae24036ed0c92f079a7b2e9a6a5beff3f543266d2be4726a24660527188f2`.
-GitHub secret-value read-back is unavailable; the complete release workflow and
-deployed runtime still need acceptance.
-
-The new resource must now
-be connected only to Preview with Sensitive variables and the required Preview
-deployment action before another canary and the full application journey. No
-private import or modernized application deployment occurred in these creation
-and schema-migration steps.
-
-Loom 1.26.0 models one database resource name, so its current network check does
-not prove this intended two-resource environment topology. `loom.json` now declares
-the verified Production-only scope of `magickli-db`; the separate Preview resource
-is tracked here until shared configuration supports it. Exact provider metadata
-and the follow-up canary remain the topology gate.
-
-Full application Preview acceptance still needs isolated external services,
-OAuth, uploads/publication and offline journeys. No private production import or
-modernized application deployment has occurred. The reusable modernization skill
-remains an unpublished draft until the complete modernization actually finishes.
+Loom 1.26.0 still models one database resource name, so its network check cannot
+prove this two-resource topology by itself. The provider evidence above remains
+the topology gate. Full application Preview acceptance still covers runtime SQL
+authentication, OAuth, uploads/publication and offline journeys. The writer
+pause, final private import, staged Production acceptance and controlled cutover
+also remain; no modernized Production deployment has occurred. The reusable
+modernization skill remains unpublished until the modernization finishes.
 
 ## Published package adoption validation
 

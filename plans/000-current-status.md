@@ -14,7 +14,7 @@ retains historical checkpoints and their original limitations.
 | Files and publication | Private scoped upload/read services; legacy public URLs preserved; durable publication/backfill; separate R2 credentials installed; ten legacy objects copied and verified, with readers supporting verified relocation | Final source reconciliation and SQL mapping activation; real upload/publication acceptance |
 | Ritual editing | JRT/source editor integration `584e9c6`; ordinary-editor renewal of definitively expired attempts `e9b66ff`, retaining old evidence and exact retries | Browser/deployed acceptance against real publication storage |
 | Legacy retirement | Old polling endpoint fenced; browser recovery retained; replaced auth/editors/upload helpers and unused dependencies retired in `ba1a487`; operator confirms Mongo user is dedicated to Magickly | Apply and verify the approved write pause at cutover; retire old credentials/storage after verification |
-| Release | Reviewed staged workflow committed `6d7741d`; 24 release tests, 25 shell syntax checks, synthetic environment-policy rehearsal; exact production Trusted Sources rule and protected GitHub project credential applied and verified | Effective Preview isolation, verified writer pause, staged acceptance and production promotion |
+| Release | Reviewed staged workflow committed `6d7741d`; exact production Trusted Sources rule and protected GitHub project credential applied; isolated Preview database connection, native branch probe and cleanup verified | Full application Preview journeys, verified writer pause, staged acceptance and production promotion |
 | Reusable Loom skill | Generic draft and references under `.loom/drafts/modernize-app`; validator passes | Final lessons and independent evaluation; save into Loom only after modernization finishes |
 
 Production has not switched. The main Neon branch still has only migrations
@@ -29,19 +29,23 @@ legacy file relocation/retirement preparation. The exact Trusted Sources rule
 and R2 settings were applied and verified on 14 September. GitHub Production
 now permits only `master` and has a verified project-scoped deployment token
 expiring 13 December. Shared credential/trust improvements shipped in Loom 1.26.0;
-Magickly pins that release. Full deployment acceptance remains pending. On 14
-September the operator saved deployment readiness enabled and branch deployment
-enabled for Preview only on the existing connection; fresh API metadata confirms
-both settings. A temporary deployment verified effective pooled/direct Preview
-database overrides in London and automatic branch cleanup. It also confirmed
-that the existing resource's Preview branch inherits Production main's data. A
-separate free London resource, `magickli-preview-db`, now provides an unconnected
-sanitized root: all 17 migrations are applied, its 36 application tables have
-zero rows, and the Production baseline is unchanged. The original connection and
-its database variables are now Production-only; the operator rotated its password
-and the protected GitHub migration secret has been refreshed through Loom.
-Connect the new resource to Preview before application acceptance. Saving also made both
-database URLs Sensitive, so the readable migration fallback is no longer available.
+Magickly pins that release. Full deployment acceptance remains pending. The
+original `magickli-db` resource is now Production-only, and the distinct London
+`magickli-preview-db` resource is connected only to Preview with Sensitive
+variables and the required Neon Preview action. An isolated native deployment
+created a child of the sanitized Preview root. Its runtime-reported pooled and
+direct host/database hashes matched that exact child, while separate read-only
+SQL checks found 17 migrations, 36 application tables and zero rows on both the
+child and root. Production remained at two migrations and zero aliases. The
+temporary deployment, child branch and endpoint were then confirmed absent;
+both roots and the live Production deployment remained unchanged.
+
+The hash-only runtime route proves Vercel injected the intended Preview hosts and
+database name. It did not authenticate to PostgreSQL from the deployed runtime,
+so actual application credential acceptance still belongs to full Preview
+acceptance. The operator also rotated the Production database password and the
+protected GitHub migration secret has been refreshed through Loom. Both database
+URLs are Sensitive, so the readable migration fallback is no longer available.
 GitHub Production now contains the verified direct
 `MIGRATION_DATABASE_URL_UNPOOLED` secret and its expected-role metadata, installed
 through Loom from authenticated Neon access. It uses the existing database owner
