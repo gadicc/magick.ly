@@ -3,13 +3,30 @@
 Updated 14 September 2026. This is the current status; the implementation ledger
 retains historical checkpoints and their original limitations.
 
+**Paused at the operator's request to conserve usage.** No implementation,
+build, deployment or agent work is running. See the exact
+[resume checkpoint](025-pause-checkpoint.md) before continuing.
+
+Latest checkpoint: local temple/admin, private upload/publication, offline image
+reading and expired-source locking pass. The study reconnect race is fixed and
+passes the rebuilt browser journey in `3586b18`. Permission retry fix `803c234`
+passes ordinary online reload after revocation, followed by offline direct and
+catalog denial. Image-bearing revision v4 is published locally; its reader
+download/revocation check is paused. A separate initial CodeMirror display race
+is reproduced but not yet fixed.
+The integrated candidate passes 4,335 tests with 16 opt-in tests skipped, full
+TypeScript and Biome. Loom 1.27.0 is published and adopted in Magickly (`388123d`),
+Porty (`7a3eac1`) and Shadowlang (`033b173`); reference-app commits stay local.
+Local storage acceptance support is committed in `88387cd`. See
+[local acceptance](024-local-acceptance.md). Production has not changed.
+
 | Area | Completed and verified | Remaining |
 | --- | --- | --- |
-| Tooling and framework | pnpm, Biome, Vitest, App Router, current React/MUI, Loom 1.26.1; integrated tests, types, Biome and final standalone build pass; live SVG/PNG and legacy rendering pass | Remaining authenticated browser journeys |
+| Tooling and framework | pnpm, Biome, Vitest, App Router, current React/MUI, Loom 1.27.0; integrated tests, types and Biome pass; previous standalone build and live SVG/PNG and legacy rendering pass | Rebuilt acceptance candidate and remaining authenticated browser journeys |
 | Database and import | UUIDv7 schemas, 17 migrations rehearsed on Neon, protected resumable import and reconciliation; separate empty Preview root migrated through 0016, including the relocation schema | Final consistent production snapshot/import |
 | Authentication | Better Auth runtime, fresh SQL identity, import readiness gate, coordinated sign-out; two real Google sign-ins verified with new Preview SQL accounts/sessions | Two-account permissions/offline acceptance; one-time user reauthentication at cutover |
 | Administration and integrations | SQL temple/group administration and Discourse mapping; Pinecone remains authoritative | Deployed acceptance and retirement of unused credentials after checking scope |
-| Study | Durable account/anonymous projections and idempotent SQL receipts; cached identity cannot assign ownership | Integrated browser acceptance against the final runtime |
+| Study | Durable account/anonymous projections and idempotent SQL receipts; cached identity cannot assign ownership; cold offline reload and exactly-once reconnect pass in a production-build browser journey | Production smoke after cutover |
 | Private offline reading | Fourteen-day leases, source/draft locks, sign-out purge, image dependency handling, offline discovery | Full deployed/offline journey with published bundles |
 | Files and publication | Private scoped upload/read services; legacy public URLs preserved; durable publication/backfill; separate R2 credentials installed; ten legacy objects copied and verified, with readers supporting verified relocation | Final source reconciliation and SQL mapping activation; real upload/publication acceptance |
 | Ritual editing | JRT/source editor integration `584e9c6`; ordinary-editor renewal of definitively expired attempts `e9b66ff`, retaining old evidence and exact retries | Browser/deployed acceptance against real publication storage |

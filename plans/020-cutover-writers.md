@@ -58,3 +58,56 @@ narrow, reversible method still needs preparation and verification before use.
 This is not yet a tested operational recipe. Evidence is in
 `/tmp/magickli-current-production-metadata.json` and the mode-0600
 `/tmp/magickli-legacy-writer-identity.json`; neither contains connection secrets.
+
+The later read-only preparation identified the production Atlas hostname as
+`cluster0.ko9xx.mongodb.net`, database `magickli`. No authenticated Atlas
+administrator or all-user operation-monitoring credential is available locally;
+the operator identified the Atlas project as `magickli` on 14 September and
+confirmed database-user Edit access for `magickli@admin` (username `magickli`).
+Cluster0 uses Atlas Free, so the operation-drain recipe must account for that
+tier's command restrictions. The intended role-only
+change replaces the existing role with `read` on `magickli`, preserving all other
+user settings. It has not been applied.
+
+The old file route writes its object before inserting Mongo metadata, so the
+Mongo role change alone cannot freeze its object inventory. Vercel's project
+firewall can match HTTP methods and deny requests. A proposal under
+`/tmp/magickli-firewall-readiness/proposal.json` temporarily blocks non-read
+methods across this project's hostnames and environments, while the separate
+Mongo fence covers writes triggered by GET requests. This also interrupts
+Preview mutations, so deployed acceptance must finish first.
+[Vercel rule configuration](https://vercel.com/docs/vercel-firewall/vercel-waf/rule-configuration).
+
+Read-only inspection found the project firewall disabled, no custom rules or
+draft changes, and no enabled managed rulesets. The proposal remains local;
+enabling/publishing it still requires a fresh pre-state comparison and review.
+The complete preparation, including active-operation and external-work drains,
+is `/tmp/magickli-writer-pause-readiness.md`. Neither proposal changes the rule
+that SQL writes prevent simply restoring the old Mongo writer as a rollback.
+
+A fresh read of the live legacy deployment reports
+`config.functionTimeout: 300` with Fluid compute. Its exact deployed source has
+no `maxDuration` or `functionTimeout` override. The recorded drain interval is
+therefore at least five minutes after ingress and administrator activity stop,
+alongside the separate Mongo operation checks and Discourse audit. Recheck this
+deployment identity and configuration immediately before the pause; the API
+response does not include per-function output configuration. Vercel describes
+the invocation limit in its
+[maximum-duration documentation](https://vercel.com/docs/functions/configuring-functions/duration).
+
+The later Atlas Free review supersedes the draft's mandatory `$currentOp`
+aggregation: that stage is unsupported on Free. Do not provision a monitoring
+credential merely to satisfy it. The proposed alternative combines the exact
+read-only role and denied-write proof with the verified invocation drain,
+Discourse audit and R2 reconciliation, then primary/majority checks and a primary
+dump while the fences remain. A majority read does not make the dump atomic;
+consistency depends on stopping all writes throughout it. The operator still
+needs to confirm no external/manual consumer uses the dedicated credential.
+[Atlas Free limits](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/),
+[MongoDB dump consistency](https://www.mongodb.com/docs/manual/tutorial/backup-and-restore-tools/).
+
+Do not simply remove the broad ingress fence after promotion: that would reopen
+historical `/api/file2` object writes. A narrower persistent upload-route fence
+must remain until the old storage credential can be retired. Its exact path
+matching and URL normalization checks are still to be prepared and reviewed.
+No fence or role change was applied before the operator paused work.
