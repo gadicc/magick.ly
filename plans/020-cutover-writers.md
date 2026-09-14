@@ -51,7 +51,10 @@ writers after promotion; new SQL writes make a simple return to the old Mongo
 snapshot unsafe.
 
 No firewall, project-pause, credential-change or cutover command has been
-approved or executed from this note. The exact method remains a blocking
-readiness item, rather than a tested operational recipe. Evidence is in
+executed from this note. On 14 September the operator confirmed that the live
+Mongo user is dedicated to Magickly and approved stopping writes at the
+appropriate final backup/import time. Ownership is now resolved; the exact
+narrow, reversible method still needs preparation and verification before use.
+This is not yet a tested operational recipe. Evidence is in
 `/tmp/magickli-current-production-metadata.json` and the mode-0600
 `/tmp/magickli-legacy-writer-identity.json`; neither contains connection secrets.
