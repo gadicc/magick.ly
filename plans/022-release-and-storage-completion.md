@@ -254,17 +254,45 @@ Evidence is `/tmp/magickli-preview-ancestry-run/{created,neon-target}.json` and
 `/tmp/magickli-preview-base-migration/result.json`, whose SHA-256 is
 `90804b7e77b20641cae4c7e0d6034275c40efe03d71217760a6a27319df0be04`.
 
-The original resource still needs to be restricted to Production only, followed
-by rotation of the inherited Production credentials. The new resource must then
+The operator subsequently saved the original resource's Production-only policy.
+Fresh metadata confirms its connection and both Sensitive database variables are
+Production-only, with no Preview deployment action. The storage response does
+not expose the resource-wide policy itself; that setting is operator-reported.
+Evidence is `/tmp/magickli-production-only-verification/20260914T133013.json`.
+
+After the operator reset `neondb_owner` on the same Neon project and main branch,
+Vercel replaced its connection ID with `spc_XDFrBMjdzJtxpNow` and updated both
+Sensitive Production variables. The store, Neon project and live deployment
+remained unchanged. Metadata in
+`/tmp/magickli-neon-rotation-verification/vercel-metadata.json` confirms that
+update, but cannot prove the unreadable values work in a deployment.
+
+The refreshed credential passed the exact-target read-only database probe and
+Loom's connected migration permission check. The unchanged two-entry journal,
+empty alias table and catalog hash were verified before the GitHub write. Loom
+then refreshed `MIGRATION_DATABASE_URL_UNPOOLED` in GitHub Production at
+`2026-09-14T13:40:55Z`; the role, master-only policy and other secret metadata
+remained unchanged. The runner passed five focused offline tests and independent
+review before execution. No credential was printed or saved locally.
+Evidence is `/tmp/magickli-migration-secret-refresh/{plan,result}.json`; the
+reviewed proposal digest is
+`5b96f6461538ad0ea80a0358c437df1a90c7c9bf2bcdd94b3b974863331324c6`
+and the result SHA-256 is
+`ad5ae24036ed0c92f079a7b2e9a6a5beff3f543266d2be4726a24660527188f2`.
+GitHub secret-value read-back is unavailable; the complete release workflow and
+deployed runtime still need acceptance.
+
+The new resource must now
 be connected only to Preview with Sensitive variables and the required Preview
 deployment action before another canary and the full application journey. No
 private import or modernized application deployment occurred in these creation
 and schema-migration steps.
 
 Loom 1.26.0 models one database resource name, so its current network check does
-not prove this intended two-resource environment topology. Reconcile `loom.json`
-with the verified connections when they change, without inventing unsupported
-fields; exact provider metadata and the follow-up canary remain the topology gate.
+not prove this intended two-resource environment topology. `loom.json` now declares
+the verified Production-only scope of `magickli-db`; the separate Preview resource
+is tracked here until shared configuration supports it. Exact provider metadata
+and the follow-up canary remain the topology gate.
 
 Full application Preview acceptance still needs isolated external services,
 OAuth, uploads/publication and offline journeys. No private production import or

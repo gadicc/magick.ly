@@ -37,9 +37,10 @@ database overrides in London and automatic branch cleanup. It also confirmed
 that the existing resource's Preview branch inherits Production main's data. A
 separate free London resource, `magickli-preview-db`, now provides an unconnected
 sanitized root: all 17 migrations are applied, its 36 application tables have
-zero rows, and the Production baseline is unchanged. Restrict the original
-resource to Production, rotate its inherited credentials, and connect the new
-resource to Preview before application acceptance. Saving also made both
+zero rows, and the Production baseline is unchanged. The original connection and
+its database variables are now Production-only; the operator rotated its password
+and the protected GitHub migration secret has been refreshed through Loom.
+Connect the new resource to Preview before application acceptance. Saving also made both
 database URLs Sensitive, so the readable migration fallback is no longer available.
 GitHub Production now contains the verified direct
 `MIGRATION_DATABASE_URL_UNPOOLED` secret and its expected-role metadata, installed

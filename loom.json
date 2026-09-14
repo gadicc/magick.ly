@@ -75,7 +75,7 @@
           "provisionedBy": "vercel-marketplace",
           "region": "lhr1",
           "resourceName": "magickli-db",
-          "vercelEnvironments": ["production", "preview"]
+          "vercelEnvironments": ["production"]
         },
         "release": {
           "productionBranch": "master"
