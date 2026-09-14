@@ -34,9 +34,10 @@ An identical setup rerun preserved the same token and expiry. At that checkpoint
 the network check found the GitHub release variables/secret and advised that a
 dedicated migration secret was not installed; the then-readable Vercel direct URL
 provided the supported fallback. The later Sensitive change below removes that
-fallback. The overall network check is not yet green: the app has not
-recorded the final R2 provider policy in `loom.json`. Its exact Preview upload
-origin and CORS still need to be settled with the Preview deployment.
+fallback. The overall network check is not yet green: the app has not recorded
+the final R2 provider policy in `loom.json`. The Preview upload origin has been
+selected and bucket CORS verified below; the provider contract still needs to be
+recorded in the manifest.
 
 The published trust planner/checker also verified the existing provider rule
 without changing it. Its complete-proposal approval digest is
@@ -268,6 +269,18 @@ and existing Google configuration were retained. A fresh Preview-only Better Aut
 secret, exact Preview origin and publication policy are configured. Sensitive
 values remain unreadable through external pulls; metadata checks do not replace
 runtime authentication tests.
+
+The guarded R2 operator applied the exact PUT-only policy for origin
+`https://magickly-preview-9fd4f93a-wastelands.vercel.app` to private bucket
+`magickli-files-preview`. Preview had no prior CORS policy. Fresh readback matched
+the reviewed policy digest
+`6208821933f7b0f68dd8f031ace50e8387108d85823d78e71d551843b63f5c56`,
+while Production CORS remained unchanged; no credential or public-access setting
+changed. The sanitized result is
+`/tmp/magickli-preview-acceptance/cors-preview-apply-result.json`, SHA-256
+`2b94625afa66dca4830f8efb59006a536d12243efd6104149031fc508ed0ddb0`.
+This verifies bucket configuration, while browser upload and application runtime
+acceptance remain pending.
 
 Native app deployments from `918eb883d6e9396f014b9ab0d90668aec8fbf457`, on ref
 `codex/preview-acceptance-9fd4f93a`, created and reused child
