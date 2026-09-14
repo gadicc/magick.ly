@@ -167,6 +167,36 @@ Provision and verify the migration credential before any release. Do not
 expect `vercel pull` or `vercel env run` on GitHub to recover Sensitive values.
 Credential-free evidence is `/tmp/magickli-preview-settings/saved-20260914.json`.
 
+The protected migration credential was subsequently installed through Loom 1.26.0
+at `2026-09-14T11:18:14Z`. A guarded read-only preflight used authenticated Neon
+profile `magickli`, bound the exact London main branch/endpoint/database/role,
+verified the unchanged two-entry migration journal and empty alias table, and
+passed `loom db migrations verify-env --connect`. The reviewed proposal also
+bound GitHub's canonical repository and immutable ID, its existing `Production`
+environment and sole `master` branch policy, the source graph, and the setup
+script hashes. Review caught and corrected implicit GitHub target selection.
+A stopped first preflight exposed an unsupported `gh repo view` field; the
+corrected runner uses REST repository metadata. The failed preflight changed no
+provider state.
+
+Loom sent the credential through stdin to GitHub and recorded
+`LOOM_MIGRATION_DATABASE_ROLE=neondb_owner`. The post-write check confirmed the
+secret name, exact role metadata and unchanged branch policy; an independent
+GitHub metadata read confirmed the secret and installation timestamp. This uses
+the existing owner as an explicit transition, without Neon password, role, grant,
+ownership or schema changes. A separate least-privilege role needs a deliberate
+ownership/default-grants migration and runtime/importer verification.
+
+Evidence is `/tmp/magickli-migration-credential-setup/{plan,result}.json`;
+`github-secret-metadata.json` in the same directory retains the independently
+read secret names and timestamps without values. The
+complete reviewed proposal digest is
+`20ef8f2f03c0e78f557566585a8ec31fb567a01e36ad1207be4b206e597712d6`.
+No credential value was printed or saved locally. GitHub does not expose its
+stored secret for read-back: live credential verification preceded installation,
+while a complete Actions run still must prove the stored-secret, generated
+placeholder, build/artifact, migration and staged-runtime path.
+
 Preview database ancestry and the actual deployment overrides/readiness action
 still need proof.
 Use a schema-only or sanitized preview dataset and isolate external writes before

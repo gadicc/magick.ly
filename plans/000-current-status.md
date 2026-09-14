@@ -35,9 +35,11 @@ enabled for Preview only on the existing connection; fresh API metadata confirms
 both settings. The deployment's effective database destination and sanitized
 Preview ancestry still need runtime evidence. Saving also made both database
 URLs Sensitive, so the readable migration fallback is no longer available.
-Install and verify GitHub `MIGRATION_DATABASE_URL_UNPOOLED` from authenticated
-Neon access before release; GitHub currently has only the `VERCEL_TOKEN` secret
-in its protected Production environment. See
+GitHub Production now contains the verified direct
+`MIGRATION_DATABASE_URL_UNPOOLED` secret and its expected-role metadata, installed
+through Loom from authenticated Neon access. It uses the existing database owner
+transitionally; a separate role needs a reviewed ownership/grants migration.
+The complete Sensitive-variable external build and release still need acceptance. See
 [the completion decisions](022-release-and-storage-completion.md).
 
 After the relocation unit and Loom 1.26.0 adoption, the integrated candidate
