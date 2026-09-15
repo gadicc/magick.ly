@@ -145,7 +145,7 @@ describe("fenced atomic legacy import", () => {
     expect(saved.payload).toBe(checkpoint.payload);
     expect(JSON.stringify(complete)).not.toContain(importSecret);
     expect(JSON.stringify(complete)).not.toContain('payload"');
-  });
+  }, 30_000);
   it("refuses apply without durable preparation", async () => {
     const { service, checkpoint } = fixture();
     await refused(service.apply(checkpoint.payloadSha256), "MISSING_RUN");

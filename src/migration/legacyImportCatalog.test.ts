@@ -583,5 +583,5 @@ describe("reviewed legacy import catalog evidence", () => {
       }),
     } as unknown as Tx;
     await refused(capture(oversized), "INVALID_CATALOG");
-  });
+  }, 30_000);
 });

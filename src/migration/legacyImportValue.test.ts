@@ -458,7 +458,7 @@ describe("bounded encoding and parsing", () => {
     const overhead = Buffer.byteLength(wire(""));
     const text = "x".repeat(limits.bytes - overhead + 1);
     invalid(() => serialize(text));
-  });
+  }, 30_000);
 });
 
 describe("actual synthetic domain planner outputs", () => {

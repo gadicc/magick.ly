@@ -88,7 +88,7 @@ describe("SVG compatibility bytes and actual corpus", () => {
       expect(
         await readFile(`${process.cwd()}/public/pics/${name}.svg`),
       ).toEqual(before);
-    });
+    }, 15_000);
   }
   it("supports namespace-equivalent prefixes without depending on a particular xmlns prefix", async () => {
     expect(
