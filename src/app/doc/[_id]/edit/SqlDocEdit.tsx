@@ -1178,7 +1178,14 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
     );
 
   return (
-    <div style={{ height: "calc(100vh - 64px)", overflow: "auto" }}>
+    <div
+      style={{
+        height: "calc(100vh - 64px)",
+        maxWidth: "100%",
+        overflowX: "hidden",
+        overflowY: "auto",
+      }}
+    >
       <Typography variant="h5" component="h1" sx={{ px: 1, pt: 1 }}>
         {currentDisplay.title}
       </Typography>
@@ -1230,8 +1237,15 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
       <Button onClick={insertAsset} disabled={saving || !assetLocator}>
         Insert image
       </Button>
-      <Split>
-        <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <Split style={{ width: "100%", minWidth: 0, overflow: "hidden" }}>
+        <div
+          style={{
+            width: "50%",
+            minWidth: 0,
+            height: "100%",
+            position: "relative",
+          }}
+        >
           <div
             ref={setContainer}
             style={{ height: "100%", width: "100%", overflow: "auto" }}
@@ -1253,7 +1267,7 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
         </div>
         <div
           style={{
-            width: 720,
+            width: "50%",
             minWidth: 100,
             height: "100%",
             overflow: "auto",
