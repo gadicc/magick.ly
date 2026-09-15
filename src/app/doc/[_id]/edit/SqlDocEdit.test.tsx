@@ -62,6 +62,9 @@ const mock = vi.hoisted(() => ({
   transform: vi.fn(),
   download: vi.fn(),
   commitAllowed: true,
+  deferEditorView: false,
+  releaseEditorView: null as null | (() => void),
+  readEditorValue: null as null | (() => string),
 }));
 
 let recoveryQueue = new LockedRecoveryQueue();
@@ -151,16 +154,19 @@ vi.mock("@/doc/drafts", () => ({
   downloadRitualRecovery: (...args: unknown[]) => mock.download(...args),
 }));
 vi.mock("@uiw/react-codemirror", async () => {
-  const { useCallback, useMemo, useRef } = await import("react");
+  const { useCallback, useEffect, useMemo, useRef, useState } = await import(
+    "react"
+  );
   return {
     Prec: { highest: (value: unknown) => value },
     useCodeMirror: ({ onChange }: { onChange(value: string): void }) => {
       const change = useRef(onChange);
       change.current = onChange;
+      const container = useRef<HTMLElement | null>(null);
       const textarea = useRef<HTMLTextAreaElement | null>(null);
-      const view = useMemo(() => {
+      const editor = useMemo(() => {
         let value = "";
-        return {
+        const result = {
           state: {
             doc: {
               get length() {
@@ -176,19 +182,42 @@ vi.mock("@uiw/react-codemirror", async () => {
             change.current(value);
           },
         };
+        return result;
       }, []);
-      const setContainer = useCallback(
-        (node: HTMLElement | null) => {
-          if (!node) return;
+      const [view, setView] = useState<typeof editor | undefined>();
+      const activate = useCallback(() => {
+        setView(editor);
+        const node = container.current;
+        if (node && !textarea.current) {
           const input = document.createElement("textarea");
           input.setAttribute("aria-label", "Ritual source");
-          input.value = view.state.doc.toString();
+          input.value = editor.state.doc.toString();
           input.oninput = () =>
-            view.dispatch({ changes: { insert: input.value } });
+            editor.dispatch({ changes: { insert: input.value } });
           node.replaceChildren(input);
           textarea.current = input;
+        }
+      }, [editor]);
+      useEffect(() => {
+        mock.releaseEditorView = activate;
+        mock.readEditorValue = () => editor.state.doc.toString();
+        return () => {
+          if (mock.releaseEditorView === activate)
+            mock.releaseEditorView = null;
+          mock.readEditorValue = null;
+        };
+      }, [activate, editor]);
+      const setContainer = useCallback(
+        (node: HTMLElement | null) => {
+          container.current = node;
+          if (!node) {
+            textarea.current = null;
+            return;
+          }
+          if (view) activate();
+          else if (!mock.deferEditorView) activate();
         },
-        [view],
+        [activate, view],
       );
       return { view, setContainer };
     },
@@ -229,6 +258,9 @@ beforeEach(() => {
   runtimeState = { phase: "ready", generation: 1, account };
   runtimeStateListeners.clear();
   mock.commitAllowed = true;
+  mock.deferEditorView = false;
+  mock.releaseEditorView = null;
+  mock.readEditorValue = null;
   mock.registered = null;
   runtime.start.mockResolvedValue(undefined);
   runtime.refreshVerifiedAccount.mockResolvedValue(true);
@@ -366,6 +398,64 @@ it("retains already gated source when a readiness-triggered refresh rejects", as
   await act(async () => sync.reject(new Error("sanitized provider failure")));
   expect(screen.getByText("Protected A")).toBeDefined();
   expect(screen.getByLabelText("Ritual source")).toBeDefined();
+});
+
+it("hydrates and compiles an authorized source when the editor view is delayed", async () => {
+  mock.deferEditorView = true;
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  expect(await screen.findByText("Protected A")).toBeDefined();
+  expect(screen.queryByLabelText("Ritual source")).toBeNull();
+
+  act(() => mock.releaseEditorView?.());
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  expect(source.value).toBe("p Source A");
+  await waitFor(() =>
+    expect(screen.getByLabelText("Preview").textContent).toContain("Source A"),
+  );
+  expect(mock.transform).toHaveBeenCalledWith("p Source A");
+
+  await act(
+    async () => await new Promise((resolve) => window.setTimeout(resolve, 550)),
+  );
+  expect(mock.preserve).toHaveBeenCalledOnce();
+});
+
+it("never creates a delayed view with locked source and hydrates only the regrant", async () => {
+  mock.deferEditorView = true;
+  render(<SqlDocEdit ritualId={ids.ritualA} />);
+  expect(await screen.findByText("Protected A")).toBeDefined();
+
+  act(() => {
+    mock.registered?.hide("expiry", { retainUncapturedDraft: false });
+    mock.releaseEditorView?.();
+  });
+  expect(mock.readEditorValue?.()).toBe("");
+  expect(screen.queryByLabelText("Ritual source")).toBeNull();
+
+  mock.source.mockResolvedValue({
+    ownerId: ids.owner,
+    ritualId: ids.ritualA,
+    revisionId: ids.nextRevision,
+    parentVersion: 5,
+    title: "Protected regrant",
+    source: "p Source regrant",
+  });
+  act(() => mock.registered?.available());
+
+  expect(await screen.findByText("Protected regrant")).toBeDefined();
+  const source = (await screen.findByLabelText(
+    "Ritual source",
+  )) as HTMLTextAreaElement;
+  expect(source.value).toBe("p Source regrant");
+  expect(source.value).not.toContain("Source A");
+  expect(mock.readEditorValue?.()).toBe("p Source regrant");
+  await waitFor(() =>
+    expect(screen.getByLabelText("Preview").textContent).toContain(
+      "Source regrant",
+    ),
+  );
 });
 
 it("retries an active source check invalidated by account activation without looping on its own change", async () => {

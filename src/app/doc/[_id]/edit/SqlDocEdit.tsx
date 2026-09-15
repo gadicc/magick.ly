@@ -141,6 +141,7 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
   const generation = React.useRef(0);
   const compilationGeneration = React.useRef(0);
   const viewRef = React.useRef<EditorView | undefined>(undefined);
+  const synchronizingViewRef = React.useRef(false);
   const compileTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -301,6 +302,7 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
 
   const onChange = React.useCallback(
     (value: string) => {
+      if (synchronizingViewRef.current) return;
       if (!visibleRef.current) return;
       const current = draftRef.current;
       if (!current) return;
@@ -328,6 +330,32 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
     width: "100%",
   });
   viewRef.current = view;
+  // uiw creates its view after the container commit. Hydrate only after
+  // rechecking live capability refs, and compile the authorized load separately.
+  const displayedDraft =
+    display.kind === "ready" && display.ritualId === ritualId
+      ? display.draft
+      : null;
+  React.useLayoutEffect(() => {
+    if (!view) return;
+    const currentDraft = draftRef.current;
+    const source =
+      visibleRef.current &&
+      displayedDraft &&
+      currentDraft?.id === displayedDraft.id &&
+      currentDraft.ritualId === ritualId
+        ? currentDraft.source
+        : "";
+    if (view.state.doc.toString() === source) return;
+    synchronizingViewRef.current = true;
+    try {
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: source },
+      });
+    } finally {
+      synchronizingViewRef.current = false;
+    }
+  }, [displayedDraft, ritualId, view]);
 
   const load = React.useCallback(
     async (operation: OfflineOperation) => {
@@ -487,17 +515,7 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
           );
           setRenewalAvailable(expiredPublication !== null);
           showScriptHandle(draft.source);
-          queueMicrotask(() => {
-            const currentView = viewRef.current;
-            if (!visibleRef.current || !currentView) return;
-            currentView.dispatch({
-              changes: {
-                from: 0,
-                to: currentView.state.doc.length,
-                insert: draft.source,
-              },
-            });
-          });
+          compile(draft.source);
           if (publication)
             queueMicrotask(() => {
               void publishRef.current();
@@ -509,7 +527,7 @@ export default function SqlDocEdit({ ritualId }: { ritualId: string }) {
         runtime.coordinator.finish(operation);
       }
     },
-    [ritualId, showScriptHandle],
+    [compile, ritualId, showScriptHandle],
   );
 
   React.useEffect(() => {
