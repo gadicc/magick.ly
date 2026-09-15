@@ -84,34 +84,6 @@
       "sensitive": true
     },
     {
-      "name": "legacy public file endpoint",
-      "keys": ["AWS_S3_ENDPOINT_URL"]
-    },
-    {
-      "name": "legacy public file bucket",
-      "keys": ["AWS_S3_DEFAULT_BUCKET"]
-    },
-    {
-      "name": "legacy public file region",
-      "keys": ["AWS_REGION_APP", "AWS_REGION"]
-    },
-    {
-      "name": "legacy public file access key",
-      "keys": ["AWS_ACCESS_KEY_ID_APP", "AWS_ACCESS_KEY_ID"],
-      "placeholder": {
-        "key": "AWS_ACCESS_KEY_ID_APP",
-        "kind": "secret"
-      }
-    },
-    {
-      "name": "legacy public file secret key",
-      "keys": ["AWS_SECRET_ACCESS_KEY_APP", "AWS_SECRET_ACCESS_KEY"],
-      "placeholder": {
-        "key": "AWS_SECRET_ACCESS_KEY_APP",
-        "kind": "secret"
-      }
-    },
-    {
       "name": "chat generation and embeddings",
       "keys": ["OPENAI_API_KEY"],
       "placeholder": {
