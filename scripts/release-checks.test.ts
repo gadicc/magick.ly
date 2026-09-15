@@ -56,7 +56,7 @@ function harness(replies: Array<unknown | Response>, overrides = {}) {
 
 describe("production release state checks", () => {
   it("rejects old unresolved promotions without the CLI's age cutoff", async () => {
-    const { checks } = harness([
+    const { checks, calls } = harness([
       {
         ...project,
         lastAliasRequest: {
@@ -68,6 +68,9 @@ describe("production release state checks", () => {
     ]);
     await expect(checks.preflight()).rejects.toThrow(
       "previous alias change remains unresolved",
+    );
+    expect(calls[0][0]).toBe(
+      "https://api.vercel.com/v9/projects/project?rollbackInfo=true&teamId=team",
     );
   });
   it("accepts settled previous promotions but refuses rolling release configuration", async () => {
@@ -167,6 +170,17 @@ describe("production release state checks", () => {
       completed,
     ]);
     await checks.promoted();
+    expect(
+      calls
+        .filter(([url]) => url.includes("/v9/projects/"))
+        .map(([url]) => url),
+    ).toEqual(
+      Array.from(
+        { length: 3 },
+        () =>
+          "https://api.vercel.com/v9/projects/project?rollbackInfo=true&teamId=team",
+      ),
+    );
     expect(
       calls
         .filter(([url]) => url.startsWith("https://magick.ly/"))

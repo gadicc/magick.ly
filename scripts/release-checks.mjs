@@ -30,20 +30,22 @@ export function createReleaseChecks(env, options = {}) {
   const projectId = required("VERCEL_PROJECT_ID");
   const teamId = required("VERCEL_ORG_ID");
   const api = async (path) => {
-    const response = await request(
-      `https://api.vercel.com${path}?teamId=${encodeURIComponent(teamId)}`,
-      {
-        headers: { Authorization: `Bearer ${required("VERCEL_TOKEN")}` },
-        redirect: "error",
-        signal: AbortSignal.timeout(30_000),
-      },
-    );
+    const url = new URL(path, "https://api.vercel.com");
+    url.searchParams.set("teamId", teamId);
+    const response = await request(url.href, {
+      headers: { Authorization: `Bearer ${required("VERCEL_TOKEN")}` },
+      redirect: "error",
+      signal: AbortSignal.timeout(30_000),
+    });
     if (!response.ok)
       throw new Error(`Release provider check failed (${response.status})`);
     return response.json();
   };
   const project = async () => {
-    const value = await api(`/v9/projects/${encodeURIComponent(projectId)}`);
+    // Vercel omits lastAliasRequest unless this expanded projection is requested.
+    const value = await api(
+      `/v9/projects/${encodeURIComponent(projectId)}?rollbackInfo=true`,
+    );
     if (
       value.id !== projectId ||
       value.accountId !== teamId ||
