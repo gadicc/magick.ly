@@ -1,146 +1,82 @@
 # Modernization status
 
-Updated 15 September 2026. This is the current status; the implementation ledger
-retains historical checkpoints and their original limitations.
+Updated 15 September 2026. This page is the current status. The
+[resume checkpoint](025-pause-checkpoint.md) records the exact continuation
+boundaries. The [implementation ledger](002-implementation-ledger.md) and the
+other numbered plans retain dated evidence; their present-tense limitations are
+historical and do not override this page.
 
-The operator resumed a bounded local session after the usage-conservation pause.
-Deployment and cutover work remain deferred. See the exact
-[resume checkpoint](025-pause-checkpoint.md) before continuing.
+Modernized commit `8ad3a978429ae35d31edd238b7aac4410358485e` is serving
+Production from Vercel deployment `dpl_6TcqMFzJtFkNyjiniRxZYx3Hctfz` in London.
+Both the project Production target and `magick.ly` resolve to that exact ready
+deployment. Normal application writes are open. A verified persistent firewall
+rule denies legacy `/api/file2` writes, including normalized path variants, while
+ordinary reads remain available. The traffic switch has happened; final cutover
+acceptance and retirement are still in progress.
 
-Latest checkpoint: local temple/admin, private upload/publication, offline image
-reading and expired-source locking pass. The study reconnect race is fixed and
-passes the rebuilt browser journey in `3586b18`. Permission retry fix `803c234`
-passes ordinary online reload after revocation, followed by offline direct and
-catalog denial. The image-bearing v4 journey also passes: a rendered image with
-matching bytes and one cached asset is removed on ordinary reload after
-revocation, and remains absent offline. CodeMirror initialization is fixed in
-`984301b`; 38 focused tests, Node 24 types and Biome pass, and the new regression
-fails against the old source. Real editor confirmation awaits the next build.
-The last full suite passed 4,335 tests with 16 opt-in tests skipped, full
-TypeScript and Biome before this focused fix. Loom 1.27.0 is published and adopted in Magickly (`388123d`),
-Porty (`7a3eac1`) and Shadowlang (`033b173`); reference-app commits stay local.
-Local storage acceptance support is committed in `88387cd`. See
-[local acceptance](024-local-acceptance.md). Production has not changed.
+The final fenced Mongo snapshot was imported into Production SQL and replayed
+against its completed fingerprint without allocating new identities. All ten
+reviewed legacy file mappings are active and their public bytes, hashes and media
+types reconcile. Do not rerun the importer or relocation activation. The dedicated
+legacy Mongo principal remains restricted to exactly `readAnyDatabase@admin`; its
+safe zero-match write probe was denied by Atlas. Do not restore its write role.
 
-| Area | Completed and verified | Remaining |
+GitHub release run `34973396659`, attempt 2, completed its build, artifact scan,
+Production staging, migrations, staged runtime checks, import gate and promotion.
+Only its original final checker failed because the Vercel project request omitted
+the `rollbackInfo=true` projection that exposes `lastAliasRequest`. Independent
+recovery receipt `production-release-recovery.json` then verified the terminal
+promotion, exact deployment, stable alias and anonymous runtime; its receipt hash
+starts `d675bc3501d3`. The corrected checker is local commit `d295164` and has not
+yet been pushed. Runtime and release-policy cleanup is reviewed in local commit
+`651f1a1`; it is also unpushed. The failed CI attempt remains failed, and a later
+successful release run is still required.
+
+| Area | Current verified state | Remaining |
 | --- | --- | --- |
-| Tooling and framework | pnpm, Biome, Vitest, App Router, current React/MUI, Loom 1.27.0; integrated tests, types and Biome pass; previous standalone build and live SVG/PNG and legacy rendering pass | Rebuilt acceptance candidate and remaining authenticated browser journeys |
-| Database and import | UUIDv7 schemas, 17 migrations rehearsed on Neon, protected resumable import and reconciliation; separate empty Preview root migrated through 0016, including the relocation schema | Final consistent production snapshot/import |
-| Authentication | Better Auth runtime, fresh SQL identity, import readiness gate, coordinated sign-out; two real Google sign-ins verified with new Preview SQL accounts/sessions | Two-account permissions/offline acceptance; one-time user reauthentication at cutover |
-| Administration and integrations | SQL temple/group administration and Discourse mapping; Pinecone remains authoritative | Deployed acceptance and retirement of unused credentials after checking scope |
-| Study | Durable account/anonymous projections and idempotent SQL receipts; cached identity cannot assign ownership; cold offline reload and exactly-once reconnect pass in a production-build browser journey | Production smoke after cutover |
-| Private offline reading | Fourteen-day leases, source/draft locks, sign-out purge, image dependency handling, offline discovery | Full deployed/offline journey with published bundles |
-| Files and publication | Private scoped upload/read services; legacy public URLs preserved; durable publication/backfill; separate R2 credentials installed; ten legacy objects copied and verified, with readers supporting verified relocation | Final source reconciliation and SQL mapping activation; real upload/publication acceptance |
-| Ritual editing | JRT/source editor integration `584e9c6`; ordinary-editor renewal of definitively expired attempts `e9b66ff`, retaining old evidence and exact retries | Browser/deployed acceptance against real publication storage |
-| Legacy retirement | Old polling endpoint fenced; browser recovery retained; replaced auth/editors/upload helpers and unused dependencies retired in `ba1a487`; operator confirms Mongo user is dedicated to Magickly | Apply and verify the approved write pause at cutover; retire old credentials/storage after verification |
-| Release | Reviewed staged workflow committed `6d7741d`; exact production Trusted Sources rule and protected GitHub project credential applied; isolated Preview database connection, native branch probe and cleanup verified | Full application Preview journeys, verified writer pause, staged acceptance and production promotion |
-| Reusable Loom skill | Generic draft and references under `.loom/drafts/modernize-app`; validator passes | Final lessons and independent evaluation; save into Loom only after modernization finishes |
+| Runtime and release | Exact modern Production deployment is ready in `lhr1`; project target and public alias match; independent recovery passed | After Production acceptance and legacy-setting cleanup, push the two reviewed follow-up commits and obtain a clean deployed release run |
+| Database and import | Seventeen migrations and the final private-data import are complete; completed-fingerprint replay is unchanged | Production browser acceptance; preserve immutable import and backup receipts |
+| Files and legacy routes | Ten SQL file mappings are active; public legacy files reconcile; permanent legacy-write firewall passed 98 edge observations and 14 strict same-host normalizations | Run the bounded backfill for up to five imported rituals, then verify their online and offline reads |
+| Authentication and private access | Real Preview Google OAuth, two-account authorization, private image upload/save/publication and offline reload passed | Complete Production Google OAuth and the bounded Production account/permission journeys |
+| Study and offline lifecycle | Local production-build cold offline and exactly-once reconnect passed; deployed Preview private offline reading passed | Confirm the selected Production journeys after bundle backfill |
+| Chat and Discourse | Live chat passed against the retained corpus. The replacement Discourse key is Production-only, rotated and validated through bounded read-only routes | Verify required Production integration behavior without sending test forum mutations |
+| Writer and rollback safety | Application writes are open; legacy file writes stay denied; Mongo is read-only; final backup and reconciliation receipts are retained | Keep legacy authorities available only for the rollback window, without restoring them as writers |
+| Retirement | Legacy runtime use is bounded and current environment metadata is captured | Remove legacy environment entries after acceptance; identify and retire the dedicated old R2 token and Mongo credential under the rollback policy while preserving the old bucket and backups |
+| Reusable Loom skill | The generic modernization skill remains an ignored, validated draft | Final review and evaluation after cutover completion; only then save and commit it into Loom |
 
-Production has not switched. The main Neon branch still has only migrations
-0000–0001 and no private import. The two new R2 buckets are private. Separate
-application credentials passed own-bucket PUT/GET and cross-bucket read-denial
-checks; all synthetic objects were removed. Matching Vercel settings are verified.
-London/London is the approved destination.
+Preview acceptance used two real Google accounts and the isolated Preview database.
+It covered temple authorization, private upload/save/publication, image rendering
+and offline reload. Revocation, expiry and image-purge behavior passed separate
+local production-build browser tests. The live chat check also completed without
+writing the retained corpus. These checks support the Production rollout but do
+not replace the remaining Production OAuth, bundle backfill and browser acceptance.
 
-The operator approved the production-only GitHub OIDC Trusted Sources rule,
-GitHub Production release configuration, separate private R2 credentials, and
-legacy file relocation/retirement preparation. The exact Trusted Sources rule
-and R2 settings were applied and verified on 14 September. GitHub Production
-now permits only `master` and has a verified project-scoped deployment token
-expiring 13 December. Shared credential/trust improvements shipped in Loom 1.26.0;
-Magickly subsequently adopted the 1.26.1 artifact-verifier fix. Full deployment
-acceptance remains pending. The original `magickli-db` resource is now
-Production-only, and the distinct London
-`magickli-preview-db` resource is connected only to Preview with Sensitive
-variables and the required Neon Preview action. An isolated native deployment
-created a child of the sanitized Preview root. Its runtime-reported pooled and
-direct host/database hashes matched that exact child, while separate read-only
-SQL checks found 17 migrations, 36 application tables and zero rows on both the
-child and root. Production remained at two migrations and zero aliases. The
-temporary deployment, child branch and endpoint were then confirmed absent;
-both roots and the live Production deployment remained unchanged.
+The replacement Discourse credential is installed as a Production Sensitive
+setting and the revoked predecessor was not restored. Read-only groups, admin and
+staff-log capabilities were validated. The remaining acceptance must not create
+forum messages, invitations or synthetic users merely to prove connectivity.
 
-The full app Preview environment has since been configured and an isolated
-child imported with invented fixtures. Prepare, apply, reconciliation and an
-identical retry pass; the sanitized root remains empty and Production retains
-its original two migrations. The native full-app build from `918eb883` passed
-compilation, TypeScript and output generation. Its deployment and same-source
-retry failed Vercel's post-build `patchBuild` step with `patch_build_4xx` and an
-internal-error reason.
-A fresh isolated install and `vercel build --standalone` produced a complete,
-self-contained artifact from the same source. Independent review verified all
-mapped references and symlinks and found no build-placeholder markers. Its
-prebuilt upload, `dpl_HSC6uXqHhZNPqMeUqnfZmmTf94ia`, reached `READY` in `lhr1`.
-The stable Preview alias is assigned. The home page loads and the guarded auth
-endpoint successfully reads SQL before returning the expected anonymous result.
-The operator added the exact Google callback and successfully signed in through
-real Google OAuth. Two-account permissions, upload/publication and offline
-acceptance remain outstanding.
-The native post-build error's underlying cause is still unproven. Deployed SVG
-and PNG requests exposed a missing packaged WASM asset. Fix `e8dcfcc` passes
-actual routes from a fresh standalone build. Creating the QA temple succeeded
-atomically, but its redirected page failed RSC serialization of a Next Link
-function passed to MUI. Fix `47d521d` removes that boundary error on five server
-pages; 4,255 tests, types and Biome pass. Both fixes are now in the frozen
-Loom 1.26.1 standalone build deployed as `dpl_5PJAB3NodZAdquB9bgwTDRmvF7nq`
-in London. Live canonical SVG, PNG and legacy SVG pass and match the local
-built-route hashes; unknown slugs still return 400. The stable Preview alias now
-points to this deployment and passes the same checks. Both OAuth sign-ins and
-the single QA temple/admin membership remain in the exact Preview child.
-The operator confirmed that the existing temple page loads and its join code
-saves. The remaining permissions/offline journeys are moving to automated local
-production-build tests with synthetic sessions, with a smaller deployed
-integration acceptance pass retained.
+The persistent legacy-upload edge check has passed. Its earlier `308` response for
+a doubled-slash path was a same-host normalization to the canonical path, whose
+write was then denied. The final checker follows only that strict normalization;
+it does not accept arbitrary redirects.
 
-The earlier inert hash-only route proved injection of the intended Preview
-hosts and database name without opening PostgreSQL. The current app's guarded
-auth query now proves runtime SQL authentication and import readiness. Provider
-metadata confirms the expected Preview connection, branch ancestry and endpoint,
-but does not expose which exact endpoint credential was attached to this app
-deployment; that attribution remains a narrower evidence limit. The operator also rotated the Production database password and the
-protected GitHub migration secret has been refreshed through Loom. Both database
-URLs are Sensitive, so the readable migration fallback is no longer available.
-GitHub Production now contains the verified direct
-`MIGRATION_DATABASE_URL_UNPOOLED` secret and its expected-role metadata, installed
-through Loom from authenticated Neon access. It uses the existing database owner
-transitionally; a separate role needs a reviewed ownership/grants migration.
-The earlier local build's marker check covered physical output but omitted
-externally mapped dependencies. That evidence is superseded by the fresh
-standalone artifact's complete-reference review and successful Preview upload.
-The shared Loom verifier fix adds mapped-file and symlink scanning. It shipped
-as 1.26.1 from `3ff7266` after explicit publication approval; Magickly adopted it
-and the standalone release-build flag in `ea50786`. Frozen installation, Loom's
-production check and the published verifier pass. The current
-1.26.1 candidate with both acceptance fixes passes the integrated suite, final
-standalone build and public deployed checks. Authenticated journeys and the
-complete GitHub release still need acceptance. See
-[the completion decisions](022-release-and-storage-completion.md).
+## Next gates
 
-After the relocation unit and Loom 1.26.0 adoption, the integrated candidate
-passes 4,255 tests (14 opt-in Mongo tests skipped), with 158 passing test files.
-Its production build, TypeScript and Biome pass in an isolated copy using
-synthetic build-only configuration. The earlier 4,238-test coverage run passed
-all existing per-module gates; its selected instrumented modules had 97.97% statement, 96.47% branch, 99.60% function and
-99.04% line coverage. This is not whole-application or browser-journey coverage.
-The [final live rehearsal](023-final-migration-rehearsal.md) also passes all
-17 migrations and source-free import/retry checks; its disposable branch was
-deleted and the main branch remained unchanged. Loom's local production check passes with
-pnpm-11 migration advice while this app remains pinned to pnpm 10.
+1. Complete Production Google sign-in and verify the existing imported account,
+   temple and ritual access.
+2. Run the bounded backfill for up to five imported rituals and verify current
+   permission, image and offline behavior without replaying the primary import.
+3. Finish the bounded Production acceptance journeys.
+4. Remove the reviewed legacy runtime environment settings while the accepted
+   `8ad3a978` deployment remains immutable. Preserve shared Development scopes.
+5. Push reviewed commits `d295164` and `651f1a1`, then obtain a fully successful
+   CI release and deployed verification without the retired settings.
+6. Retire the dedicated legacy credentials only after their identity and rollback
+   conditions are satisfied. Preserve the old bucket and backups until a separate
+   retention decision is authorized.
+7. Reconcile, independently evaluate, save and commit the generic Loom skill after
+   the modernization is complete.
 
-Current production is still deployment `dpl_9m7ojZk6FZMJoCKsELDe53qiQkRp`,
-commit `f51a84dd1a7177cfb54c20372f0f89a614651a74`. Read-only inspection confirms
-its Mongo credential has `readWriteAnyDatabase` on a replica set. The operator
-confirmed on 14 September that this user is dedicated to Magickly and approved
-stopping writes at the appropriate final backup/import time. No credential or
-role has been changed. The
-[cutover writer review](020-cutover-writers.md) records the required scope check.
-
-Earlier Sol agents reached the account usage limit; root completed that local
-verification and its commits. Sol implementation delegation has resumed for the
-new release and relocation work. No reset credit was consumed. The generic skill remains an ignored,
-validated draft until the full modernization, including production cutover,
-actually finishes.
-
-WYSIWYG editing and realtime collaboration remain deferred. The current migration
-preserves the source editor and JRT rather than changing document format during
-the storage/authentication cutover.
+WYSIWYG editing and realtime collaboration remain deferred. The migration retains
+the JRT source editor and existing document format.
