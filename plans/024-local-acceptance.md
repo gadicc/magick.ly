@@ -67,15 +67,36 @@ reader's grade: the permission request returns a signed denial, the rendered
 ritual disappears, and its cached bundle is removed. A later offline direct
 reload remains unavailable and the offline catalog is empty. This receipt had
 zero cached images before revocation, so it does not establish image removal;
-an image-present rerun remains outstanding. Revision v4 subsequently published
+an image-present rerun was still outstanding. Revision v4 subsequently published
 with one verified image asset, but the operator paused work before the reader
 download. All eight committed files match the runtime's frozen source manifest.
+
+On 15 September the image-present rerun passed on that unchanged build. The
+reader downloaded v4 and rendered the 1,878-byte, 16×16 image from a Blob URL;
+its SHA-256 matched the uploaded fixture, and IndexedDB held one bundle and one
+asset. After the creator changed the reader's grade from two to zero through
+the membership UI, an ordinary online reload obtained a denial and removed
+both. A later offline direct reload showed no ritual or Blob image, the catalog
+was empty, and an actual network fetch failed. The browser was restored online.
+Receipt: `output/playwright/local-acceptance/image-revocation-20260915.json`.
 
 The creator editor exposed a separate initialization defect: source and draft
 storage contained the saved source while CodeMirror appeared blank. The one-shot
 source dispatch can precede view creation. Inserting the existing attachment
-preserved and displayed the full source, so no data loss was observed. The fix
-and delayed-view/lock regression tests have not been started.
+preserved and displayed the full source, so no data loss was observed.
+
+Fix `984301b` waits for the view and rechecks live access/draft identity before
+inserting source. Loaded source compiles explicitly, and the synchronous fill
+does not persist as a user edit. Independent root review found no blocking issue.
+The corrected mock delays view creation; tests cover initial text/preview,
+locking before creation, regranting new source, and existing edits/save flows.
+The focused run passes 38 tests, Node 24.21 typechecking and two-file Biome.
+An old-code negative run fails at the expected blank-source assertion; its log
+is `/tmp/magickli-local-acceptance/editor-init-old-code-negative-oskq4__i.log`.
+Positive runs were observed in the implementation agent's terminal without
+persisted logs. Root verified the restored source/test hashes before committing.
+The production browser check remains for the next build; no build or deployment
+was run during this bounded session.
 
 Study reviews persisted under the reader account online and offline, including
 after an offline restart of a fully cached document. Three reviews eventually

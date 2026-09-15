@@ -1,21 +1,23 @@
 # Modernization status
 
-Updated 14 September 2026. This is the current status; the implementation ledger
+Updated 15 September 2026. This is the current status; the implementation ledger
 retains historical checkpoints and their original limitations.
 
-**Paused at the operator's request to conserve usage.** No implementation,
-build, deployment or agent work is running. See the exact
+The operator resumed a bounded local session after the usage-conservation pause.
+Deployment and cutover work remain deferred. See the exact
 [resume checkpoint](025-pause-checkpoint.md) before continuing.
 
 Latest checkpoint: local temple/admin, private upload/publication, offline image
 reading and expired-source locking pass. The study reconnect race is fixed and
 passes the rebuilt browser journey in `3586b18`. Permission retry fix `803c234`
 passes ordinary online reload after revocation, followed by offline direct and
-catalog denial. Image-bearing revision v4 is published locally; its reader
-download/revocation check is paused. A separate initial CodeMirror display race
-is reproduced but not yet fixed.
-The integrated candidate passes 4,335 tests with 16 opt-in tests skipped, full
-TypeScript and Biome. Loom 1.27.0 is published and adopted in Magickly (`388123d`),
+catalog denial. The image-bearing v4 journey also passes: a rendered image with
+matching bytes and one cached asset is removed on ordinary reload after
+revocation, and remains absent offline. CodeMirror initialization is fixed in
+`984301b`; 38 focused tests, Node 24 types and Biome pass, and the new regression
+fails against the old source. Real editor confirmation awaits the next build.
+The last full suite passed 4,335 tests with 16 opt-in tests skipped, full
+TypeScript and Biome before this focused fix. Loom 1.27.0 is published and adopted in Magickly (`388123d`),
 Porty (`7a3eac1`) and Shadowlang (`033b173`); reference-app commits stay local.
 Local storage acceptance support is committed in `88387cd`. See
 [local acceptance](024-local-acceptance.md). Production has not changed.

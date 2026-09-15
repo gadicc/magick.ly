@@ -1,9 +1,15 @@
-# Pause checkpoint — 14 September 2026
+# Resume checkpoint — 15 September 2026
 
 The operator requested a temporary pause with 10% usage remaining. All agents
 stopped; no new work should run until requested. Production remains legacy
 deployment `dpl_9m7ojZk6FZMJoCKsELDe53qiQkRp`. No maintenance fence, Mongo role
 change, final backup/import, or modernized Production promotion has occurred.
+
+On 15 September the operator resumed a bounded local session. The image
+revocation journey below is complete and editor initialization fix `984301b`
+is reviewed, tested and committed. No agent remains active. The next step is
+building this exact reviewed source and confirming the real editor, then
+refreshing Preview. Deployment and cutover remain deferred.
 
 ## Saved implementation
 
@@ -14,8 +20,9 @@ change, final backup/import, or modernized Production promotion has occurred.
 - Ritual permission retries are committed in `803c234`. All eight committed
   files match the frozen browser runtime manifest. Full suite: 4,335 passing,
   16 skipped; focused regressions and canonical Node 24 types pass.
-- No application code is left half-edited. The initial CodeMirror display fix
-  is pending, not implemented.
+- Editor initialization fix `984301b` passes 38 focused tests, Node 24.21 types
+  and Biome. The delayed-view regression fails against the old source. No
+  application code is left half-edited; real browser confirmation is pending.
 
 ## Resume the local acceptance work
 
@@ -33,28 +40,31 @@ The exact remaining image journey is prepared:
 
 - Temple: `01a0a0ed-61ad-762d-9a6c-55437a96bd0b`.
 - Ritual: `01a0a0f9-0de5-75d8-aac9-fa08f6c7a06f`.
-- Reader: `019a0000-0000-7000-8000-000000000002`, grade 2, not admin.
+- Reader: `019a0000-0000-7000-8000-000000000002`, now grade 0, not admin.
 - Revision v4: `01a0a149-1323-7465-a79e-bb46bad9723d`.
 - Published bundle: `01a0a149-12ec-7cf1-85d9-ddce87794c02`, one verified asset.
-- `magickli-reader-final3` is online at the offline catalog with its earlier
-  revoked cache purged. It has not downloaded v4. `magickli-creator-final2` is
+- `magickli-reader-final3` is online at the offline catalog with v4 and its
+  image purged after successful revocation. `magickli-creator-final2` is
   online at the editor; `magickli-creator-final` is online at temple admin.
 
-First download v4 as reader and prove the actual image renders with a positive
-cached asset count. Then lower the reader to grade zero through creator UI,
-perform an ordinary online reload, and prove denial, bundle/image removal and
-offline direct/catalog absence. Earlier ordinary revocation passed, but that
-revision contained no image; do not claim image purge from its zero baseline.
-Receipt: `/tmp/magickli-local-acceptance/final-revocation-result.json`.
+The v4 image journey passed on 15 September: a rendered 1,878-byte, 16×16 Blob
+image matched the upload SHA-256, with one cached bundle and asset. Creator UI
+revocation followed by an ordinary online reload removed both; offline direct
+and catalog access stayed unavailable, with a failed network probe proving the
+offline condition. The reader was restored online. Preserve the receipt at
+`output/playwright/local-acceptance/image-revocation-20260915.json`; there is no
+need to repeat this unchanged-runtime journey. The earlier text-only result is
+`/tmp/magickli-local-acceptance/final-revocation-result.json`.
 
-Next fix the initial editor display race in `SqlDocEdit.tsx` and its tests.
-Source POST and IndexedDB held the saved source while the real CodeMirror DOM
-was blank: `load()` dispatches once in a microtask before `viewRef` may exist.
-The eager mock concealed this lifecycle gap. Preserve initial compilation,
-lock-before-view creation, regrant isolation, and user edits. Controlled uiw
-value changes suppress `onChange`, so compilation cannot silently rely on it.
-Run focused tests/types, obtain adversarial review, commit, then verify the real
-editor before making the final Preview artifact.
+The initial editor race is fixed in `984301b`: the one-shot microtask could run
+before `viewRef` existed. A small layout synchronization reads current access
+and draft refs when the initially empty view arrives; it suppresses persistence
+for that synchronous fill. The gated source load compiles explicitly. Regression
+tests cover delayed initialization, lock-before-view and regrant isolation;
+existing user-edit/save flows pass. The old-source failure log is
+`/tmp/magickli-local-acceptance/editor-init-old-code-negative-oskq4__i.log`.
+Do not repeat the source investigation; verify the actual editor after the next
+reviewed production build. The existing 3115 runtime still serves `803c234`.
 
 ## Prepared Preview build
 
@@ -62,7 +72,8 @@ Packet: `output/preview-refresh-803c234/` (ignored, mode 0700). It contains a
 clean isolated checkout, frozen dependencies with published Loom 1.27.0, and
 verified synthetic inputs. No standalone build, provider access or upload ran.
 Use the existing dependency tree after updating this unbuilt checkout to the
-new reviewed commit and rebinding its provenance. Do not allocate another full
+new reviewed commit `984301b` (or its documentation-only descendant) and
+rebinding its provenance. Do not allocate another full
 dependency tree unnecessarily: `/tmp` previously ran short of inodes.
 
 The first install used pnpm's embedded Node 20 and issued an engine warning.
