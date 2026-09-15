@@ -76,8 +76,9 @@ describe("SVG compatibility bytes and actual corpus", () => {
         result.status === "validated" ? undefined : JSON.stringify(result),
       ).toMatchObject({ status: "validated" });
       if (result.status !== "validated") throw Error("expected validation");
-      expect(result.bytes).toEqual(new Uint8Array(before));
-      expect(bytes).toEqual(before);
+      // Native comparisons retain exactness without walking every byte in Vitest.
+      expect(before.equals(result.bytes)).toBe(true);
+      expect(bytes.equals(before)).toBe(true);
       expect(result.embeddedRasters).toHaveLength(
         name === "theoricus1" ? 1 : name === "theoricus2" ? 3 : 0,
       );
@@ -86,8 +87,10 @@ describe("SVG compatibility bytes and actual corpus", () => {
         expect(embedded.decodedPixels).toBeGreaterThan(0);
       }
       expect(
-        await readFile(`${process.cwd()}/public/pics/${name}.svg`),
-      ).toEqual(before);
+        (await readFile(`${process.cwd()}/public/pics/${name}.svg`)).equals(
+          before,
+        ),
+      ).toBe(true);
     }, 15_000);
   }
   it("supports namespace-equivalent prefixes without depending on a particular xmlns prefix", async () => {
