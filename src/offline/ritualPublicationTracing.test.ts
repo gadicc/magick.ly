@@ -1,4 +1,13 @@
-import { existsSync, realpathSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+} from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import nextConfig from "../../next.config";
@@ -14,6 +23,20 @@ const tracedWasm = `./${path
   .relative(process.cwd(), realpathSync(linkedWasm))
   .split(path.sep)
   .join("/")}`;
+const trace = (file: string) =>
+  `./${path.relative(process.cwd(), realpathSync(file)).split(path.sep).join("/")}`;
+const cssTreeDirectory = path.dirname(
+  realpathSync(path.join(process.cwd(), "node_modules/css-tree/package.json")),
+);
+const cssTreeData = path.join(cssTreeDirectory, "data/patch.json");
+const mdnDirectory = realpathSync(path.join(cssTreeDirectory, "../mdn-data"));
+const sourceMapDirectory = realpathSync(
+  path.join(cssTreeDirectory, "../source-map-js"),
+);
+const mdnData = ["at-rules.json", "properties.json", "syntaxes.json"].map(
+  (file) => path.join(mdnDirectory, "css", file),
+);
+const tracedCssData = [cssTreeData, ...mdnData].map(trace);
 const fonts = [
   "NotoSans-Regular.ttf",
   "NotoSansHebrew-Regular.ttf",
@@ -31,7 +54,9 @@ describe("server image resource tracing", () => {
         (pathname) => `./public${pathname}`,
       ),
       ...rendererResources,
+      ...tracedCssData,
     ];
+    expect(config.serverExternalPackages).toContain("css-tree");
     for (const route of rendererRoutes)
       expect(config.outputFileTracingIncludes?.[route]).toEqual(
         rendererResources,
@@ -53,5 +78,57 @@ describe("server image resource tracing", () => {
       expect(existsSync(path.join(process.cwd(), "public/fonts", file))).toBe(
         true,
       );
+    for (const file of tracedCssData) {
+      expect(path.resolve(file)).toBe(realpathSync(path.resolve(file)));
+      expect(existsSync(path.resolve(file))).toBe(true);
+    }
+  });
+
+  it("loads the complete external CSS parser from an isolated package graph", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "magickli-css-tree-runtime-"));
+    const modules = path.join(root, "node_modules");
+    const cssDestination = path.join(modules, "css-tree");
+    const mdnDestination = path.join(modules, "mdn-data");
+    const sourceMapDestination = path.join(modules, "source-map-js");
+    try {
+      mkdirSync(path.join(cssDestination, "data"), { recursive: true });
+      cpSync(
+        path.join(cssTreeDirectory, "package.json"),
+        path.join(cssDestination, "package.json"),
+      );
+      cpSync(
+        path.join(cssTreeDirectory, "cjs"),
+        path.join(cssDestination, "cjs"),
+        {
+          recursive: true,
+        },
+      );
+      cpSync(cssTreeData, path.join(cssDestination, "data/patch.json"));
+      mkdirSync(path.join(mdnDestination, "css"), { recursive: true });
+      cpSync(
+        path.join(mdnDirectory, "package.json"),
+        path.join(mdnDestination, "package.json"),
+      );
+      for (const file of mdnData)
+        cpSync(file, path.join(mdnDestination, "css", path.basename(file)));
+      mkdirSync(sourceMapDestination, { recursive: true });
+      cpSync(
+        path.join(sourceMapDirectory, "package.json"),
+        path.join(sourceMapDestination, "package.json"),
+      );
+      cpSync(
+        path.join(sourceMapDirectory, "lib"),
+        path.join(sourceMapDestination, "lib"),
+        { recursive: true },
+      );
+
+      const isolatedRequire = createRequire(path.join(root, "probe.cjs"));
+      expect(isolatedRequire.resolve("css-tree").startsWith(root)).toBe(true);
+      const css = isolatedRequire("css-tree") as typeof import("css-tree");
+      expect(css.parse("a { color: red }").type).toBe("StyleSheet");
+      expect(css.lexer.matchProperty("color", "red").matched).not.toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

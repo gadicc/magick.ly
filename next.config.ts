@@ -21,11 +21,24 @@ const resvgWasmTraceFile = `./${path
   .split(path.sep)
   .join("/")}`;
 
+const physicalTraceFile = (file: string) =>
+  `./${path.relative(process.cwd(), realpathSync(file)).split(path.sep).join("/")}`;
+const cssTreeDirectory = path.dirname(
+  realpathSync(path.join(process.cwd(), "node_modules/css-tree/package.json")),
+);
+const cssTreeDynamicDataTraceFiles = [
+  path.join(cssTreeDirectory, "data/patch.json"),
+  ...["at-rules.json", "properties.json", "syntaxes.json"].map((file) =>
+    path.join(cssTreeDirectory, "../mdn-data/css", file),
+  ),
+].map(physicalTraceFile);
+
 const ritualPublicationTraceFiles = [
   // Next 16 resolves include values from the project root and route keys with picomatch.
   ...RITUAL_PUBLICATION_STATIC_PATHS.map((pathname) => `./public${pathname}`),
   "./public/fonts/*.ttf",
   resvgWasmTraceFile,
+  ...cssTreeDynamicDataTraceFiles,
 ];
 
 export default async function (phase: string): Promise<NextConfig> {
@@ -38,7 +51,9 @@ export default async function (phase: string): Promise<NextConfig> {
       })),
     // See also alternative with patch-package:
     // https://stackoverflow.com/a/77722836/1839099
-    serverExternalPackages: ["pdf-parse", "@resvg/resvg-wasm"],
+    // css-tree's ESM data entry uses createRequire(import.meta.url). Keep the
+    // package native so its relative data paths remain runtime-relative.
+    serverExternalPackages: ["pdf-parse", "@resvg/resvg-wasm", "css-tree"],
     outputFileTracingIncludes: {
       "/api/treeOfLife": ["./public/fonts/*.ttf", resvgWasmTraceFile],
       "/api/render/*": ["./public/fonts/*.ttf", resvgWasmTraceFile],
