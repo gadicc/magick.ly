@@ -328,6 +328,7 @@ describe("SQL ritual authorization/read repository", () => {
         "canEdit",
         "createdAt",
         "id",
+        "templeSlug",
         "title",
         "updatedAt",
       ]);
@@ -337,6 +338,32 @@ describe("SQL ritual authorization/read repository", () => {
     );
     expect(listed[0].createdAt).toBeNull();
     expect(listed[0].updatedAt).toEqual(when);
+  });
+
+  it("labels only authorized temple catalog rows without exposing temple identifiers", async () => {
+    const outsiderRows = await reader(actor.outsider).listMetadata();
+    expect(outsiderRows).toEqual([
+      expect.objectContaining({
+        id: ritualIds.public,
+        templeSlug: null,
+      }),
+    ]);
+
+    const memberRows = await reader(actor.gradeTwo).listMetadata();
+    expect(
+      Object.fromEntries(
+        memberRows.map((row) => [
+          Object.entries(ritualIds).find(([, id]) => id === row.id)?.[0],
+          row.templeSlug,
+        ]),
+      ),
+    ).toEqual({ public: null, two: "synthetic", zero: "synthetic" });
+
+    const globalRows = await reader(actor.global).listMetadata();
+    expect(
+      globalRows.find((row) => row.id === ritualIds.otherTemple)?.templeSlug,
+    ).toBe("other");
+    expect(JSON.stringify(globalRows)).not.toContain(otherTemple);
   });
 
   it("reloads current global, group and temple grants on every call", async () => {

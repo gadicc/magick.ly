@@ -1,6 +1,7 @@
 import { Edit } from "@mui/icons-material";
 import {
   Box,
+  Chip,
   Container,
   IconButton,
   Paper,
@@ -21,16 +22,19 @@ const builtInDocs = [
     id: "neophyte",
     title: "0=0 Grade of the Neophyte (Regardie, S.M.)",
     canEdit: false,
+    templeSlug: null,
   },
   {
     id: "zelator",
     title: "1=10 Grade of the Zelator (Regardie, S.M.)",
     canEdit: false,
+    templeSlug: null,
   },
   {
     id: "theoricus",
     title: "2=9 Grade of the Theoricus (Regardie, S.M.)",
     canEdit: false,
+    templeSlug: null,
   },
 ];
 
@@ -44,6 +48,7 @@ export default async function Rituals() {
       id: ritual.id,
       title: ritual.title,
       canEdit: ritual.canEdit,
+      templeSlug: ritual.templeSlug,
     })),
   ];
 
@@ -51,9 +56,10 @@ export default async function Rituals() {
     <Container maxWidth="sm">
       <Box>
         <p>
-          A collection of well publicized documents, remodelled for clearer
-          visibility and various form factors (e.g. mobile), with additional
-          helpful features. See a{" "}
+          A collection of public Golden Dawn documents, remodelled for clearer
+          visibility on mobile and other devices, with additional helpful
+          features. When signed in, this list also includes private rituals you
+          are currently authorized to read. See a{" "}
           <a href="https://www.youtube.com/watch?v=iEFiXtxPxu0">short demo</a>.
         </p>
         <TableContainer component={Paper}>
@@ -68,6 +74,13 @@ export default async function Rituals() {
                 <TableRow key={ritual.id}>
                   <TableCell scope="row">
                     <Link href={`/doc/${ritual.id}`}>{ritual.title}</Link>{" "}
+                    {ritual.templeSlug && (
+                      <Chip
+                        label={ritual.templeSlug}
+                        size="small"
+                        sx={{ mx: 0.5 }}
+                      />
+                    )}{" "}
                     {ritual.canEdit && (
                       <IconButton
                         size="small"
@@ -89,10 +102,9 @@ export default async function Rituals() {
         <SqlDocAdmin />
         <br />
         <p>
-          Note: You&apos;ll only find material here that is readily available
-          elsewhere. However, if you&apos;re the head of an order and want
-          private materials made available securely to your members, please
-          contact me.
+          To share private rituals with temple members, open{" "}
+          <Link href="/temples">My Temples</Link>. From there, you can join an
+          existing temple or create and manage one.
         </p>
         <p>
           Image credit:{" "}

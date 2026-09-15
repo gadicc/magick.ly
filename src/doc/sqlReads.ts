@@ -5,6 +5,7 @@ import type {
   PgQueryResultHKT,
   PgTransactionConfig,
 } from "drizzle-orm/pg-core";
+import { temples } from "../db/schema/memberships";
 import { ritualRevisions, rituals } from "../db/schema/rituals";
 import { isUuidV7 } from "../lib/ids";
 import {
@@ -36,6 +37,11 @@ export interface SqlRitualMetadata {
   createdAt: Date | null;
   updatedAt: Date | null;
   canEdit: boolean;
+}
+
+/** Catalog-only organization label, projected only after the ritual is readable. */
+export interface SqlRitualCatalogMetadata extends SqlRitualMetadata {
+  templeSlug: string | null;
 }
 
 /** Exact current archived renderer input, excluding source/history and import provenance. */
@@ -178,16 +184,19 @@ export function createSqlRitualReader(
 
   return {
     /** One batched grant load and one metadata query, regardless of ritual count. */
-    async listMetadata(): Promise<SqlRitualMetadata[]> {
+    async listMetadata(): Promise<SqlRitualCatalogMetadata[]> {
       return read(async (tx, actor) => {
         const rows = await tx
-          .select(parentFields)
+          .select({ ...parentFields, templeSlug: temples.slug })
           .from(rituals)
+          .leftJoin(temples, eq(temples.id, rituals.templeId))
           .where(isNotNull(rituals.currentRevisionId))
           .orderBy(asc(rituals.id));
         return rows.flatMap((row) => {
           const access = getRitualAccess(policy(row), actor);
-          return access.read ? [metadata(row, access)] : [];
+          return access.read
+            ? [{ ...metadata(row, access), templeSlug: row.templeSlug }]
+            : [];
         });
       });
     },
