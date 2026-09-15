@@ -1,88 +1,87 @@
-# Resume checkpoint — Production transition
+# Modernization closeout checkpoint
 
-Updated 15 September 2026. This supersedes the earlier paused-session and local-QA
-instructions previously kept in this file. Historical implementation evidence is
-preserved in the [implementation ledger](002-implementation-ledger.md),
-[release and storage plan](022-release-and-storage-completion.md),
+Updated 15 September 2026. See [current status](000-current-status.md) for the live
+result. Earlier [release/storage](022-release-and-storage-completion.md),
 [migration rehearsal](023-final-migration-rehearsal.md) and
-[local acceptance plan](024-local-acceptance.md).
+[local acceptance](024-local-acceptance.md) plans retain their historical scope.
 
-## Authoritative current state
+Production commit `4d9d10d37b5a3877d0f9230c5e75ff5a969c7e37` is served by ready
+London/Node 24 deployment `dpl_HHLsAXCa7vopfkqwiyVuqETkaaL2`.
+[Run 34994058815](https://github.com/gadicc/magick.ly/actions/runs/34994058815)
+completed successfully. The final collector verified its completed promotion,
+exact deployment/alias, eight environment changes and ten public legacy images
+through both alias and fresh deployment requests, with exact byte/hash/MIME/size
+parity. Receipt profile: `magickli-final-production-release-v1`; SHA-256:
+`bfce8ec354712b9beac6d7a168b039f69b60540349af2a9bc470b61b32cf8aab`.
 
-- Production serves commit `8ad3a978429ae35d31edd238b7aac4410358485e`
-  from ready London deployment `dpl_6TcqMFzJtFkNyjiniRxZYx3Hctfz`. The
-  Production target and `magick.ly` alias match it.
-- The final Production SQL import, unchanged completed-fingerprint replay and all
-  ten legacy file mapping activations are complete.
-- Normal application writes are open. The broad pause firewall is gone. The
-  persistent firewall denies legacy `/api/file2` writes and its final normalized
-  edge check passed.
-- The dedicated legacy Mongo user has exactly `readAnyDatabase@admin`; primary
-  majority reads passed and the targeted zero-match, `upsert:false` write was
-  denied. Keep it read-only.
-- Preview acceptance passed real Google OAuth with two accounts, private image
-  upload/save/publication and private offline reload. Revocation, expiry and image
-  purge passed separate local production-build browser tests. Live chat passed
-  against the existing providers and corpus.
-- The replacement Discourse key is installed for Production as Sensitive and
-  passed bounded read-only groups, admin and staff-log checks. The revoked key
-  remains revoked.
-- Release run `34973396659`, attempt 2, promoted the exact deployment but remains
-  failed because its final checker requested the reduced Vercel project response.
-  Independent recovery `production-release-recovery.json` (SHA-256 prefix
-  `d675bc3501d3`) passed with the expanded promotion projection.
-- Local commit `d295164` fixes that checker and passes its focused tests. Local
-  commit `651f1a1` contains the reviewed runtime and release-policy cleanup. Neither
-  commit is pushed or deployed; Production remains the immutable `8ad3a978` build.
-- The generic modernization skill remains unpublished under the ignored
-  `.loom/drafts/modernize-app` directory.
+Existing-account sign-in/navigation, all five imported publications with zero
+stops, private online/offline text and images, and new private upload acceptance
+already passed on `8ad3a978`. Do not repeat completed journeys solely because an
+older checkpoint still says pending.
 
-The Production traffic switch is real, but completion is pending Production OAuth,
-bounded backfill for up to five imported rituals, final browser acceptance,
-legacy-environment cleanup, credential retirement and a fully successful CI release.
+## Retired access and retained data
 
-## Immutable evidence and replay boundaries
+- Eight environment operations completed: actions 1/2 narrowed shared records to
+  Development only; recovery completed deletions 3–8. Receipt SHA-256:
+  `787ebaf4b1888925dbecfb3669e5142a693e229991021f90dd76f4909d7b4b1c`.
+- The obsolete Vercel release token was removed and independently verified, with
+  the replacement, other token identities and saved OAuth preserved. Result
+  SHA-256: `07d23afc8fb2bbcbd2469786ad7873d9ebb610bdc0e31d5171496be8f11c435d`.
+- The operator confirmed deletion of old R2 token `magickly` and Atlas database
+  user `magickli@admin`. No independent Mongo/R2 inventory is claimed.
+- The old database, bucket/object bodies and backups remain retained. Credential
+  retirement does not authorize deletion of those recovery assets.
 
-Keep the final backup, source comparison, import, reconciliation, promotion and
-firewall receipts under their existing private packets. In particular:
+Post-retirement acceptance passed on 15 September at 16:39–16:41 UTC. The
+`magickli-post-retirement-live-parity-v1` receipt verified the unchanged live
+identity, 20 byte/hash/MIME-matching responses and canonical Files 400/404 behavior
+(SHA-256 `76ea55ef3be8ea2a2cc612036a6c55085b6f6fe692da15aff9eae3ae35cb4a46`).
+The images were CDN-cached; earlier attempts correctly refused to label them
+fresh storage reads. A separate `magickli-post-retirement-r2-verification-v1`
+receipt verified all ten objects and 7,790,234 bytes through direct GETs with the
+replacement Production credential (SHA-256
+`9bf747d58d80284cecda401e66c47bca82a71133135aaa98427fa5ade6bf175a`).
+The prior exact-build fresh-runtime proof remains separately recorded.
 
-- `/tmp/magickli-cutover-20260915/evidence/production-release-recovery.json`
-  is independent recovery evidence; it does not turn the failed CI attempt into a
-  successful run.
-- `/tmp/magickli-cutover-20260915/evidence/06-persistent-waf-live.json` and
-  `06b-persistent-waf-verified.json` establish the persistent policy.
-- `production-persistent-file2-edge.json` establishes canonical and normalized
-  legacy-write denial. Its first stopped observation remains historical evidence,
-  not a bypass.
-- The final backup/import packets and their completed receipts are immutable.
-  Reuse their read-only evidence; do not regenerate their identities or reapply
-  their mutations.
+The R2, Discourse and Vercel temporary credential handoff files were removed after
+these checks, without changing provider settings or backups. Cleanup receipt
+SHA-256: `cc54da299fab7458b1b54b10d23ea117f2a2e6586d917db5e911e2c378936c8c`.
+Historical verification helpers that need those handoffs cannot be rerun without
+a new authorized credential source; preserve their non-secret evidence.
 
-Do not rerun the importer, relocation activation or promotion. Do not restore the
-legacy Mongo write role or remove the persistent legacy-upload rule. Do not reapply
-the earlier broad pause/import sequence as ordinary continuation; a future incident
-may require a separately reviewed forward-repair fence. A new release must use the
-corrected checker and the ordinary reviewed release workflow.
+## Preserve the recovery boundary
 
-## Continue from here
+Normal writes are open on SQL; the persistent legacy-upload write denial stays in
+place. Do not rerun the importer, relocation activation, completed backfill or old
+promotion. Do not restore Mongo write privileges or reapply the broad pause as
+routine continuation. Recovery after new writes must preserve acknowledged SQL
+work; restoring an old database snapshot alone is not a rollback.
 
-1. Use an existing imported operator account to complete Production Google OAuth
-   and verify account, temple and ritual identity.
-2. Run the bounded authenticated backfill for up to five imported rituals. Treat
-   primary imported revisions as already authoritative.
-3. Verify the bounded Production reader, editor, upload, offline and permission
-   journeys. No forum mutations are required for this acceptance.
-4. Remove only the reviewed legacy environment settings after accepting Production
-   `8ad3a978`. Preserve shared Development scopes where recorded.
-5. Push reviewed commits `d295164` and `651f1a1`, then require a fully successful
-   CI release and deployed verification without the retired settings.
-6. Identify the dedicated old R2 token in the operator account. Retire it and the
-   dedicated Mongo credential only after modern runtime independence and the
-   rollback window are accepted. Preserve the old bucket and backups until a
-   separate retention decision is authorized. The paused vector experiment remains
-   out of scope.
-7. Finalize and independently evaluate the generic modernization skill; save and
-   commit it into Loom only after the whole modernization is complete.
+Keep immutable backup/import, relocation, environment-recovery and firewall
+receipts. Preserve the failed CI history: `34973396659` attempt 2 promoted but
+failed a verifier missing `rollbackInfo=true`; independent recovery receipt
+prefix `d675bc3501d3` verified the live result. `34992906681` failed the SVG corpus
+timeout and skipped deployment. Only the subsequent `34994058815` is the fully
+successful final run.
 
-This documentation update changes no provider, database, runtime or credential
-state.
+## Shared skill and subsequent work
+
+Loom skill closeout is committed locally as
+`b3460006a8482270c4cb9427b6a6bd4af7c2d51e` (`modernize-app`). The full Deno
+suite passed (64 tests, 634 steps), formatting/lint and skill validation passed,
+and the npm build emitted exactly six matching resources with resolvable links.
+Root reviewed the final integrated change, including common managed-skill
+registration and preservation of consumer-local instructions. Draft provenance
+is excluded. The commit has not been pushed or published; existing consumers
+retain their pins. Majou2/MyReiki remain untouched historical evaluation fixtures,
+not completed migrations or automatically authorized next tasks.
+
+The replacement release credential expires **2026-12-14T14:17:03.165Z**; no
+automatic rotation is configured. Review the separate unconfirmed `vector-dev`
+credential before any future unpause. Preserve canonical storage/auth settings
+and Development scopes; this closeout is not Development runtime acceptance.
+
+WYSIWYG/JRT editor work, pgvector evaluation and realtime collaboration are
+deferred follow-ups. Pinecone remains authoritative for chat vectors. Reconcile
+the dated 60-alert dependency banner against current manifests and actual sinks;
+the migration does not claim a complete security audit.

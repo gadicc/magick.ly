@@ -1,82 +1,79 @@
 # Modernization status
 
-Updated 15 September 2026. This page is the current status. The
-[resume checkpoint](025-pause-checkpoint.md) records the exact continuation
-boundaries. The [implementation ledger](002-implementation-ledger.md) and the
-other numbered plans retain dated evidence; their present-tense limitations are
-historical and do not override this page.
+Updated 15 September 2026. This page supersedes older pending-acceptance notes;
+the [closeout checkpoint](025-pause-checkpoint.md) records preservation and
+continuation boundaries.
 
-Modernized commit `8ad3a978429ae35d31edd238b7aac4410358485e` is serving
-Production from Vercel deployment `dpl_6TcqMFzJtFkNyjiniRxZYx3Hctfz` in London.
-Both the project Production target and `magick.ly` resolve to that exact ready
-deployment. Normal application writes are open. A verified persistent firewall
-rule denies legacy `/api/file2` writes, including normalized path variants, while
-ordinary reads remain available. The traffic switch has happened; final cutover
-acceptance and retirement are still in progress.
+Production is live on `4d9d10d37b5a3877d0f9230c5e75ff5a969c7e37`, deployment
+`dpl_HHLsAXCa7vopfkqwiyVuqETkaaL2`, in London (`lhr1`) on Node 24.
+[CI/release run 34994058815](https://github.com/gadicc/magick.ly/actions/runs/34994058815)
+succeeded, including migrations, artifact checks, staged acceptance and promotion.
+The final read-only receipt verified the exact deployment, Production target,
+stable `magick.ly` alias and ten legacy images on both the public alias and fresh
+deployment requests, preserving bytes, MIME and size. All twenty responses were
+cache misses. The eight reviewed legacy environment changes were verified.
 
-The final fenced Mongo snapshot was imported into Production SQL and replayed
-against its completed fingerprint without allocating new identities. All ten
-reviewed legacy file mappings are active and their public bytes, hashes and media
-types reconcile. Do not rerun the importer or relocation activation. The dedicated
-legacy Mongo principal remains restricted to exactly `readAnyDatabase@admin`; its
-safe zero-match write probe was denied by Atlas. Do not restore its write role.
+| Area | Completed evidence |
+| --- | --- |
+| Data and files | Fenced SQL import, unchanged completed replay, ten file relocations and exact retained-public-link checks |
+| Product acceptance | Existing-account Google sign-in/navigation; publication of all five imported rituals with zero stops; private online reading and offline reload with text/images; new private upload confirmed |
+| Runtime cleanup | Final Production deployment works without its retired settings; two shared credential records retain Development only and six obsolete records were deleted |
+| Old credentials | Vercel release-token removal independently verified, preserving its replacement and unrelated identities; operator confirmed deletion of R2 token `magickly` and Atlas database user `magickli@admin` |
 
-GitHub release run `34973396659`, attempt 2, completed its build, artifact scan,
-Production staging, migrations, staged runtime checks, import gate and promotion.
-Only its original final checker failed because the Vercel project request omitted
-the `rollbackInfo=true` projection that exposes `lastAliasRequest`. Independent
-recovery receipt `production-release-recovery.json` then verified the terminal
-promotion, exact deployment, stable alias and anonymous runtime; its receipt hash
-starts `d675bc3501d3`. The corrected checker is local commit `d295164` and has not
-yet been pushed. Runtime and release-policy cleanup is reviewed in local commit
-`651f1a1`; it is also unpushed. The failed CI attempt remains failed, and a later
-successful release run is still required.
+The product journeys above passed on the accepted `8ad3a978` deployment; the
+final `4d9d10d` release adds the verified cleanup and retains that evidence within
+its recorded scope. Mongo/R2 deletions are operator confirmations, not independent
+provider inventories.
 
-| Area | Current verified state | Remaining |
-| --- | --- | --- |
-| Runtime and release | Exact modern Production deployment is ready in `lhr1`; project target and public alias match; independent recovery passed | After Production acceptance and legacy-setting cleanup, push the two reviewed follow-up commits and obtain a clean deployed release run |
-| Database and import | Seventeen migrations and the final private-data import are complete; completed-fingerprint replay is unchanged | Production browser acceptance; preserve immutable import and backup receipts |
-| Files and legacy routes | Ten SQL file mappings are active; public legacy files reconcile; permanent legacy-write firewall passed 98 edge observations and 14 strict same-host normalizations | Run the bounded backfill for up to five imported rituals, then verify their online and offline reads |
-| Authentication and private access | Real Preview Google OAuth, two-account authorization, private image upload/save/publication and offline reload passed | Complete Production Google OAuth and the bounded Production account/permission journeys |
-| Study and offline lifecycle | Local production-build cold offline and exactly-once reconnect passed; deployed Preview private offline reading passed | Confirm the selected Production journeys after bundle backfill |
-| Chat and Discourse | Live chat passed against the retained corpus. The replacement Discourse key is Production-only, rotated and validated through bounded read-only routes | Verify required Production integration behavior without sending test forum mutations |
-| Writer and rollback safety | Application writes are open; legacy file writes stay denied; Mongo is read-only; final backup and reconciliation receipts are retained | Keep legacy authorities available only for the rollback window, without restoring them as writers |
-| Retirement | Legacy runtime use is bounded and current environment metadata is captured | Remove legacy environment entries after acceptance; identify and retire the dedicated old R2 token and Mongo credential under the rollback policy while preserving the old bucket and backups |
-| Reusable Loom skill | The generic modernization skill remains an ignored, validated draft | Final review and evaluation after cutover completion; only then save and commit it into Loom |
+Final release receipt SHA-256:
+`bfce8ec354712b9beac6d7a168b039f69b60540349af2a9bc470b61b32cf8aab`.
+Vercel retirement receipt SHA-256:
+`07d23afc8fb2bbcbd2469786ad7873d9ebb610bdc0e31d5171496be8f11c435d`.
 
-Preview acceptance used two real Google accounts and the isolated Preview database.
-It covered temple authorization, private upload/save/publication, image rendering
-and offline reload. Revocation, expiry and image-purge behavior passed separate
-local production-build browser tests. The live chat check also completed without
-writing the retained corpus. These checks support the Production rollout but do
-not replace the remaining Production OAuth, bundle backfill and browser acceptance.
+Post-retirement verification passed on 15 September at 16:39–16:41 UTC:
+20 live public/deployment responses preserved byte/hash/MIME parity, the exact
+Production identity remained unchanged, and the uncached canonical Files API
+returned the expected 400/404 responses. Cached image responses were explicitly
+not treated as fresh storage proof. Ten direct GETs using the replacement R2
+credential then verified all 7,790,234 migrated bytes and MIME types.
 
-The replacement Discourse credential is installed as a Production Sensitive
-setting and the revoked predecessor was not restored. Read-only groups, admin and
-staff-log capabilities were validated. The remaining acceptance must not create
-forum messages, invitations or synthetic users merely to prove connectivity.
+- Live parity receipt: `76ea55ef3be8ea2a2cc612036a6c55085b6f6fe692da15aff9eae3ae35cb4a46`.
+- Direct R2 receipt: `9bf747d58d80284cecda401e66c47bca82a71133135aaa98427fa5ade6bf175a`.
+- The three temporary credential handoff files were removed after verification;
+  provider settings and backups were preserved. Cleanup receipt:
+  `cc54da299fab7458b1b54b10d23ea117f2a2e6586d917db5e911e2c378936c8c`.
 
-The persistent legacy-upload edge check has passed. Its earlier `308` response for
-a doubled-slash path was a same-host normalization to the canonical path, whose
-write was then denied. The final checker follows only that strict normalization;
-it does not accept arbitrary redirects.
+The reusable Loom `modernize-app` skill is committed locally as
+`b3460006a8482270c4cb9427b6a6bd4af7c2d51e`. The full Deno suite passed
+(64 tests, 634 steps), as did formatting/lint, skill validation and the npm build.
+All six emitted skill resources match source and their references resolve.
+The source commit is not yet pushed or published; Magickly remains pinned to
+Loom 1.27.0. This documentation closeout is separate from the deployed code.
 
-## Next gates
+Normal SQL writes are open. The persistent legacy-upload write denial remains;
+public reads remain available. The old database, old bucket/object bodies and
+backups are retained. Do not rerun imports or make an old store authoritative
+over acknowledged SQL writes.
 
-1. Complete Production Google sign-in and verify the existing imported account,
-   temple and ritual access.
-2. Run the bounded backfill for up to five imported rituals and verify current
-   permission, image and offline behavior without replaying the primary import.
-3. Finish the bounded Production acceptance journeys.
-4. Remove the reviewed legacy runtime environment settings while the accepted
-   `8ad3a978` deployment remains immutable. Preserve shared Development scopes.
-5. Push reviewed commits `d295164` and `651f1a1`, then obtain a fully successful
-   CI release and deployed verification without the retired settings.
-6. Retire the dedicated legacy credentials only after their identity and rollback
-   conditions are satisfied. Preserve the old bucket and backups until a separate
-   retention decision is authorized.
-7. Reconcile, independently evaluate, save and commit the generic Loom skill after
-   the modernization is complete.
+Earlier release history remains distinct: run `34973396659`, attempt 2, promoted
+successfully but failed its final checker; separate recovery evidence verified
+the promotion (receipt prefix `d675bc3501d3`). Run `34992906681` failed a large SVG
+test and never deployed. The final fix uses exact native byte comparisons and
+excludes saved deployment test copies; validator behavior and deadlines remain
+unchanged. Neither earlier failed run is relabeled successful.
 
-WYSIWYG editing and realtime collaboration remain deferred. The migration retains
-the JRT source editor and existing document format.
+Follow-ups are separate from the completed migration work:
+
+- The current release token expires **2026-12-14T14:17:03.165Z**. Plan deliberate
+  replacement before expiry; no automatic rotation is configured.
+- Keep the separate `vector-dev` experiment paused until its unconfirmed
+  credential is reviewed before any future unpause.
+- Retain JRT source editing and format compatibility. WYSIWYG/editor evaluation,
+  further JRT development and realtime collaboration are deferred product work.
+  Pinecone remains the chat vector authority; pgvector is a future option.
+- The 15 September push banner reported 60 dependency alerts (2 critical, 27 high,
+  26 moderate, 5 low). Reconcile the [current alerts](https://github.com/gadicc/magick.ly/security/dependabot)
+  against current manifests and reachable dependency paths; this is not a complete
+  audit or blanket security clearance.
+
+Majou2 and MyReiki were read-only skill-evaluation fixtures. Neither was migrated.
