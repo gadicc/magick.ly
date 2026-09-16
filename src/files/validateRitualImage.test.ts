@@ -1,4 +1,5 @@
-import { crc32 } from "node:zlib";
+import { Worker } from "node:worker_threads";
+import { crc32, deflateRawSync } from "node:zlib";
 import { fileTypeFromBuffer } from "file-type";
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
@@ -224,5 +225,106 @@ describe("complete bounded image validation", () => {
         controller.signal,
       ),
     ).rejects.toMatchObject({ code: "ABORTED" });
+  });
+});
+
+// Bounded regression checks for the parser defects fixed in file-type 21.3.1
+// (GHSA-5v7r-6r5c-r473) and 21.3.2 (GHSA-j47w-4g3g-c36v). Detection runs in a
+// worker with a deadline so a regression fails instead of hanging the suite.
+describe("bounded detection of crafted non-image uploads", () => {
+  const workerUrl = new URL(
+    "../../tests/fileTypeDetectionWorker.mjs",
+    import.meta.url,
+  );
+  async function detect(bytes: Uint8Array, deadlineMs = 5_000) {
+    const worker = new Worker(workerUrl, { workerData: bytes });
+    try {
+      return await new Promise<unknown>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error(`Detection exceeded ${deadlineMs}ms`)),
+          deadlineMs,
+        );
+        worker.once("message", (value) => {
+          clearTimeout(timer);
+          resolve(value);
+        });
+        worker.once("error", (error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
+        worker.once("exit", (code) => {
+          clearTimeout(timer);
+          if (code) reject(new Error(`Detection worker exited with ${code}`));
+        });
+      });
+    } finally {
+      await worker.terminate();
+    }
+  }
+  // The advisory's 55-byte proof of concept: an ASF header whose first
+  // sub-header declares a zero size, which moved the read position backwards.
+  const asf = Buffer.from("3026b2758e66cf11a6d9" + "00".repeat(45), "hex");
+  function zipLocalFile(options: {
+    filename: string;
+    data: Uint8Array;
+    deflate?: boolean;
+    uncompressedSize?: number;
+  }) {
+    const data = options.deflate ? deflateRawSync(options.data) : options.data;
+    const filename = Buffer.from(options.filename);
+    const header = Buffer.alloc(30 + filename.length);
+    header.writeUInt32LE(0x04034b50, 0);
+    header.writeUInt16LE(20, 4);
+    header.writeUInt16LE(options.deflate ? 8 : 0, 8);
+    header.writeUInt32LE(data.length, 18);
+    header.writeUInt32LE(options.uncompressedSize ?? options.data.length, 22);
+    header.writeUInt16LE(filename.length, 26);
+    filename.copy(header, 30);
+    return Buffer.concat([header, data]);
+  }
+  const wordContentTypes =
+    '<?xml version="1.0" encoding="UTF-8"?><Types><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>';
+  const docx = (contentTypes: Uint8Array, uncompressedSize?: number) =>
+    Buffer.concat([
+      zipLocalFile({
+        filename: "[Content_Types].xml",
+        data: contentTypes,
+        deflate: true,
+        uncompressedSize,
+      }),
+      zipLocalFile({
+        filename: "word/document.xml",
+        data: Buffer.from("<w:document/>"),
+      }),
+    ]);
+
+  it("finishes the crafted ASF header instead of looping", async () => {
+    // Bounded completion is the requirement; the reported type is incidental.
+    await detect(asf);
+    await expect(
+      createSharpRitualImageValidator().validate(asf, active()),
+    ).rejects.toMatchObject({ code: "UNSUPPORTED_TYPE" });
+  });
+
+  it("bounds ZIP entry inflation for known-size input", async () => {
+    // Control: the same declaration within the probe limit is parsed as Word.
+    await expect(
+      detect(docx(Buffer.from(wordContentTypes))),
+    ).resolves.toMatchObject({ ext: "docx" });
+    // A deflated entry that understates its size inflates past the 1 MiB
+    // probe limit. Bounded probing abandons it, so the declaration is never
+    // read and the archive stays a generic zip; unbounded inflation would
+    // report Word.
+    const limit = 1024 * 1024;
+    const padded = Buffer.concat([
+      Buffer.from(wordContentTypes),
+      Buffer.alloc(limit + 1 - wordContentTypes.length, 0x20),
+    ]);
+    const bomb = docx(padded, 1);
+    expect(bomb.length).toBeLessThan(16 * 1024);
+    await expect(detect(bomb)).resolves.toEqual({
+      ext: "zip",
+      mime: "application/zip",
+    });
   });
 });

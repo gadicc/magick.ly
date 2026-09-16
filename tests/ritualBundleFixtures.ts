@@ -22,8 +22,10 @@ import {
   rituals,
 } from "../src/db/schema/rituals";
 import { userAccess } from "../src/db/schema/userProfile";
+import type { PrivateRitualImageCatalog } from "../src/files/privateRitualImageCatalog";
 import { createStaticRitualImageCatalog } from "../src/files/staticRitualImageCatalog";
 import { createUuidV7 } from "../src/lib/ids";
+import type { RitualRenderDescriptorV1 } from "../src/offline/permissionContract";
 import { prepareRitualBundle } from "../src/offline/prepareRitualBundle";
 import { createRitualAssetPlan } from "../src/offline/ritualAssetPlan";
 import {
@@ -32,6 +34,7 @@ import {
   type RitualBundleStorageReceiptV1,
   ritualBundleRequestHash,
 } from "../src/offline/ritualBundlePublication";
+import { deriveRitualPublicationIdentity } from "../src/offline/ritualPublicationIdentity";
 import { createRitualRenderDescriptor } from "../src/offline/ritualRenderDescriptor";
 
 export const bundleSchema = {
@@ -212,36 +215,64 @@ export async function seedRitualBundleFixture(
     .returning();
   // PGlite's direct text codec strips an initial BOM, so preserve fixture input.
   parent.title = "\uFEFF Synthetic e\u0301 é 🌍\r\n";
+  const prepared = await prepareRitualBundleFixture({
+    ritualId: parent.id,
+    title: parent.title,
+    contentJson,
+    descriptor: createRitualRenderDescriptor(parent, artifact),
+  });
+  return {
+    actors,
+    groupId,
+    otherGroupId,
+    templeId,
+    otherTempleId,
+    parent,
+    revision,
+    artifact,
+    contentJson,
+    prepared,
+    dispose: () => prepared.dispose(),
+  };
+}
+
+/**
+ * Empty static catalog, asset plan and prepared bundle for one selection. An
+ * operation ID derives the bundle identity the way the runtime builder does.
+ */
+export async function prepareRitualBundleFixture(options: {
+  ritualId: string;
+  title: string;
+  contentJson: string;
+  descriptor: RitualRenderDescriptorV1;
+  privateCatalog?: PrivateRitualImageCatalog;
+  operationId?: string;
+  knownAppOrigins?: readonly string[];
+}) {
   const catalog = await createStaticRitualImageCatalog({
     publicDirectory: path.resolve("public"),
     paths: [],
   });
-  const plan = await createRitualAssetPlan(contentJson, {
-    contentSha256: hash(contentJson),
-    knownAppOrigins: [],
+  const plan = await createRitualAssetPlan(options.contentJson, {
+    contentSha256: hash(options.contentJson),
+    knownAppOrigins: [...(options.knownAppOrigins ?? [])],
     staticCatalog: catalog,
+    privateCatalog: options.privateCatalog,
   });
   try {
-    const prepared = await prepareRitualBundle({
-      ritualId: parent.id,
-      title: parent.title,
-      contentJson,
+    return await prepareRitualBundle({
+      ritualId: options.ritualId,
+      title: options.title,
+      contentJson: options.contentJson,
       plan,
-      descriptor: createRitualRenderDescriptor(parent, artifact),
+      descriptor: options.descriptor,
+      identity: options.operationId
+        ? deriveRitualPublicationIdentity(
+            options.operationId,
+            plan.metadata.assets.length,
+          )
+        : undefined,
     });
-    return {
-      actors,
-      groupId,
-      otherGroupId,
-      templeId,
-      otherTempleId,
-      parent,
-      revision,
-      artifact,
-      contentJson,
-      prepared,
-      dispose: () => prepared.dispose(),
-    };
   } finally {
     plan.dispose();
     catalog.dispose();

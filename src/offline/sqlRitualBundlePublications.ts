@@ -413,7 +413,16 @@ export function createSqlRitualBundlePublisher(
           publicationPolicyId: policyId,
         });
         return operation(bound, signal, async (tx, previous, authorize) => {
-          if (previous && previous.requestHash !== requestHash)
+          // The operation is the manifest published under this policy for the
+          // bound actor. A rebuilt plan may differ in server-side provenance
+          // (validator identity, catalog hashes, limits) without changing what
+          // is published, so such a retry replays its completed receipt or
+          // pending reservation instead of being stranded.
+          if (
+            previous &&
+            (previous.manifestSha256 !== manifestSha256 ||
+              previous.publicationPolicyId !== policyId)
+          )
             fail("OPERATION_CONFLICT");
           if (previous) {
             const found = await inspect(tx, previous, authorize);

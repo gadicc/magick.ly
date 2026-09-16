@@ -67,7 +67,11 @@ export function bundleTextSha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-/** Immutable retry identity; changing payload or policy requires a new explicit operation. */
+/**
+ * Stored request binding for a reservation. Changing payload or policy requires
+ * a new explicit operation; the plan hash records server-side provenance, and
+ * a retry is matched on manifest and policy rather than on this hash.
+ */
 export function ritualBundleRequestHash(value: {
   operationId: string;
   actorId: string;
