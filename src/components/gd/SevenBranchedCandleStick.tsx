@@ -1,4 +1,3 @@
-"use client";
 import React from "react";
 import { PlanetId } from "@/../data/astrology/Planets";
 import data from "@/../data/data";
@@ -151,7 +150,6 @@ export default React.forwardRef(function SevenBranchedCandleStick(
       viewBox="-50 -50 100 100"
       ref={ref}
     >
-      <style jsx>{``}</style>
       <circle
         cx="0"
         cy="0"

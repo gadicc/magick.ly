@@ -127,7 +127,7 @@ describe("bundled Tree of Life outlines", () => {
         source("a").replace("-170.5 0 341 598", "0 0 341 598"),
         false,
       ),
-    ).rejects.toThrow("Unexpected Tree of Life viewport");
+    ).rejects.toThrow("Unexpected component viewport");
   });
 
   it("rejects output that introduces resource references", async () => {
@@ -136,7 +136,7 @@ describe("bundled Tree of Life outlines", () => {
       '<defs><linearGradient id="test"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient></defs><rect x="0" y="0" width="10" height="10" fill="url(#test)"/></svg>',
     );
     await expect(outlineTreeImage(input, false)).rejects.toThrow(
-      "Unexpected Tree of Life image dependency",
+      "Unexpected component image dependency",
     );
   });
 

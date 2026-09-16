@@ -1,3 +1,6 @@
+import { tetragram as tetragrams } from "@/../data/data";
+import type { Tetragram } from "@/../data/geomancy/Tetragrams";
+
 function compute(mothers: (1 | 2)[][]) {
   const daughters = [
     [mothers[0][0], mothers[1][0], mothers[2][0], mothers[3][0]], // heads
@@ -62,3 +65,28 @@ function compute(mothers: (1 | 2)[][]) {
 }
 
 export { compute };
+
+/** The figure whose four rows match, or null for a malformed row set. */
+function tetragramFromRows(rows: readonly number[]): Tetragram | null {
+  for (const tetragram of Object.values(tetragrams)) {
+    const tr = tetragram.rows;
+    if (
+      tr[0] === rows[0] &&
+      tr[1] === rows[1] &&
+      tr[2] === rows[2] &&
+      tr[3] === rows[3]
+    )
+      return tetragram;
+  }
+  return null;
+}
+
+/** All sixteen figures of a reading in chart order: mothers, daughters, nephews, witnesses, judge. */
+function figuresFromMothers(mothers: (1 | 2)[][]): (Tetragram | null)[] {
+  const { daughters, nephews, witnesses, judges } = compute(mothers);
+  return [...mothers, ...daughters, ...nephews, ...witnesses, ...judges].map(
+    tetragramFromRows,
+  );
+}
+
+export { figuresFromMothers, tetragramFromRows };

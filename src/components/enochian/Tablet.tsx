@@ -1,7 +1,6 @@
-import React from "react";
+import React, { type CSSProperties } from "react";
 
 import enochianTablets, { EnochianTablet } from "@/../data/enochian/Tablets";
-import EnochianFont from "./enochianFont";
 
 function isCrossFromPosition(x: number, y: number) {
   if (x === 2 || x === 5 || x === 6 || x === 9) return true;
@@ -135,11 +134,12 @@ export const Sigils = {
 
 function Grid({
   id,
-  enochianFont = false,
+  enochianStyle,
 }: {
   id: string;
-  enochianFont?: boolean;
+  enochianStyle?: CSSProperties;
 }) {
+  const enochianFont = enochianStyle !== undefined;
   const tablet: EnochianTablet = enochianTablets[id];
   const size = 20;
   const border = 2;
@@ -182,7 +182,7 @@ function Grid({
                   fontSize: size - 2 - (enochianFont ? 4 : 0),
                   textAnchor: "middle",
                   fill: isCross ? "black" : color || undefined,
-                  ...(enochianFont ? EnochianFont.style : {}),
+                  ...enochianStyle,
                 }}
               >
                 {letter}
@@ -209,12 +209,16 @@ function Grid({
 const Tablet = React.forwardRef(function Tablet(
   {
     id,
-    enochianFont = false,
+    enochianStyle,
+    frame = true,
     width,
     height,
   }: {
     id: string;
-    enochianFont?: boolean;
+    /** Page font style for the grid letters; omitted renders the Latin transliteration. */
+    enochianStyle?: CSSProperties;
+    /** CSS border for on-page display; server images omit it since CSS boxes are not SVG. */
+    frame?: boolean;
     width?: string | number;
     height?: string | number;
   },
@@ -228,14 +232,14 @@ const Tablet = React.forwardRef(function Tablet(
       viewBox="-105 0 210 297"
       width={width}
       height={height}
-      style={{ border: "1px solid black" }}
+      style={frame ? { border: "1px solid black" } : undefined}
       ref={ref}
     >
       <g transform="translate(-31.5,-5) scale(0.3)">
         <Sigil />
       </g>
       <g transform="translate(-94.5,48) scale(0.9)">
-        <Grid id={id} enochianFont={enochianFont} />
+        <Grid id={id} enochianStyle={enochianStyle} />
       </g>
     </svg>
   );

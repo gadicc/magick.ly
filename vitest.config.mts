@@ -1,7 +1,21 @@
 import { fileURLToPath } from "node:url";
+import JSON5 from "json5";
 import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
+  plugins: [
+    {
+      // Mirror next.config's webpack rule so tests can render components over the data set.
+      name: "magickli-json5",
+      transform(code, id) {
+        if (!id.endsWith(".json5")) return null;
+        return {
+          code: `export default ${JSON.stringify(JSON5.parse(code))};`,
+          map: null,
+        };
+      },
+    },
+  ],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -64,9 +78,24 @@ export default defineConfig({
         "src/files/dataImage.ts",
         "src/files/validateRitualSvg.ts",
         "src/render/componentImageRequest.ts",
+        "src/render/componentImageUrl.ts",
         "src/render/componentImage.tsx",
         "src/render/componentImageResponse.ts",
         "src/render/outlineTreeImage.ts",
+        "src/render/registry.tsx",
+        "src/render/contracts/index.ts",
+        "src/render/contracts/types.ts",
+        "src/render/contracts/treeOfLife.ts",
+        "src/render/contracts/astroGeomancyChart.ts",
+        "src/render/contracts/enochianTablet.ts",
+        "src/render/contracts/sevenBranchedCandlestick.ts",
+        "src/render/contracts/roseSigil.ts",
+        "src/components/export/svgExport.ts",
+        "src/components/export/exportRuntime.ts",
+        "src/components/export/ExportControls.tsx",
+        "src/app/geomancy/reading/readingState.ts",
+        "src/lib/pageSearchParams.ts",
+        "src/components/gd/roseSigilGeometry.ts",
         "src/app/geomancy/tetragrams.ts",
         "src/app/chat/train/access.ts",
         "src/app/chat/train/ingestPdf.ts",

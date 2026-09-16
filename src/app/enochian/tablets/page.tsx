@@ -9,12 +9,13 @@ import {
 } from "@mui/material";
 import React from "react";
 import Tablet from "@/components/enochian/Tablet";
-import CopyPasteExport, { ToastContainer } from "@/copyPasteExport";
+import ExportControls from "@/components/export/ExportControls";
 import OpenSource from "@/OpenSource";
-import useEnochianFont from "../useEnochianFont";
+import { TABLET_IDS } from "@/render/contracts/enochianTablet";
+import useEnochianFont, { EnochianFont } from "../useEnochianFont";
 
 export default function Tablets() {
-  const [elementId, setElementId] = React.useState<string>("earth");
+  const [id, setId] = React.useState<(typeof TABLET_IDS)[number]>("earth");
   const { EnochianFontToggle, enochianFont } = useEnochianFont();
   const ref = React.useRef<SVGSVGElement>(null);
 
@@ -26,9 +27,11 @@ export default function Tablets() {
           <Select
             labelId="demo-simple-select-label"
             id="demo-simple-select"
-            value={elementId}
+            value={id}
             label="Tablet"
-            onChange={(e) => setElementId(e.target.value)}
+            onChange={(e) =>
+              setId(e.target.value as (typeof TABLET_IDS)[number])
+            }
           >
             <MenuItem value="earth">Earth</MenuItem>
             <MenuItem value="air">Air</MenuItem>
@@ -38,8 +41,22 @@ export default function Tablets() {
         <br />
         <br />
 
-        <Tablet id={elementId} enochianFont={enochianFont} ref={ref} />
-        <CopyPasteExport ref={ref} filename={`enochian-${elementId}-tablet`} />
+        <Tablet
+          id={id}
+          enochianStyle={enochianFont ? EnochianFont.style : undefined}
+          ref={ref}
+        />
+        <ExportControls
+          target={ref}
+          filename={`enochian-${id}-tablet`}
+          // The server renders the Latin grid only until the Enochian glyph
+          // font is bundled with a recorded licence.
+          link={
+            enochianFont
+              ? undefined
+              : { slug: "enochian-tablet", props: { id } }
+          }
+        />
         <div style={{ textAlign: "center", fontSize: "90%" }}>
           Enochian Font:{" "}
           <a href="https://fonts2u.com/enochian-plain.font">enochian-plain</a>
@@ -53,17 +70,6 @@ export default function Tablets() {
           ]}
         />
       </Container>
-      <ToastContainer
-        position="bottom-center"
-        autoClose={1500}
-        hideProgressBar
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss={false}
-        draggable={false}
-        pauseOnHover
-      />
     </>
   );
 }

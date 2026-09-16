@@ -2,19 +2,20 @@
 
 import { Container } from "@mui/material";
 import React from "react";
+import ExportControls from "@/components/export/ExportControls";
 import SevenBranchedCandleStick from "@/components/gd/SevenBranchedCandleStick";
-import CopyPasteExport from "@/copyPasteExport";
 import OpenSource from "@/OpenSource";
 
 export default function CandleStickPage() {
-  const ref = React.useRef(null);
+  const ref = React.useRef<SVGSVGElement>(null);
 
   return (
     <Container sx={{ p: 2 }}>
       <SevenBranchedCandleStick ref={ref} />
-      <CopyPasteExport
-        ref={ref}
+      <ExportControls
+        target={ref}
         filename="SevenBranchedCandleStick-magickly-export"
+        link={{ slug: "seven-branched-candlestick", props: {} }}
       />
       <OpenSource
         files={[

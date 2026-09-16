@@ -3,8 +3,12 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
+import { TREE_VIEWBOX } from "./contracts/treeOfLife";
 
+/** Identity of existing generated Tree of Life assets; bytes must not change under it. */
 export const TREE_IMAGE_PROFILE = "magickli-tree-image-outlines-v1";
+/** The other registered components share the same fonts and normalisation. */
+export const COMPONENT_IMAGE_PROFILE = "magickli-component-image-outlines-v1";
 
 const FONT_FILES = [
   "NotoSans-Regular.ttf",
@@ -28,11 +32,16 @@ async function loadResources() {
       readFile(path.join(process.cwd(), "public/fonts", name)),
     ),
   ]);
-  await initWasm(wasm);
+  try {
+    await initWasm(wasm);
+  } catch (error) {
+    // The package is a server external, so its WASM instance outlives this
+    // module when Next reloads it in development; the bytes are the same.
+    if (!/Already initialized/.test(String(error))) throw error;
+  }
   return {
     fonts,
     identity: {
-      profile: TREE_IMAGE_PROFILE,
       resvg: "2.6.2",
       wasmSha256: sha256(wasm),
       fonts: fonts.map((font, index) => ({
@@ -44,13 +53,32 @@ async function loadResources() {
   };
 }
 
+export interface OutlineOptions {
+  profile: string;
+  /** The root viewBox the component must have rendered. */
+  viewBox: readonly [number, number, number, number];
+  /** Mirror horizontally after outlining, around the centred coordinates. */
+  flip?: boolean;
+}
+
 /**
- * Outline trusted TreeOfLife JSX output only. Never pass uploaded/arbitrary SVG.
+ * Outline trusted registry JSX output only. Never pass uploaded/arbitrary SVG.
  * All font input is bundled; WASM has no filesystem/network font fallback.
  */
-export async function outlineTreeImage(svg: string, flip: boolean) {
-  const { fonts, identity } = await (resources ??= loadResources());
-  const tree = new Resvg(svg, {
+export async function outlineComponentImage(
+  svg: string,
+  options: OutlineOptions,
+) {
+  let loaded: Awaited<ReturnType<typeof loadResources>>;
+  try {
+    loaded = await (resources ??= loadResources());
+  } catch (error) {
+    // A transient read failure must not disable the route until restart.
+    resources = undefined;
+    throw error;
+  }
+  const { fonts, identity } = loaded;
+  const image = new Resvg(svg, {
     font: {
       fontBuffers: fonts,
       defaultFontFamily: "Noto Sans",
@@ -58,39 +86,49 @@ export async function outlineTreeImage(svg: string, flip: boolean) {
     },
   });
   try {
-    const result = tree.toString();
+    const result = image.toString();
     const originalRoot = svg.match(/<svg\b[^>]*>/)?.[0];
     const outlinedRoot = result.match(/^<svg\b[^>]*>/)?.[0];
-    // usvg preserves this centered coordinate system but changes implicit image
+    const viewBox = `viewBox="${options.viewBox.join(" ")}"`;
+    // usvg preserves this coordinate system but changes implicit image
     // sizing. Retain the original outer attributes without moving the geometry.
     if (
       !originalRoot ||
       !outlinedRoot ||
-      !originalRoot.includes('viewBox="-170.5 0 341 598"') ||
-      !outlinedRoot.includes('viewBox="-170.5 0 341 598"')
+      !originalRoot.includes(viewBox) ||
+      !outlinedRoot.includes(viewBox)
     ) {
-      throw new Error("Unexpected Tree of Life viewport");
+      throw new Error("Unexpected component viewport");
     }
     let body = result.slice(outlinedRoot.length);
-    // The component repeats link IDs. Outlined images have no link targets;
+    // Components repeat link IDs. Outlined images have no link targets;
     // remove those inert IDs instead of weakening the shared SVG validator.
     if (/href=|url\(|<(?:text|style|image)\b/.test(body)) {
-      throw new Error("Unexpected Tree of Life image dependency");
+      throw new Error("Unexpected component image dependency");
     }
     body = body.replace(/ id="[^"]*"/g, "");
     // usvg leaves invisible textPath carrier geometry after outlining. Nothing
     // references it now; display:none preserves its non-rendering behavior in
     // the existing closed SVG profile, which does not admit visibility.
     body = body.replace(/ visibility="hidden"/g, ' display="none"');
-    if (flip)
+    if (options.flip)
       body = `<g transform="scale(-1 1)">${body.replace(/<\/svg>\s*$/, "</g></svg>")}`;
     const bytes = Buffer.from(originalRoot + body);
     return {
       bytes,
-      identity: structuredClone(identity),
+      identity: { profile: options.profile, ...structuredClone(identity) },
       sourceSha256: sha256(Buffer.from(svg)),
     };
   } finally {
-    tree.free();
+    image.free();
   }
+}
+
+/** The Tree's existing outline contract, unchanged for saved ritual references. */
+export function outlineTreeImage(svg: string, flip: boolean) {
+  return outlineComponentImage(svg, {
+    profile: TREE_IMAGE_PROFILE,
+    viewBox: TREE_VIEWBOX,
+    flip,
+  });
 }

@@ -5,7 +5,9 @@ import {
   TREE_IMAGE_FIELDS,
 } from "./componentImageRequest";
 
-const parse = (query = "", slug = "tree-of-life") =>
+const parse = (query = "", slug: "tree-of-life" = "tree-of-life") =>
+  parseComponentImageRequest(slug, new URLSearchParams(query));
+const parseSlug = (slug: string, query = "") =>
   parseComponentImageRequest(slug, new URLSearchParams(query));
 
 describe("component image requests", () => {
@@ -165,12 +167,15 @@ describe("component image requests", () => {
 
   it.each([
     "TreeOfLife",
-    "rose-sigil",
+    "RoseSigil",
+    "table-of-shewbread",
     "../tree-of-life",
     "__proto__",
+    "constructor",
     "https://example.com",
+    "",
   ])("does not dynamically import or fetch slug %s", (slug) => {
-    expect(() => parse("", slug)).toThrow(
+    expect(() => parseSlug(slug)).toThrow(
       "Unsupported component image request",
     );
   });

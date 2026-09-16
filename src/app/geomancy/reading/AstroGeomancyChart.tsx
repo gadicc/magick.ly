@@ -178,7 +178,6 @@ export default React.forwardRef(function AstroGeomancyChart(
         const tetragramPlanets = Array.isArray(tetragram.planetId)
           ? tetragram.planetId?.map((planetId) => planets[planetId])
           : [planets[tetragram.planetId]];
-        console.log({ tetragramPlanets });
 
         return (
           <g key={layout.index}>

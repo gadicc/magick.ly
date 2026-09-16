@@ -9,7 +9,8 @@ import type {
 export interface GeneratedRitualImageProvenance {
   readonly referenceSha256: string;
   readonly sourceSha256: string;
-  readonly request: ComponentImageRequest;
+  /** Only the Tree is a ritual reference; other registry slugs are never generated assets. */
+  readonly request: ComponentImageRequest<"tree-of-life">;
   readonly renderer: Awaited<ReturnType<typeof outlineTreeImage>>["identity"];
 }
 

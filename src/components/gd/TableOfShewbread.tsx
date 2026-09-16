@@ -1,4 +1,3 @@
-"use client";
 import React from "react";
 
 import zodiacs, { Zodiac } from "@/../data/astrology/Zodiac";
@@ -230,7 +229,6 @@ export default React.forwardRef(function TableOfShewbread(
       viewBox="-50 -50 100 100"
       ref={ref}
     >
-      <style jsx>{``}</style>
       <circle
         cx="0"
         cy="0"

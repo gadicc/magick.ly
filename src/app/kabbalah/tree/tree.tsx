@@ -5,9 +5,10 @@ import Container from "@mui/material/Container";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 import Data from "@/../data/data";
+import ExportControls from "@/components/export/ExportControls";
 import Tree from "@/components/kabbalah/TreeOfLife";
-import CopyPasteExport, { ToastContainer } from "@/copyPasteExport";
 import Link from "@/lib/link";
+import { parseComponentImageRequest } from "@/render/componentImageRequest";
 
 /*
   Update: OLD, from pages router.  Need to re-investigate.
@@ -48,7 +49,34 @@ export default function TreeOfLife() {
 
   // From "true" / "false" to true / false
   opts.flip = opts.flip === "true";
-  opts.showDaat = opts.showDaat === "true";
+  // The source data defines Da'at only in the Queen scale; the component has
+  // no colour for it otherwise, so the King scale draws without Da'at.
+  opts.showDaat = opts.showDaat === "true" && opts.colorScale !== "king";
+
+  // The server contract validates and canonicalises the page state; the page
+  // always passes fontSize, which the API otherwise derives from the field.
+  const link = (() => {
+    try {
+      const params = new URLSearchParams({
+        field: String(opts.field),
+        topText: String(opts.topText),
+        bottomText: String(opts.bottomText),
+        colorScale: String(opts.colorScale),
+        letterAttr: String(opts.letterAttr),
+        flip: String(opts.flip),
+        showDaat: String(opts.showDaat),
+        fontSize: String(opts.fontSize),
+      });
+      return {
+        slug: "tree-of-life" as const,
+        props: parseComponentImageRequest("tree-of-life", params).props,
+      };
+    } catch {
+      return undefined;
+    }
+  })();
+  const query = searchParams?.toString() ?? "";
+  const share = () => `${pathname}${query ? `?${query}` : ""}`;
 
   function set(key, value) {
     if (!searchParams) throw new Error("no search params");
@@ -126,7 +154,7 @@ export default function TreeOfLife() {
             <br />
             Bottom text:{" "}
             <select
-              name="topText"
+              name="bottomText"
               value={opts.bottomText}
               onChange={(e) => {
                 e.preventDefault();
@@ -177,7 +205,7 @@ export default function TreeOfLife() {
               Flip tree:{" "}
               <input
                 type="checkbox"
-                value={opts.flip.toString()}
+                checked={opts.flip}
                 onChange={(e) => set("flip", e.target.checked)}
               />
               &nbsp; (View from Behind / Body View)
@@ -187,9 +215,11 @@ export default function TreeOfLife() {
               Show Da&apos;at:{" "}
               <input
                 type="checkbox"
-                value={opts.showDaat.toString()}
+                checked={opts.showDaat}
+                disabled={opts.colorScale === "king"}
                 onChange={(e) => set("showDaat", e.target.checked)}
               />
+              {opts.colorScale === "king" && " (Queen scale only)"}
             </label>
           </div>
 
@@ -211,7 +241,13 @@ export default function TreeOfLife() {
           <br />
           <br />
 
-          <CopyPasteExport ref={ref} filename="TreeOfLife-magickly-export" />
+          <ExportControls
+            target={ref}
+            filename="TreeOfLife-magickly-export"
+            link={link}
+            linkNote="No image link for these settings."
+            share={share}
+          />
           <div style={{ textAlign: "center", fontSize: "90%" }}>
             Hebrew Font:{" "}
             <a href="https://magick.ly/fonts/NotoSansHebrew-Regular.ttf">
@@ -240,17 +276,6 @@ export default function TreeOfLife() {
           </div>
         </Box>
       </Container>
-      <ToastContainer
-        position="bottom-center"
-        autoClose={1500}
-        hideProgressBar
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss={false}
-        draggable={false}
-        pauseOnHover
-      />
     </>
   );
 }
