@@ -67,8 +67,9 @@ imports and the backfill were not rerun.
 
 ## Remaining advisories
 
-`pnpm audit` reports four findings on the final tree. None is reachable through
-the verified current paths; none is cleared unconditionally.
+`pnpm audit` reports three findings on the final tree (two high, one moderate).
+None is reachable through the verified current paths; none is cleared
+unconditionally.
 
 - `browserslist` 4.28.6 (GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g), pinned
   exactly by `@serwist/next`/`serwist` 9.5.12. It runs at build time on the
