@@ -3,6 +3,8 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
 
+# Seven days keeps freshly published third-party releases out of resolution.
+minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - "@gadicc/loom"
 
