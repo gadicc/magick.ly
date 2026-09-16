@@ -95,6 +95,7 @@ export default defineConfig({
         "src/components/export/exportRuntime.ts",
         "src/components/export/ExportControls.tsx",
         "src/app/geomancy/reading/readingState.ts",
+        "src/app/kabbalah/tree/treeSettings.ts",
         "src/lib/pageSearchParams.ts",
         "src/app/robots.ts",
         "src/app/sitemap.ts",

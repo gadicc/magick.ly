@@ -8,82 +8,30 @@ import Data from "@/../data/data";
 import ExportControls from "@/components/export/ExportControls";
 import Tree from "@/components/kabbalah/TreeOfLife";
 import Link from "@/lib/link";
-import { parseComponentImageRequest } from "@/render/componentImageRequest";
+import { type TreeSettings, treeImageLink, treeSettings } from "./treeSettings";
 
-/*
-  Update: OLD, from pages router.  Need to re-investigate.
+type SetSetting = (key: string, value: string | boolean) => void;
 
-  The mere existance of this function changes the behaviour of how the page
-  is served.  Next.js will render the page on-demand, per-request.  The
-  important consequence of this is that router.query won't be empty on the
-  server.  Edit: However, it prevents page cache on client / slower loading.
+// The prerendered fallback has no handler; nothing runs before hydration.
+const ignoreSetting: SetSetting = () => {};
 
-  See https://nextjs.org/docs/advanced-features/automatic-static-optimization
-*/
-/*
-function getServerSideProps(context) {
-  return { props: {} };
-}
-*/
-
-export default function TreeOfLife() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+/**
+ * The Tree, its controls and the Sephirah list for fixed settings. The page
+ * also renders this with the defaults as its Suspense fallback, so the
+ * prerendered HTML carries a complete Tree.
+ */
+export function TreeOfLifeView({
+  settings: opts,
+  onChange: set = ignoreSetting,
+  sharePath = "/kabbalah/tree",
+}: {
+  settings: TreeSettings;
+  onChange?: SetSetting;
+  /** Page path and query for the copied page link. */
+  sharePath?: string;
+}) {
   const ref = React.useRef<SVGSVGElement>(null);
-
-  const opts: Partial<typeof defaults> = {};
-  const defaults = {
-    field: "name.roman",
-    topText: "index",
-    bottomText: "name.en",
-    colorScale: "queen",
-    letterAttr: "hermetic",
-    flip: false as "false" | "true" | boolean,
-    showDaat: false as "false" | "true" | boolean,
-    fontSize: 10,
-  };
-
-  for (const key of Object.keys(defaults))
-    opts[key] = searchParams?.get(key) || defaults[key];
-
-  // From "true" / "false" to true / false
-  opts.flip = opts.flip === "true";
-  // The source data defines Da'at only in the Queen scale; the component has
-  // no colour for it otherwise, so the King scale draws without Da'at.
-  opts.showDaat = opts.showDaat === "true" && opts.colorScale !== "king";
-
-  // The server contract validates and canonicalises the page state; the page
-  // always passes fontSize, which the API otherwise derives from the field.
-  const link = (() => {
-    try {
-      const params = new URLSearchParams({
-        field: String(opts.field),
-        topText: String(opts.topText),
-        bottomText: String(opts.bottomText),
-        colorScale: String(opts.colorScale),
-        letterAttr: String(opts.letterAttr),
-        flip: String(opts.flip),
-        showDaat: String(opts.showDaat),
-        fontSize: String(opts.fontSize),
-      });
-      return {
-        slug: "tree-of-life" as const,
-        props: parseComponentImageRequest("tree-of-life", params).props,
-      };
-    } catch {
-      return undefined;
-    }
-  })();
-  const query = searchParams?.toString() ?? "";
-  const share = () => `${pathname}${query ? `?${query}` : ""}`;
-
-  function set(key, value) {
-    if (!searchParams) throw new Error("no search params");
-    const params = new URLSearchParams(searchParams);
-    params.set(key, value);
-    router.replace(pathname + "?" + params.toString());
-  }
+  const link = treeImageLink(opts);
 
   const fields = [
     "index",
@@ -246,7 +194,7 @@ export default function TreeOfLife() {
             filename="TreeOfLife-magickly-export"
             link={link}
             linkNote="No image link for these settings."
-            share={share}
+            share={() => sharePath}
           />
           <div style={{ textAlign: "center", fontSize: "90%" }}>
             Hebrew Font:{" "}
@@ -277,5 +225,27 @@ export default function TreeOfLife() {
         </Box>
       </Container>
     </>
+  );
+}
+
+/** Reads the settings from the query and writes changes back to it. */
+export default function TreeOfLife() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const query = searchParams?.toString() ?? "";
+
+  function set(key: string, value: string | boolean) {
+    const params = new URLSearchParams(query);
+    params.set(key, String(value));
+    router.replace(pathname + "?" + params.toString());
+  }
+
+  return (
+    <TreeOfLifeView
+      settings={treeSettings(searchParams)}
+      onChange={set}
+      sharePath={`${pathname}${query ? `?${query}` : ""}`}
+    />
   );
 }
