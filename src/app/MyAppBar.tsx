@@ -35,7 +35,11 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import NextLink from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import {
+  usePathname,
+  useSearchParams,
+  useSelectedLayoutSegment,
+} from "next/navigation";
 import React from "react";
 import { sqlBrowserLifecycle } from "@/auth/browserLifecycle";
 import { useSession } from "@/auth/client";
@@ -45,17 +49,25 @@ import pathnames, { type Pathnames, type PathnameValue } from "./pathnames";
 
 // import { SITE_TITLE } from "@/api-lib/consts";
 const SITE_TITLE = "Magick.ly";
+// The static 404 page's segment; the browser's router reports it without the
+// leading slash that the server-side pathname carries.
+const NOT_FOUND_SEGMENT = "_not-found";
 
 /** `known` is false when the path has no title and the site name stands in. */
 function usePathnameInfo() {
-  const pathname = usePathname() ?? "/";
+  const browserPathname = usePathname() ?? "/";
+  // The static 404 page is prerendered once, at /_not-found, and served for
+  // every unknown path; its title must not depend on the browser's path.
+  const segment = useSelectedLayoutSegment()?.replace(/^\//, "");
+  const titlePath =
+    segment === NOT_FOUND_SEGMENT ? "/" + NOT_FOUND_SEGMENT : browserPathname;
   const navParts: { title: string; url: string }[] = [];
   // if (pathnames[pathname]) return { title: pathnames[pathname], navParts };
 
   let navPath = "";
 
   let value: Pathnames | PathnameValue | undefined = pathnames;
-  const parts = pathname.split("/").filter(Boolean);
+  const parts = titlePath.split("/").filter(Boolean);
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     // The loop only continues through sections. Own keys only, so that
@@ -71,7 +83,8 @@ function usePathnameInfo() {
   const title: PathnameValue | undefined =
     typeof value === "object" ? value["/"] : value;
   return {
-    pathname,
+    // Sign-in returns to the path the reader actually opened.
+    pathname: browserPathname,
     navParts,
     title: title ?? SITE_TITLE,
     known: title !== undefined,
