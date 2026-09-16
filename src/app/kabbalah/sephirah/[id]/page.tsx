@@ -3,6 +3,9 @@ import { entityIds, sephirahPage } from "@/seo/entities";
 import { seoMetadata } from "@/seo/metadata";
 import Sephirah from "./sephirah";
 
+// Unknown ids are 404s without rendering, so arbitrary URLs add no cache entries.
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return entityIds("sephirah");
 }

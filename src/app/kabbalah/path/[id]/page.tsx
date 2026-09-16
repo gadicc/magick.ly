@@ -3,6 +3,9 @@ import { entityIds, pathPage } from "@/seo/entities";
 import { seoMetadata } from "@/seo/metadata";
 import Path from "./path";
 
+// Unknown ids are 404s without rendering, so arbitrary URLs add no cache entries.
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return entityIds("tolPath");
 }

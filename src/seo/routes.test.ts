@@ -79,6 +79,13 @@ describe("page routes", () => {
     }
   });
 
+  it("serves only the prerendered rows of each data route", () => {
+    // Otherwise every unknown id renders and caches its own 404.
+    for (const { route, source } of routes)
+      if (source.includes("export function generateStaticParams"))
+        expect(source, route).toContain("export const dynamicParams = false;");
+  });
+
   it("keeps client components out of page files", () => {
     for (const { route, source } of routes)
       expect(source.startsWith('"use client"'), route).toBe(false);
