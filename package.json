@@ -90,7 +90,7 @@
     "react-markdown": "^10.1.0",
     "react-qrcode": "^0.3.6",
     "react-syntax-highlighter": "16.1.1",
-    "react-toastify": "10.0.5",
+    "react-toastify": "11.1.0",
     "remark-gfm": "^4.0.1",
     "saxes": "6.0.0",
     "server-only": "^0.0.1",
