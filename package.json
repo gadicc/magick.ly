@@ -31,7 +31,6 @@
   "dependencies": {
     "@ai-sdk/openai": "4.0.67",
     "@ai-sdk/react": "4.0.105",
-    "@ai-sdk/rsc": "3.0.102",
     "@ampproject/remapping": "^2.3.0",
     "@aws-sdk/client-s3": "3.1133.0",
     "@aws-sdk/s3-request-presigner": "3.1133.0",
@@ -92,7 +91,6 @@
     "react-qrcode": "^0.3.6",
     "react-syntax-highlighter": "16.1.1",
     "react-toastify": "10.0.5",
-    "rehype-add-classes": "^1.0.0",
     "remark-gfm": "^4.0.1",
     "saxes": "6.0.0",
     "server-only": "^0.0.1",
@@ -107,7 +105,6 @@
     "valibot": "1.5.0",
     "xml-beautifier": "^0.5.0",
     "xmlchars": "2.2.0",
-    "yaml-loader": "^0.6.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {

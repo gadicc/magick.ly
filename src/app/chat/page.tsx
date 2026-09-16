@@ -4,11 +4,7 @@ import { DefaultChatTransport } from "ai";
 import Image from "next/image";
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { dark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { ToastContainer, toast } from "react-toastify";
-import rehypeAddClasses from "rehype-add-classes";
-import remarkGfm from "remark-gfm";
 import { createUuidV7 } from "@/lib/ids";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -33,9 +29,7 @@ import {
   messageSources,
   messageText,
 } from "./contracts";
-
-const remarkPlugins = [remarkGfm];
-const rehypePlugins = [[rehypeAddClasses, { table: "rehype-table" }]];
+import { chatMarkdownComponents, chatMarkdownRemarkPlugins } from "./markdown";
 
 function Source({
   source,
@@ -291,29 +285,8 @@ export default function Chat() {
                 style={{ width: "50px", flexGrow: 1 }}
               >
                 <ReactMarkdown
-                  linkTarget="_blank"
-                  remarkPlugins={remarkPlugins}
-                  // @ts-expect-error: its fine
-                  rehypePlugins={rehypePlugins}
-                  components={{
-                    code({ node, className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || "");
-                      return match ? (
-                        <SyntaxHighlighter
-                          {...props}
-                          style={dark}
-                          language={match[1]}
-                          PreTag="div"
-                        >
-                          {String(children).replace(/\n$/, "")}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code {...props} className={className}>
-                          {children}
-                        </code>
-                      );
-                    },
-                  }}
+                  remarkPlugins={chatMarkdownRemarkPlugins}
+                  components={chatMarkdownComponents}
                 >
                   {messageText(m)}
                 </ReactMarkdown>
