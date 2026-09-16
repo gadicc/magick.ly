@@ -55,7 +55,9 @@ describe("component image registry", () => {
     ["astro-geomancy-chart", "m=2222111122221111&width=256", 256, 256, 100],
     ["enochian-tablet", "", 840, 1188, 300],
     ["enochian-tablet", "id=air&height=297", 210, 297, 300],
+    ["enochian-tablet", "font=enochian", 840, 1188, 300],
     ["seven-branched-candlestick", "", 1024, 1024, 60],
+    ["table-of-shewbread", "", 1024, 1024, 130],
     ["rose-sigil", "text=גדי", 1024, 1024, 26],
     ["rose-sigil", "text=שלום&rose=false&width=200", 200, 200, 1],
   ] as const)(
@@ -81,6 +83,74 @@ describe("component image registry", () => {
         .toBuffer({ resolveWithObject: true });
       expect(decoded.info).toMatchObject({ width, height, channels: 4 });
       expect(png.sourceSha256).toBe(svg.sourceSha256);
+    },
+  );
+
+  it("loads extra fonts only for the components that declare them", async () => {
+    const base = [
+      "NotoSans-Regular.ttf",
+      "NotoSansHebrew-Regular.ttf",
+      "NotoSansDevanagari-Regular.ttf",
+      "NotoSansSymbols-Regular.ttf",
+      "NotoSansSymbols2-Regular.ttf",
+    ];
+    const files = async (slug: string, query = "") =>
+      (await render(slug, query)).identity.fonts.map((font) => font.file);
+    expect(await files("tree-of-life")).toEqual(base);
+    expect(await files("astro-geomancy-chart")).toEqual(base);
+    expect(await files("seven-branched-candlestick")).toEqual(base);
+    expect(await files("rose-sigil", "text=א")).toEqual(base);
+    expect(await files("enochian-tablet")).toEqual([
+      ...base,
+      "EnochianPlain.ttf",
+    ]);
+    expect(await files("table-of-shewbread")).toEqual([
+      ...base,
+      "NotoEmoji-Variable.ttf",
+    ]);
+  });
+
+  // resvg falls back to the default family with only a log line when a font
+  // is missing, and path counts do not change under that fallback. These
+  // pins were taken after visual review of the rasterised output; a font or
+  // engine change needs a new review before they move.
+  it.each([
+    [
+      "enochian-tablet",
+      "id=air",
+      124_838,
+      "5ed3a569d959b1ed9065bd9e6ee2af84938f1b0e8139789af1a85bb045f96fed",
+    ],
+    [
+      "enochian-tablet",
+      "id=air&font=enochian",
+      223_771,
+      "53514ca864d7f13b59c90bf048a462c6d56c65b11c306c53a569a6684c3c81fe",
+    ],
+    [
+      "table-of-shewbread",
+      "",
+      136_294,
+      "df3c37911f14c3e81040d62d74892b97fdb0c72027ef390323f907e795ceb516",
+    ],
+    [
+      "seven-branched-candlestick",
+      "",
+      52_363,
+      "5d8b637f7ceb159014b1bf7322b51456a8bd2b730bdb699883288ed6bf063331",
+    ],
+    [
+      "astro-geomancy-chart",
+      "",
+      52_476,
+      "eb2f1b6fe2fef2f563ee164de6e403ca9f398ec4706c9ad331195bc34286bffa",
+    ],
+  ] as const)(
+    "pins the reviewed bytes of %s?%s so a silent font fallback fails",
+    async (slug, query, byteSize, sha256) => {
+      const image = await render(slug, query);
+      expect(image.byteSize).toBe(byteSize);
+      expect(image.sha256).toBe(sha256);
     },
   );
 

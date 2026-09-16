@@ -89,6 +89,7 @@ export default defineConfig({
         "src/render/contracts/astroGeomancyChart.ts",
         "src/render/contracts/enochianTablet.ts",
         "src/render/contracts/sevenBranchedCandlestick.ts",
+        "src/render/contracts/tableOfShewbread.ts",
         "src/render/contracts/roseSigil.ts",
         "src/components/export/svgExport.ts",
         "src/components/export/exportRuntime.ts",

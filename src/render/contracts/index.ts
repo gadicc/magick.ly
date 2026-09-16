@@ -2,6 +2,7 @@ import { astroGeomancyChart } from "./astroGeomancyChart";
 import { enochianTablet } from "./enochianTablet";
 import { roseSigil } from "./roseSigil";
 import { sevenBranchedCandlestick } from "./sevenBranchedCandlestick";
+import { tableOfShewbread } from "./tableOfShewbread";
 import { treeOfLife } from "./treeOfLife";
 
 /**
@@ -14,6 +15,7 @@ export const CONTRACTS = {
   "astro-geomancy-chart": astroGeomancyChart,
   "enochian-tablet": enochianTablet,
   "seven-branched-candlestick": sevenBranchedCandlestick,
+  "table-of-shewbread": tableOfShewbread,
   "rose-sigil": roseSigil,
 } as const;
 

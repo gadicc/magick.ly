@@ -49,8 +49,15 @@ describe("component image contracts", () => {
       "m=2222111122221111",
       "m=1111111111111111&width=512",
     ],
-    "enochian-tablet": ["", "id=air", "id=earth&height=600"],
+    "enochian-tablet": [
+      "",
+      "id=air",
+      "id=earth&height=600",
+      "font=enochian",
+      "id=air&font=enochian&width=420",
+    ],
     "seven-branched-candlestick": ["", "width=300", "width=100&height=100"],
+    "table-of-shewbread": ["", "width=300"],
     "rose-sigil": ["text=גדי", "text=אבג&rose=false", "text=שלום&width=50"],
   };
 
@@ -111,9 +118,15 @@ describe("component image contracts", () => {
     expect(
       componentImageQuery({
         slug: "enochian-tablet",
-        props: parse("enochian-tablet", "id=earth"),
+        props: parse("enochian-tablet", "id=earth&font=latin"),
       }).toString(),
     ).toBe("");
+    expect(
+      componentImageQuery({
+        slug: "enochian-tablet",
+        props: parse("enochian-tablet", "font=enochian"),
+      }).toString(),
+    ).toBe("font=enochian");
     expect(
       componentImageQuery(
         { slug: "seven-branched-candlestick", props: {} },
@@ -177,7 +190,9 @@ describe("component image contracts", () => {
     for (const [slug, query] of [
       ["enochian-tablet", "id=water"],
       ["enochian-tablet", "id=Earth"],
-      ["enochian-tablet", "font=enochian"],
+      ["enochian-tablet", "font=Enochian"],
+      ["enochian-tablet", "font=hebrew"],
+      ["table-of-shewbread", "font=enochian"],
       ["seven-branched-candlestick", "id=earth"],
       ["astro-geomancy-chart", "m=1211111221111212&m=1211111221111212"],
       ["astro-geomancy-chart", "mothers=1211111221111212"],

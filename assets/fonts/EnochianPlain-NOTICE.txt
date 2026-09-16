@@ -1,0 +1,28 @@
+Enochian Plain (EnochianPlain.ttf)
+SHA-256: 82ff69cdfbe0fb8157e400120164cddc7ce6227ef054d86a92efae1340d7be9e
+
+Font name table: family "Enochian", subfamily "Plain", copyright
+"(c) 1991 Digital Type Foundry", version "Altsys Fontographer 3.3 1/4/92".
+The designer's note preserved by font archives says the alphabet follows the
+specimen in The Equinox (ed. Aleister Crowley), with only a few liberties in
+alphabetic order and design.
+
+Provenance: this is the same font the site has served to browsers since 2024 as
+src/components/enochian/font/enochian-webfont.woff (Font Squirrel kit,
+generated 2018-10-03; fontconfig reports the identical family, style and full
+name). This TTF was added on 2026-09-16 for the server image renderer only:
+it is read from assets/fonts, which no URL serves and the service worker does
+not precache; the webfont kit remains the only copy delivered to browsers.
+
+Licence: no author site or licence text is known to exist; "Digital Type
+Foundry" published Macintosh fonts in the early 1990s and is not reachable.
+Font archives distribute the file as freeware: fonts2u.com labels it
+"Freeware"; Font Zillion and FontSpace label it "Freeware, Non-Commercial"
+and say commercial use needs the designer's permission. Magick.ly is a free,
+open-source site; if the font's terms are ever clarified, update this notice
+and the tablet contract together.
+
+Sources consulted 2026-09-16:
+- https://fonts2u.com/enochian-plain.font
+- https://www.fontzillion.com/fonts/digital-type-foundry/enochian
+- https://www.fontspace.com/enochian-font-f6183

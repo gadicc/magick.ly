@@ -55,8 +55,13 @@ export default async function (phase: string): Promise<NextConfig> {
     // package native so its relative data paths remain runtime-relative.
     serverExternalPackages: ["pdf-parse", "@resvg/resvg-wasm", "css-tree"],
     outputFileTracingIncludes: {
+      // The legacy alias only renders the Tree, which uses the public base fonts.
       "/api/treeOfLife": ["./public/fonts/*.ttf", resvgWasmTraceFile],
-      "/api/render/*": ["./public/fonts/*.ttf", resvgWasmTraceFile],
+      "/api/render/*": [
+        "./public/fonts/*.ttf",
+        "./assets/fonts/*.ttf",
+        resvgWasmTraceFile,
+      ],
       "/api/rituals/publication": [...ritualPublicationTraceFiles],
       "/api/rituals/publication/backfill": [...ritualPublicationTraceFiles],
     },

@@ -216,9 +216,21 @@ Verified in Chromium 152 against a local dev server unless marked otherwise.
   restore shared state from the query through Suspense wrappers and only
   write URLs when the reader copies a link. The Tree page fixes its flip and
   Da'at checkboxes and serialises `fontSize=10` explicitly.
-- Deferred until fonts arrive: Enochian glyphs on the server (contract accepts
-  `id` only) and the table of shewbread (four colour emoji need a bundled
-  monochrome emoji font; without one they render as empty boxes).
+- Server-only fonts under `assets/fonts` (outside `public/`, so the service
+  worker's precache and the site's URLs never carry them), loaded per slug so
+  no other component's glyph fallback changes and the Tree identity keeps
+  its five fonts: `EnochianPlain.ttf` (the same 1991 Digital Type Foundry
+  font the page already serves as a webfont; provenance and the freeware and
+  non-commercial labels found on font archives are in
+  `assets/fonts/EnochianPlain-NOTICE.txt`) enables
+  `enochian-tablet?font=enochian`, and Noto Emoji (OFL 1.1, variable weight
+  with the Regular default, pinned to a google/fonts commit in
+  `assets/fonts/README.md`) enables `table-of-shewbread`, whose four kerub
+  emoji render in monochrome. Both were visually reviewed, and their bytes
+  are pinned in tests because resvg substitutes the default family with only
+  a log line when a font is missing. One fidelity difference: the page's
+  browser synthesises bold for the single-weight Enochian face, resvg does
+  not, so the exported glyphs are lighter than on screen.
 
 ## Adversarial review
 
@@ -252,6 +264,15 @@ the ETag is computed after rendering, so 304 responses save bandwidth only.
 Explicit `width` and `height` with a different aspect ratio crop (`fit: cover`),
 as the Tree route always did. Links to the new slugs pasted into rituals stay
 unrecognised by the asset inventory by design; the editor does not yet say so.
+Rate limiting for the render routes is recorded as a follow-up in
+[current status](000-current-status.md). A smaller follow-up: only Noto Sans
+and Noto Sans Hebrew are referenced by URL from the interactive Tree, so the
+Devanagari and Symbols fonts (about 1.1 MB) could also move to `assets/fonts`
+and leave the service worker's precache; that changes no rendered bytes.
+Note that Next's file tracer follows the loader's `assets/fonts` path literal,
+so both render functions carry the two server-only fonts even though only
+`/api/render/*` declares them; the legacy `/api/treeOfLife` function therefore
+still includes about 2 MB it never reads.
 
 ## Phases
 

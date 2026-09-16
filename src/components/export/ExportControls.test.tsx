@@ -214,7 +214,10 @@ describe("ExportControls", () => {
         <Page
           filename="b"
           viewBox="0 0 1 1"
-          link={{ slug: "enochian-tablet", props: { id: "air" } }}
+          link={{
+            slug: "enochian-tablet",
+            props: { id: "air", font: "latin" },
+          }}
           share={() => "/enochian/tablets"}
         />
       </>,

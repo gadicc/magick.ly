@@ -15,6 +15,7 @@ export default function CandleStickPage() {
       <ExportControls
         target={ref}
         filename="TableOfShewbread-magickly-export"
+        link={{ slug: "table-of-shewbread", props: {} }}
       />
       <OpenSource
         files={[

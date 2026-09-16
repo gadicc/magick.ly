@@ -9,11 +9,13 @@ import {
   sigilPoints,
 } from "@/components/gd/roseSigilGeometry";
 import SevenBranchedCandleStick from "@/components/gd/SevenBranchedCandleStick";
+import TableOfShewbread from "@/components/gd/TableOfShewbread";
 import TreeOfLife from "@/components/kabbalah/TreeOfLife";
 import type { ComponentImageProps, ComponentImageSlug } from "./contracts";
 import { mothersFromString } from "./contracts/astroGeomancyChart";
 import {
   COMPONENT_IMAGE_PROFILE,
+  type ServerFontFile,
   TREE_IMAGE_PROFILE,
 } from "./outlineTreeImage";
 
@@ -24,6 +26,8 @@ export interface ComponentImageRegistration<S extends ComponentImageSlug> {
   profile: string;
   /** Mirror after outlining instead of relying on the component's CSS transform. */
   flip?(props: ComponentImageProps<S>): boolean;
+  /** Server-only bundled fonts beyond the shared base set (see assets/fonts). */
+  fonts?: readonly ServerFontFile[];
 }
 
 /**
@@ -47,12 +51,28 @@ export const COMPONENT_IMAGE_REGISTRY: {
     profile: COMPONENT_IMAGE_PROFILE,
   },
   "enochian-tablet": {
-    render: (props) => <Tablet id={props.id} frame={false} />,
+    // "Enochian" is the bundled TTF's family name; the page uses next/font's
+    // generated family for the same glyphs.
+    render: (props) => (
+      <Tablet
+        id={props.id}
+        frame={false}
+        enochianStyle={
+          props.font === "enochian" ? { fontFamily: "Enochian" } : undefined
+        }
+      />
+    ),
     profile: COMPONENT_IMAGE_PROFILE,
+    fonts: ["EnochianPlain.ttf"],
   },
   "seven-branched-candlestick": {
     render: () => <SevenBranchedCandleStick />,
     profile: COMPONENT_IMAGE_PROFILE,
+  },
+  "table-of-shewbread": {
+    render: () => <TableOfShewbread />,
+    profile: COMPONENT_IMAGE_PROFILE,
+    fonts: ["NotoEmoji-Variable.ttf"],
   },
   "rose-sigil": {
     // The same bounded optimiser as the page, so the link reproduces the drawn sigil.

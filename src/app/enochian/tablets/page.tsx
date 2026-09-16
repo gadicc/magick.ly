@@ -11,6 +11,7 @@ import React from "react";
 import Tablet from "@/components/enochian/Tablet";
 import ExportControls from "@/components/export/ExportControls";
 import OpenSource from "@/OpenSource";
+import { componentImageFilename } from "@/render/componentImageUrl";
 import { TABLET_IDS } from "@/render/contracts/enochianTablet";
 import useEnochianFont, { EnochianFont } from "../useEnochianFont";
 
@@ -18,6 +19,13 @@ export default function Tablets() {
   const [id, setId] = React.useState<(typeof TABLET_IDS)[number]>("earth");
   const { EnochianFontToggle, enochianFont } = useEnochianFont();
   const ref = React.useRef<SVGSVGElement>(null);
+  const link = {
+    slug: "enochian-tablet" as const,
+    props: {
+      id,
+      font: enochianFont ? ("enochian" as const) : ("latin" as const),
+    },
+  };
 
   return (
     <>
@@ -48,14 +56,8 @@ export default function Tablets() {
         />
         <ExportControls
           target={ref}
-          filename={`enochian-${id}-tablet`}
-          // The server renders the Latin grid only until the Enochian glyph
-          // font is bundled with a recorded licence.
-          link={
-            enochianFont
-              ? undefined
-              : { slug: "enochian-tablet", props: { id } }
-          }
+          filename={componentImageFilename(link)}
+          link={link}
         />
         <div style={{ textAlign: "center", fontSize: "90%" }}>
           Enochian Font:{" "}

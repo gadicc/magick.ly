@@ -168,7 +168,7 @@ describe("component image requests", () => {
   it.each([
     "TreeOfLife",
     "RoseSigil",
-    "table-of-shewbread",
+    "tableOfShewbread",
     "../tree-of-life",
     "__proto__",
     "constructor",

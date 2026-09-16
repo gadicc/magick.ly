@@ -51,8 +51,26 @@ describe("component image URLs", () => {
       }),
     ).toBe("astro-geomancy-chart-1111111111111111");
     expect(
-      componentImageFilename({ slug: "enochian-tablet", props: { id: "air" } }),
-    ).toBe("enochian-air-tablet");
+      componentImageFilename({
+        slug: "enochian-tablet",
+        props: { id: "air", font: "enochian" },
+      }),
+    ).toBe("enochian-air-tablet-glyphs");
+    expect(
+      componentImageFilename({
+        slug: "enochian-tablet",
+        props: { id: "earth", font: "latin" },
+      }),
+    ).toBe("enochian-earth-tablet");
+    expect(
+      componentImageFilename({ slug: "table-of-shewbread", props: {} }),
+    ).toBe("table-of-shewbread");
+    expect(
+      componentImagePath(
+        { slug: "table-of-shewbread", props: { height: 300 } },
+        { download: true },
+      ),
+    ).toBe("/api/render/table-of-shewbread?height=300&download=1");
     expect(
       componentImageFilename({
         slug: "seven-branched-candlestick",

@@ -17,7 +17,8 @@ const publicationRoutes = [
   "/api/rituals/publication",
   "/api/rituals/publication/backfill",
 ] as const;
-const rendererRoutes = ["/api/treeOfLife", "/api/render/*"] as const;
+const treeRoutes = ["/api/treeOfLife"] as const;
+const rendererRoutes = ["/api/render/*"] as const;
 const linkedWasm = "./node_modules/@resvg/resvg-wasm/index_bg.wasm";
 const tracedWasm = `./${path
   .relative(process.cwd(), realpathSync(linkedWasm))
@@ -48,15 +49,25 @@ const fonts = [
 describe("server image resource tracing", () => {
   it("traces the physical WASM target for renderer and publication routes", async () => {
     const config = await nextConfig("phase-ritual-publication-test");
-    const rendererResources = ["./public/fonts/*.ttf", tracedWasm];
+    // Publication and the legacy alias only render the Tree, so they need the
+    // public base fonts; the generic render route also needs the server-only
+    // component fonts.
+    const baseResources = ["./public/fonts/*.ttf", tracedWasm];
+    const rendererResources = [
+      "./public/fonts/*.ttf",
+      "./assets/fonts/*.ttf",
+      tracedWasm,
+    ];
     const publicationResources = [
       ...RITUAL_PUBLICATION_STATIC_PATHS.map(
         (pathname) => `./public${pathname}`,
       ),
-      ...rendererResources,
+      ...baseResources,
       ...tracedCssData,
     ];
     expect(config.serverExternalPackages).toContain("css-tree");
+    for (const route of treeRoutes)
+      expect(config.outputFileTracingIncludes?.[route]).toEqual(baseResources);
     for (const route of rendererRoutes)
       expect(config.outputFileTracingIncludes?.[route]).toEqual(
         rendererResources,
@@ -76,6 +87,10 @@ describe("server image resource tracing", () => {
       );
     for (const file of fonts)
       expect(existsSync(path.join(process.cwd(), "public/fonts", file))).toBe(
+        true,
+      );
+    for (const file of ["EnochianPlain.ttf", "NotoEmoji-Variable.ttf"])
+      expect(existsSync(path.join(process.cwd(), "assets/fonts", file))).toBe(
         true,
       );
     for (const file of tracedCssData) {

@@ -78,4 +78,11 @@ Follow-ups are separate from the completed migration work:
   verified current paths, and the deferred majors list their revisit conditions.
   Dependabot re-evaluates its list after the push; this is not a complete audit.
 
+- TODO: rate limiting for the public component image routes
+  (`/api/render/*`, `/api/treeOfLife`). Each distinct query renders through
+  WASM on request, and `/api/render/rose-sigil` adds up to about 330 ms of CPU
+  for a 32-letter text, so the edge cache offers no protection against varied
+  requests. Nothing in the app rate-limits today; see
+  [plan 027](027-component-exports.md#adversarial-review).
+
 Majou2 and MyReiki were read-only skill-evaluation fixtures. Neither was migrated.

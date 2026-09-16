@@ -50,6 +50,7 @@ export async function renderComponentImage(
     profile: registration.profile,
     viewBox: contract.viewBox,
     flip: registration.flip?.(request.props as never) ?? false,
+    fonts: registration.fonts,
   });
   let bytes: Buffer<ArrayBuffer> = outlined.bytes;
   if (request.format === "png") {

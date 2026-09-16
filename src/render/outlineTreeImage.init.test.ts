@@ -27,6 +27,60 @@ afterEach(() => {
   vi.resetModules();
 });
 
+describe("bundled font loading", () => {
+  it("refuses names outside the bundled lists before touching the filesystem", async () => {
+    const { outlineComponentImage, TREE_IMAGE_PROFILE } = await load(null);
+    await expect(
+      outlineComponentImage(source, {
+        profile: TREE_IMAGE_PROFILE,
+        viewBox: [-170.5, 0, 341, 598],
+        fonts: ["../secret.ttf" as never],
+      }),
+    ).rejects.toThrow("Unknown bundled font ../secret.ttf");
+  });
+
+  it("retries a font whose read failed without discarding the others", async () => {
+    vi.resetModules();
+    const fs =
+      await vi.importActual<typeof import("node:fs/promises")>(
+        "node:fs/promises",
+      );
+    let failures = 1;
+    const readFile = vi.fn(async (file: string, ...rest: unknown[]) => {
+      if (String(file).endsWith("EnochianPlain.ttf") && failures-- > 0)
+        throw new Error("EIO");
+      return (fs.readFile as (...args: unknown[]) => Promise<Buffer>)(
+        file,
+        ...rest,
+      );
+    });
+    vi.doMock("node:fs/promises", () => ({ ...fs, readFile }));
+    const { outlineComponentImage, COMPONENT_IMAGE_PROFILE } = await import(
+      "./outlineTreeImage"
+    );
+    const options = {
+      profile: COMPONENT_IMAGE_PROFILE,
+      viewBox: [-170.5, 0, 341, 598] as const,
+      fonts: ["EnochianPlain.ttf" as const],
+    };
+    await expect(outlineComponentImage(source, options)).rejects.toThrow("EIO");
+    const result = await outlineComponentImage(source, options);
+    expect(result.identity.fonts.map((font) => font.file)).toContain(
+      "EnochianPlain.ttf",
+    );
+    const enochianReads = readFile.mock.calls.filter((call) =>
+      String(call[0]).endsWith("EnochianPlain.ttf"),
+    );
+    expect(enochianReads).toHaveLength(2);
+    // The base fonts and WASM were read once; only the failed font was retried.
+    const sansReads = readFile.mock.calls.filter((call) =>
+      String(call[0]).endsWith("NotoSans-Regular.ttf"),
+    );
+    expect(sansReads).toHaveLength(1);
+    vi.doUnmock("node:fs/promises");
+  });
+});
+
 describe("WASM initialisation guard", () => {
   it("tolerates a runtime whose WASM instance is already initialised", async () => {
     const { outlineTreeImage } = await load(
