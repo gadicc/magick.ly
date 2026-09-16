@@ -8,6 +8,7 @@ import {
   resolveSqlRitualRouteId,
 } from "@/doc/sqlRuntime";
 import type { DocNode } from "@/schemas";
+import { socialCardImage } from "@/seo/cards";
 import { privateMetadata, seoMetadata } from "@/seo/metadata";
 import DocRender from "./DocRender";
 import PrivateRitualReader from "./PrivateRitualReader";
@@ -51,6 +52,8 @@ export async function generateMetadata({
   return seoMetadata(`/doc/${id}`, {
     title,
     description: `${title}: a public ritual on Magick.ly, laid out for reading on phones and tablets.`,
+    // Stored rituals have no card of their own; the rituals list's fits.
+    image: { ...socialCardImage("/gd/rituals", title), alt: title },
   });
 }
 

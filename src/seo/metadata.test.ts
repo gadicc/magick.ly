@@ -18,11 +18,19 @@ describe("seoMetadata", () => {
         type: "website",
         siteName: SITE_NAME,
         url: "/gd/grade/0=0",
+        images: [
+          {
+            url: "/og/gd/grade/0=0.png",
+            width: 1200,
+            height: 630,
+            alt: "Neophyte 0=0",
+          },
+        ],
       },
     });
   });
 
-  it("keeps an absolute title and the social image", () => {
+  it("keeps an absolute title and a page's own image", () => {
     const image = { url: "/og.png", width: 1200, height: 630, alt: "Card" };
     const metadata = seoMetadata("/x", {
       title: "Whole title",

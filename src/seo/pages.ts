@@ -197,12 +197,6 @@ export const PUBLIC_PAGES = {
     description:
       "An interactive Tree of Life: choose the names, colour scale and letter " +
       "attributions shown on each Sephirah and path, then export the diagram.",
-    image: {
-      url: "/feature/kabbalah/tree.webp?v=2",
-      width: 1200,
-      height: 630,
-      alt: "The Kabbalistic Tree of Life",
-    },
   },
   "/kabbalah/yhvh": {
     title: "Shem HaMephorash",

@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import { socialCardImage } from "./cards";
 import { PUBLIC_PAGES, type PublicPath, type SeoPage } from "./pages";
 import { SITE_OPEN_GRAPH } from "./site";
 
-/** Metadata for one indexable URL: canonical, snippet and sharing fields. */
+/**
+ * Metadata for one indexable URL: canonical, snippet and sharing fields. The
+ * image defaults to the path's generated card, which exists for every
+ * registry and entity page; other paths must pass their own.
+ */
 export function seoMetadata(path: string, page: SeoPage): Metadata {
   return {
     title: page.absoluteTitle ? { absolute: page.title } : page.title,
@@ -11,7 +16,7 @@ export function seoMetadata(path: string, page: SeoPage): Metadata {
     openGraph: {
       ...SITE_OPEN_GRAPH,
       url: path,
-      ...(page.image && { images: [page.image] }),
+      images: [page.image ?? socialCardImage(path, page.title)],
     },
   };
 }
