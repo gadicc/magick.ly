@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
-import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import type { ChatSource } from "../contracts";
 import { createPineconeCorpus } from "../corpus";
+import { loadPdfPages } from "./pdfPages";
 
 // Leave room for multipart overhead within Vercel's request-body limit.
 export const MAX_PDF_BYTES = 4 * 1024 * 1024;
@@ -34,9 +35,12 @@ export async function ingestPdf(file: File) {
     throw new IngestionError("Chat training is not configured.", 503);
   }
 
-  let pages: Awaited<ReturnType<PDFLoader["load"]>>;
+  // Hash before parsing so the identity never depends on the parser leaving
+  // the bytes untouched.
+  const sourceId = createHash("sha256").update(bytes).digest("hex");
+  let pages: ChatSource[];
   try {
-    pages = await new PDFLoader(new Blob([bytes])).load();
+    pages = await loadPdfPages(bytes);
   } catch {
     throw new IngestionError(
       "This PDF could not be read. Check that it is valid and unencrypted.",
@@ -56,7 +60,6 @@ export async function ingestPdf(file: File) {
     );
   }
 
-  const sourceId = createHash("sha256").update(bytes).digest("hex");
   // Content-addressed indexing keys make retries upserts, even after a partial
   // batch failure. These are derived vector keys, not application entity IDs.
   const ids = chunks.map((_, index) => `pdf-v1:${sourceId}:${index}`);

@@ -7,11 +7,7 @@ const mocks = vi.hoisted(() => ({
   upsertChunks: vi.fn(),
 }));
 
-vi.mock("@langchain/community/document_loaders/fs/pdf", () => ({
-  PDFLoader: class {
-    load = mocks.load;
-  },
-}));
+vi.mock("./pdfPages", () => ({ loadPdfPages: mocks.load }));
 vi.mock("../corpus", () => ({ createPineconeCorpus: mocks.createCorpus }));
 
 const pdf = (name = "ritual.pdf") =>
@@ -61,10 +57,9 @@ describe("PDF corpus ingestion", () => {
     const file = new File([source], "reference.pdf", {
       type: "application/pdf",
     });
-    const { PDFLoader } = await vi.importActual<
-      typeof import("@langchain/community/document_loaders/fs/pdf")
-    >("@langchain/community/document_loaders/fs/pdf");
-    mocks.load.mockImplementation(() => new PDFLoader(file).load());
+    const { loadPdfPages } =
+      await vi.importActual<typeof import("./pdfPages")>("./pdfPages");
+    mocks.load.mockImplementation(loadPdfPages);
 
     await expect(ingestPdf(file)).resolves.toMatchObject({ chunks: 1 });
     expect(mocks.upsertChunks.mock.calls[0][0][0]).toMatchObject({
