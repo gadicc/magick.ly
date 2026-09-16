@@ -142,11 +142,11 @@ export default function RootLayout(props: { children: React.ReactNode }) {
             {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
             <CssBaseline />
             <ClientProviders>
-              <React.Suspense fallback={null}>
-                <MyAppBar />
-                {/* same height as floating AppBar, so page starts beneath it */}
-                <div style={{ height: 56 }}></div>
-              </React.Suspense>
+              {/* Part of the shell: a Suspense boundary here would let React
+                  outline the bar after large pages and reveal it by script. */}
+              <MyAppBar />
+              {/* same height as floating AppBar, so page starts beneath it */}
+              <div style={{ height: 56 }}></div>
               {props.children}
             </ClientProviders>
           </ThemeProvider>

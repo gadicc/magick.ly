@@ -1,23 +1,22 @@
-import { ReadonlyURLSearchParams } from "next/navigation";
+/**
+ * A page title. Titles depend only on the path, so the app bar renders on
+ * the server without the query.
+ */
+export type PathnameValue = string;
 
-export type PathnameValue =
-  | string
-  | (({
-      pathname,
-      searchParams,
-    }: {
-      pathname: string;
-      searchParams: ReadonlyURLSearchParams | null;
-    }) => string);
+/** A section: its own title under "/", and its child paths. */
+export interface Pathnames {
+  "/": PathnameValue;
+  [key: string]: PathnameValue | Pathnames;
+}
 
-const pathnames: {
-  [key: string]: PathnameValue | typeof pathnames;
-} = {
+const pathnames: Pathnames = {
   "/": "Magick.ly",
   about: "About",
   admin: "Admin",
   astrology: {
     "/": "Astrology",
+    moon: "Moon Phases",
     "planetary-hours": "Planetary Hours",
     planets: "Planets",
     zodiac: "Zodiac",
@@ -35,7 +34,12 @@ const pathnames: {
     grades: "Grades",
     rituals: "Rituals",
     sigils: "Sigils",
-    symbols: "Symbols",
+    symbols: {
+      "/": "Symbols",
+      candlestick: "Seven-Branched Candlestick",
+      "fylfot-cross": "Fylfot Cross",
+      shewbread: "Table of Shewbread",
+    },
   },
   geomancy: {
     "/": "Geomancy",

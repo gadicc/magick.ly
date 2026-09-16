@@ -94,6 +94,8 @@ export default function ClientProviders({
         <SqlIdentityBridge ready={recoveryState === "ready"} />
         {recoveryState !== "ready" && (
           <Box
+            // Prerendered pages carry this status; keep it out of search snippets.
+            data-nosnippet
             sx={{
               bottom: 12,
               left: 12,

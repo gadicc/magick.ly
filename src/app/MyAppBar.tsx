@@ -41,41 +41,81 @@ import { sqlBrowserLifecycle } from "@/auth/browserLifecycle";
 import { useSession } from "@/auth/client";
 // import Link from "@/lib/link";
 import { useLegacyRecoveryGate } from "./clientProviders";
-import pathnames, { PathnameValue } from "./pathnames";
+import pathnames, { type Pathnames, type PathnameValue } from "./pathnames";
 
 // import { SITE_TITLE } from "@/api-lib/consts";
 const SITE_TITLE = "Magick.ly";
 
+/** `known` is false when the path has no title and the site name stands in. */
 function usePathnameInfo() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const query = searchParams?.toString();
-  const callbackURL = `${pathname ?? "/"}${query ? `?${query}` : ""}`;
-
+  const pathname = usePathname() ?? "/";
   const navParts: { title: string; url: string }[] = [];
-  if (!pathname) return { title: SITE_TITLE, navParts, callbackURL };
   // if (pathnames[pathname]) return { title: pathnames[pathname], navParts };
 
   let navPath = "";
 
-  let value: typeof pathnames | PathnameValue | string = pathnames;
+  let value: Pathnames | PathnameValue | undefined = pathnames;
   const parts = pathname.split("/").filter(Boolean);
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
-    value = value[part];
-    if (typeof value === "string") break;
+    // The loop only continues through sections. Own keys only, so that
+    // /constructor does not resolve to Object.
+    const section = value as Pathnames;
+    value = Object.hasOwn(section, part) ? section[part] : undefined;
+    if (typeof value !== "object") break;
     if (i === parts.length - 1) break;
-    if (value === undefined) break;
     navPath += "/" + part;
     navParts.push({ url: navPath, title: value["/"] });
   }
 
-  if (typeof value === "function")
-    value = value({ pathname, searchParams }) as string;
-  else if (value === undefined) value = SITE_TITLE;
-  else if (typeof value === "object") value = value["/"];
+  const title: PathnameValue | undefined =
+    typeof value === "object" ? value["/"] : value;
+  return {
+    pathname,
+    navParts,
+    title: title ?? SITE_TITLE,
+    known: title !== undefined,
+  };
+}
 
-  return { navParts, title: value as unknown as string, callbackURL };
+function SignInButton({
+  callbackURL,
+  disabled,
+}: {
+  callbackURL: string;
+  disabled: boolean;
+}) {
+  return (
+    <IconButton
+      aria-label="sign in"
+      component={Link}
+      disabled={disabled}
+      href={`/signin?callbackURL=${encodeURIComponent(callbackURL)}`}
+      sx={{ color: "white" }}
+    >
+      <Login />
+    </IconButton>
+  );
+}
+
+/**
+ * The only part of the bar that needs the query. Static pages render the
+ * rest on the server and this one after hydration.
+ */
+function SignInWithQuery({
+  pathname,
+  disabled,
+}: {
+  pathname: string;
+  disabled: boolean;
+}) {
+  const query = useSearchParams()?.toString();
+  return (
+    <SignInButton
+      callbackURL={`${pathname}${query ? `?${query}` : ""}`}
+      disabled={disabled}
+    />
+  );
 }
 
 function HideOnScroll({ children }) {
@@ -204,7 +244,7 @@ function MenuDrawer({
 }
 
 export default function ButtonAppBar() {
-  const { title, navParts, callbackURL } = usePathnameInfo();
+  const { pathname, title, known, navParts } = usePathnameInfo();
   const [search, setSearch] = React.useState("");
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -283,7 +323,8 @@ export default function ButtonAppBar() {
             </IconButton>
             <Typography
               variant="h6"
-              component="div"
+              // The bar's title is the page heading wherever it names the page.
+              component={known ? "h1" : "div"}
               sx={{
                 flexGrow: 1,
                 display: "inline-block",
@@ -295,7 +336,10 @@ export default function ButtonAppBar() {
             >
               {navParts && navParts.length ? (
                 <>
-                  <div onClick={(e) => setNavAnchorEl(e.currentTarget)}>
+                  <span
+                    style={{ display: "block" }}
+                    onClick={(e) => setNavAnchorEl(e.currentTarget)}
+                  >
                     <span style={{ verticalAlign: "top" }}>{title}</span>
                     {navAnchorEl ? (
                       <ArrowDropUp
@@ -306,7 +350,7 @@ export default function ButtonAppBar() {
                         sx={{ verticalAlign: "bottom", marginBottom: 0.5 }}
                       />
                     )}
-                  </div>
+                  </span>
                   <Menu
                     id="nav-menu"
                     anchorEl={navAnchorEl}
@@ -482,15 +526,14 @@ export default function ButtonAppBar() {
                   </Menu>
                 </span>
               ) : (
-                <IconButton
-                  aria-label="sign in"
-                  component={Link}
-                  disabled={session.isPending || recovery.state !== "ready"}
-                  href={`/signin?callbackURL=${encodeURIComponent(callbackURL)}`}
-                  sx={{ color: "white" }}
+                <React.Suspense
+                  fallback={<SignInButton callbackURL={pathname} disabled />}
                 >
-                  <Login />
-                </IconButton>
+                  <SignInWithQuery
+                    pathname={pathname}
+                    disabled={session.isPending || recovery.state !== "ready"}
+                  />
+                </React.Suspense>
               )}
             </div>
           </Toolbar>
