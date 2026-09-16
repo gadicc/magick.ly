@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -580,8 +580,10 @@ it("pins actual validator/framing/policy sources and decoder dependencies, inclu
         ),
       ).version,
     ).toBe(svgComponents[name]);
+  // Resolve from the package's real path so its own sibling copies win over
+  // whichever versions pnpm happened to hoist.
   const parserRequire = createRequire(
-    path.join(here, "../../node_modules/css-tree/package.json"),
+    realpathSync(path.join(here, "../../node_modules/css-tree/package.json")),
   );
   for (const name of ["mdn-data", "source-map-js"] as const)
     expect(
