@@ -4,49 +4,41 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import type { Metadata, Viewport } from "next";
 import * as React from "react";
 
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_OPEN_GRAPH,
+  SITE_TITLE,
+  SITE_URL,
+} from "@/seo/site";
 import theme from "@/theme";
 import ClientProviders from "./clientProviders";
 import MyAppBar from "./MyAppBar";
 import "@/db";
 
-const APP_NAME = "Magick.ly";
-const APP_DEFAULT_TITLE = "Magick.ly";
-const APP_TITLE_TEMPLATE = "%s - PWA App";
-const APP_DESCRIPTION = "Your Magick Toolkit";
-
+// No canonical here: every page below would inherit it. Open Graph titles and
+// descriptions are left unset so Next fills them from each page's own.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   manifest: "/manifest.json",
-  applicationName: APP_NAME,
+  applicationName: SITE_NAME,
   title: {
-    default: APP_DEFAULT_TITLE,
-    template: APP_TITLE_TEMPLATE,
+    default: SITE_TITLE,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: APP_DESCRIPTION,
+  description: SITE_DESCRIPTION,
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: APP_DEFAULT_TITLE,
+    title: SITE_NAME,
     // startUpImage: [],
   },
   formatDetection: {
     telephone: false,
   },
-  openGraph: {
-    type: "website",
-    siteName: APP_NAME,
-    title: {
-      default: APP_DEFAULT_TITLE,
-      template: APP_TITLE_TEMPLATE,
-    },
-    description: APP_DESCRIPTION,
-  },
+  openGraph: SITE_OPEN_GRAPH,
   twitter: {
     card: "summary",
-    title: {
-      default: APP_DEFAULT_TITLE,
-      template: APP_TITLE_TEMPLATE,
-    },
-    description: APP_DESCRIPTION,
   },
   /*
   icons: {
@@ -68,8 +60,6 @@ export default function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="en" dir="ltr">
       <head>
-        {/* PWA primary color */}
-        <meta name="theme-color" content="#FFFFFF" />
         <link
           rel="apple-touch-icon"
           sizes="57x57"
@@ -144,7 +134,6 @@ export default function RootLayout(props: { children: React.ReactNode }) {
           name="msapplication-TileImage"
           content="/favicons/ms-icon-144x144.png"
         />
-        <meta name="theme-color" content="#ffffff" />
         <meta property="fb:admins" content="gadicohen" />
       </head>
       <body>
