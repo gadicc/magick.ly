@@ -15,7 +15,6 @@
 
 # production
 /build
-/public/sitemap.xml
 
 # misc
 .DS_Store
@@ -41,7 +40,6 @@ yarn-error.log*
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map
-public/sitemap-0.xml
 .vercel
 next-env.d.ts
 tsconfig.tsbuildinfo
