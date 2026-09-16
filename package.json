@@ -109,7 +109,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
-    "@electric-sql/pglite": "^0.3.15",
+    "@electric-sql/pglite": "^0.5.8",
     "@svgr/webpack": "^8.1.0",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "^16.3.3",
