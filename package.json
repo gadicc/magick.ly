@@ -138,7 +138,8 @@
     "tsx": "^4.23.1",
     "typescript": "^5.9.3",
     "vite": "8.3.0",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.1",
+    "webpack": "^5.111.0"
   },
   "resolutions": {
     "corpora": "https://github.com/dariusk/corpora/tarball/ff1941630dc5a7aa3d4459fc038cb7a04ec93cb0"
