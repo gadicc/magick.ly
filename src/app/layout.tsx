@@ -14,6 +14,7 @@ import {
 import theme from "@/theme";
 import ClientProviders from "./clientProviders";
 import MyAppBar from "./MyAppBar";
+import StyledJsxRegistry from "./StyledJsxRegistry";
 import "@/db";
 
 // No canonical here: every page below would inherit it. Open Graph titles and
@@ -137,20 +138,22 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <meta property="fb:admins" content="gadicohen" />
       </head>
       <body>
-        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-          <ThemeProvider theme={theme}>
-            {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
-            <CssBaseline />
-            <ClientProviders>
-              {/* Part of the shell: a Suspense boundary here would let React
+        <StyledJsxRegistry>
+          <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+            <ThemeProvider theme={theme}>
+              {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
+              <CssBaseline />
+              <ClientProviders>
+                {/* Part of the shell: a Suspense boundary here would let React
                   outline the bar after large pages and reveal it by script. */}
-              <MyAppBar />
-              {/* same height as floating AppBar, so page starts beneath it */}
-              <div style={{ height: 56 }}></div>
-              {props.children}
-            </ClientProviders>
-          </ThemeProvider>
-        </AppRouterCacheProvider>
+                <MyAppBar />
+                {/* same height as floating AppBar, so page starts beneath it */}
+                <div style={{ height: 56 }}></div>
+                {props.children}
+              </ClientProviders>
+            </ThemeProvider>
+          </AppRouterCacheProvider>
+        </StyledJsxRegistry>
       </body>
     </html>
   );
