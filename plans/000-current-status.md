@@ -84,5 +84,13 @@ Follow-ups are separate from the completed migration work:
   for a 32-letter text, so the edge cache offers no protection against varied
   requests. Nothing in the app rate-limits today; see
   [plan 027](027-component-exports.md#adversarial-review).
+- TODO: after the SEO release, resubmit `/sitemap.xml` in Search Console and
+  remove `/sitemap-0.xml` if it was submitted directly (it is now a 404); see
+  [plan 028](028-seo.md#follow-ups).
+- TODO: SEO content follow-ups from [plan 028](028-seo.md#follow-ups): fix
+  Keter's `archangelIdId` data key, compute `/astrology/moon` dates only in the
+  browser, replace the raw JSON rows on planet and grade pages, prerender the
+  `/study` set list, consider public SQL rituals for the sitemap, and give the
+  short app bar titles fuller names.
 
 Majou2 and MyReiki were read-only skill-evaluation fixtures. Neither was migrated.
