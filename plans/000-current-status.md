@@ -72,8 +72,10 @@ Follow-ups are separate from the completed migration work:
   further JRT development and realtime collaboration are deferred product work.
   Pinecone remains the chat vector authority; pgvector is a future option.
 - The 15 September push banner reported 60 dependency alerts (2 critical, 27 high,
-  26 moderate, 5 low). Reconcile the [current alerts](https://github.com/gadicc/magick.ly/security/dependabot)
-  against current manifests and reachable dependency paths; this is not a complete
-  audit or blanket security clearance.
+  26 moderate, 5 low). The [dependency upgrade ledger](026-dependency-upgrades.md)
+  records the 16 September reconciliation: the reachable alerts were resolved by
+  upgrades and removals, four audit findings remain unreachable through the
+  verified current paths, and the deferred majors list their revisit conditions.
+  Dependabot re-evaluates its list after the push; this is not a complete audit.
 
 Majou2 and MyReiki were read-only skill-evaluation fixtures. Neither was migrated.
