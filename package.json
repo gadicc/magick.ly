@@ -90,7 +90,7 @@
     "react-hook-form": "^7.88.0",
     "react-markdown": "^10.1.0",
     "react-qrcode": "^0.3.6",
-    "react-syntax-highlighter": "15.5.0",
+    "react-syntax-highlighter": "16.1.1",
     "react-toastify": "10.0.5",
     "rehype-add-classes": "^1.0.0",
     "remark-gfm": "^4.0.1",
