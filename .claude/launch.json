@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "magickli-attach-3123",
+      "url": "http://localhost:3123",
+      "port": 3123
+    },
+    {
+      "name": "magickli-dev-export-research",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "export ROOT_URL=http://localhost:3124 BETTER_AUTH_URL=http://localhost:3124 NEXTAUTH_URL=http://localhost:3124 && exec pnpm exec next dev --webpack --port 3124"
+      ],
+      "port": 3124
+    }
+  ]
+}
