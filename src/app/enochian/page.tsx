@@ -1,11 +1,14 @@
 import { Box } from "@mui/material";
 import Tablet from "@/components/enochian/Tablet";
 import Tiles from "@/components/Tiles";
+import { pageMetadata } from "@/seo/metadata";
 import dictionaryImg from "./img/dictionary.jpg";
 import enochianAbc from "./img/enochianAbc.png";
 import firstKey from "./img/enochianFirstKey.png";
 //import aethyrs from './enochian/30aethyrs.jpg';
 import orationThumb from "./img/oration-thumb.jpg";
+
+export const metadata = pageMetadata("/enochian");
 
 const tiles = [
   {

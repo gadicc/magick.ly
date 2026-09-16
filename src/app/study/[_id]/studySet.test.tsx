@@ -5,8 +5,8 @@ import { useSession } from "@/auth/client";
 import { useStudySet } from "@/study/client";
 import type { StudySet } from "@/study/sets";
 import getSet from "@/study/sets";
-import StudySetLoad from "./page";
 import StudyQuiz from "./StudyQuiz";
+import StudySetLoad from "./studySet";
 
 vi.mock("@/auth/client", () => ({ useSession: vi.fn() }));
 vi.mock("@/study/client", () => ({ useStudySet: vi.fn() }));
@@ -50,7 +50,7 @@ describe("study card interaction", () => {
     });
 
     await act(async () => {
-      render(<StudySetLoad params={Promise.resolve({ _id: "synthetic" })} />);
+      render(<StudySetLoad _id="synthetic" />);
     });
     expect(
       await screen.findByText(

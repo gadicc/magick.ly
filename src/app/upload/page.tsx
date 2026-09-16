@@ -2,6 +2,9 @@ import { Alert, Container, Link as MuiLink, Typography } from "@mui/material";
 import { getCurrentSqlUserId } from "@/auth/session";
 import { sqlRitualReader } from "@/doc/sqlRuntime";
 import Upload from "@/lib/upload";
+import { privateMetadata } from "@/seo/metadata";
+
+export const metadata = privateMetadata("Attach an Image");
 
 export const dynamic = "force-dynamic";
 

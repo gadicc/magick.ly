@@ -1,5 +1,8 @@
 import GradeTree from "@/components/gd/GradeTree";
 import Tiles from "@/components/Tiles";
+import { pageMetadata } from "@/seo/metadata";
+
+export const metadata = pageMetadata("/gd");
 
 const tiles = [
   {

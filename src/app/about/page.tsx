@@ -1,4 +1,7 @@
 import { Box, Container } from "@mui/material";
+import { pageMetadata } from "@/seo/metadata";
+
+export const metadata = pageMetadata("/about");
 
 export default function Sequence() {
   return (

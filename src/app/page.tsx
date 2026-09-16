@@ -2,6 +2,7 @@ import { AdminPanelSettingsTwoTone } from "@mui/icons-material";
 import { getCurrentSqlViewer } from "@/auth/viewer";
 import Tiles from "@/components/Tiles";
 import GDLogoSquished from "@/goldendawn-logo-squished.svg";
+import { pageMetadata } from "@/seo/metadata";
 import AndroidMagician from "./img/android-magician.png";
 import AstrologyTile from "./img/astrology.jpeg";
 import EnochianAngel from "./img/enochian-angel.webp";
@@ -10,6 +11,8 @@ import MagicalTemple from "./img/magical-temple.webp";
 import PortaeLucis from "./img/portae_lucis_upsampled.webp";
 import MagicBook from "./img/shutterstock_393367726_768x512.webp";
 import StudyImg from "./img/study.webp";
+
+export const metadata = pageMetadata("/");
 
 const tiles = [
   {

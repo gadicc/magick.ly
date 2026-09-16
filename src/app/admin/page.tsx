@@ -4,7 +4,10 @@ import { createSqlAdminService, SqlAdminError } from "@/admin/sqlAdmin";
 import { getCurrentSqlUserId } from "@/auth/session";
 import { db } from "@/db/neonFull";
 import { createUuidV7 } from "@/lib/ids";
+import { privateMetadata } from "@/seo/metadata";
 import AdminForms from "./AdminForms";
+
+export const metadata = privateMetadata("Administration");
 
 export default async function Admin() {
   const service = createSqlAdminService(db, getCurrentSqlUserId);

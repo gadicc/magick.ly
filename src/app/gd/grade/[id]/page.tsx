@@ -1,26 +1,33 @@
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
+import Typography from "@mui/material/Typography";
 import { decycle } from "cycle";
+import { notFound } from "next/navigation";
 import Data from "@/../data/data";
 
 import GradeTree from "@/components/gd/GradeTree";
 import Link from "@/lib/link";
+import { entityIds, gradePage } from "@/seo/entities";
+import { seoMetadata } from "@/seo/metadata";
 
 const grades = Data.gdGrade;
 
 export function generateStaticParams() {
-  return Object.values(grades).map(({ id }) => ({ id }));
+  return entityIds("gdGrade");
 }
 
-export default async function Planet(props: {
-  params: Promise<{ id: string }>;
-}) {
-  const params = await props.params;
-  const id = decodeURIComponent(params.id);
-  if (!id) return "No id param given";
+export async function generateMetadata({
+  params,
+}: PageProps<"/gd/grade/[id]">) {
+  const page = gradePage(decodeURIComponent((await params).id));
+  if (!page) notFound();
+  return seoMetadata(page.path, page);
+}
 
-  const grade = grades[id];
-  if (!grade) return "Could not find grade: " + id;
+export default async function Grade({ params }: PageProps<"/gd/grade/[id]">) {
+  const id = decodeURIComponent((await params).id);
+  if (!gradePage(id)) notFound();
+  const grade = grades[id as keyof typeof grades];
 
   return (
     <>
@@ -68,11 +75,9 @@ export default async function Planet(props: {
           </div>
           <br />
 
-          <p>
-            <i>
-              {grade.name} ({grade.id})
-            </i>
-          </p>
+          <Typography variant="h5" component="h1" gutterBottom>
+            {grade.name} ({grade.id})
+          </Typography>
 
           <table>
             <tbody>

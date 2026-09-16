@@ -12,6 +12,9 @@ import TableRow from "@mui/material/TableRow";
 import Data from "@/../data/data";
 import GradeTree from "@/components/gd/GradeTree";
 import Link from "@/lib/link";
+import { pageMetadata } from "@/seo/metadata";
+
+export const metadata = pageMetadata("/gd/grades");
 
 export default function Grades() {
   return (

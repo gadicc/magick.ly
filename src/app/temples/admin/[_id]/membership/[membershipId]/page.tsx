@@ -10,8 +10,11 @@ import {
 import Link from "next/link";
 import { getCurrentSqlUserId } from "@/auth/session";
 import { db } from "@/db/neonFull";
+import { privateMetadata } from "@/seo/metadata";
 import { createSqlTempleReader } from "@/temples/sql";
 import { updateTempleMembershipAction } from "../../../../actions";
+
+export const metadata = privateMetadata("Temple Membership");
 
 function signInHref(callbackURL: string) {
   return `/signin?${new URLSearchParams({ callbackURL }).toString()}`;

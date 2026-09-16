@@ -1,3 +1,6 @@
+import { pageMetadata } from "@/seo/metadata";
+
+export const metadata = pageMetadata("/enochian/oration");
 const s = {
   page: {
     textAlign: "center" as const,

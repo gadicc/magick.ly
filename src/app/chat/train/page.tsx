@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { privateMetadata } from "@/seo/metadata";
 import { trainingAccess } from "./access";
 import TrainingUpload from "./TrainingUpload";
+
+export const metadata = privateMetadata("Chat Training");
 
 export default async function TrainingPage() {
   const access = await trainingAccess();

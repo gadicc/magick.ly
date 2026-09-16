@@ -1,4 +1,7 @@
 import Tiles from "@/components/Tiles";
+import { pageMetadata } from "@/seo/metadata";
+
+export const metadata = pageMetadata("/kabbalah/yhvh");
 
 const tiles = [
   {

@@ -14,10 +14,13 @@ import {
 import Link from "next/link";
 import { getCurrentSqlUserId } from "@/auth/session";
 import { db } from "@/db/neonFull";
+import { privateMetadata } from "@/seo/metadata";
 import { canRunDiscourseSync } from "@/temples/discourseSync";
 import { createSqlTempleReader } from "@/temples/sql";
 import { DiscourseSyncButton } from "./DiscourseSyncButton";
 import { InviteManager } from "./InviteManager";
+
+export const metadata = privateMetadata("Manage Temple");
 
 function signInHref(callbackURL: string) {
   return `/signin?${new URLSearchParams({ callbackURL }).toString()}`;

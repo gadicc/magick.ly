@@ -1,7 +1,10 @@
 import { isBetterAuthLocalTestLoginEnabled } from "@gadicc/loom/next/auth";
 import { Container, Typography } from "@mui/material";
 import { safeAuthCallbackURL } from "@/auth/callbackURL";
+import { privateMetadata } from "@/seo/metadata";
 import SignInButton from "./SignInButton";
+
+export const metadata = privateMetadata("Sign In");
 
 export default async function SignInPage({
   searchParams,

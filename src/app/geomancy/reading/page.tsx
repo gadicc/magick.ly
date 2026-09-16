@@ -1,6 +1,9 @@
 import { pageSearchParams } from "@/lib/pageSearchParams";
+import { pageMetadata } from "@/seo/metadata";
 import GeomancyReading from "./reading";
 import { readingFromSearchParams } from "./readingState";
+
+export const metadata = pageMetadata("/geomancy/reading");
 
 /**
  * A shared link's reading is resolved on the server so the HTML carries the

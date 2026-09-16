@@ -3,8 +3,11 @@ import Link from "next/link";
 import { getCurrentSqlUserId } from "@/auth/session";
 import { db } from "@/db/neonFull";
 import { createUuidV7 } from "@/lib/ids";
+import { privateMetadata } from "@/seo/metadata";
 import { createSqlTempleReader } from "@/temples/sql";
 import { CreateTempleForm } from "../CreateTempleForm";
+
+export const metadata = privateMetadata("Temple Administration");
 
 function signInHref() {
   return `/signin?${new URLSearchParams({ callbackURL: "/temples/admin" }).toString()}`;

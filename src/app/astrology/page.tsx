@@ -1,6 +1,9 @@
 import Tiles from "@/components/Tiles";
+import { pageMetadata } from "@/seo/metadata";
 import AstrologyTile from "../img/astrology.jpeg";
 import PlanetaryHoursPic from "./img/planetary-hours.webp";
+
+export const metadata = pageMetadata("/astrology");
 
 const tiles = [
   {

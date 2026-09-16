@@ -1,7 +1,10 @@
 import { Alert } from "@mui/material";
 import { connection } from "next/server";
 import { resolveSqlRitualRouteId } from "@/doc/sqlRuntime";
+import { privateMetadata } from "@/seo/metadata";
 import SqlDocEdit from "./SqlDocEdit";
+
+export const metadata = privateMetadata("Edit Ritual");
 
 export default async function DocEditPage({
   params,

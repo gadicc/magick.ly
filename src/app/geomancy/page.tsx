@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Tiles from "@/components/Tiles";
-
+import { pageMetadata } from "@/seo/metadata";
 import ReadingImgTile from "./img/reading.webp";
 import ReferenceImgTile from "./img/reference.webp";
+
+export const metadata = pageMetadata("/geomancy");
 
 const tiles = [
   {

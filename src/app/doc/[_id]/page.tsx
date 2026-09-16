@@ -1,12 +1,14 @@
 import { Box, Typography } from "@mui/material";
+import type { Metadata } from "next";
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { parseRitualRouteIdentity } from "@/doc/ritualRouteIdentity";
 import {
   publicSqlRitualReader,
   resolveSqlRitualRouteId,
 } from "@/doc/sqlRuntime";
 import type { DocNode } from "@/schemas";
+import { privateMetadata, seoMetadata } from "@/seo/metadata";
 import DocRender from "./DocRender";
 import PrivateRitualReader from "./PrivateRitualReader";
 
@@ -24,15 +26,8 @@ function parsePublicDoc(contentJson: string): DocNode | null {
   }
 }
 
-/** SQL-public content may render anonymously; every other route gets the Dexie shell. */
-export default async function DocPage({
-  params,
-}: {
-  params: Promise<{ _id: string }>;
-}) {
-  await connection();
-  const routeId = (await params)._id;
-  const routeIdentity = parseRitualRouteIdentity(routeId);
+/** One anonymous lookup per request, shared by the metadata and the page. */
+const loadPublicRitual = cache(async (routeId: string) => {
   const ritualId = await resolveSqlRitualRouteId(routeId).catch(() => null);
   const publicRitual = ritualId
     ? await publicSqlRitualReader.getRendered(ritualId).catch(() => null)
@@ -40,6 +35,31 @@ export default async function DocPage({
   const publicDoc = publicRitual
     ? parsePublicDoc(publicRitual.contentJson)
     : null;
+  return { ritualId, publicRitual, publicDoc };
+});
+
+/** Only anonymous, SQL-public rituals are indexed, under their canonical id. */
+export async function generateMetadata({
+  params,
+}: PageProps<"/doc/[_id]">): Promise<Metadata> {
+  await connection();
+  const { publicRitual, publicDoc } = await loadPublicRitual(
+    (await params)._id,
+  );
+  if (!publicRitual || !publicDoc) return privateMetadata("Ritual");
+  const { id, title } = publicRitual.ritual;
+  return seoMetadata(`/doc/${id}`, {
+    title,
+    description: `${title}: a public ritual on Magick.ly, laid out for reading on phones and tablets.`,
+  });
+}
+
+/** SQL-public content may render anonymously; every other route gets the Dexie shell. */
+export default async function DocPage({ params }: PageProps<"/doc/[_id]">) {
+  await connection();
+  const routeId = (await params)._id;
+  const routeIdentity = parseRitualRouteIdentity(routeId);
+  const { ritualId, publicRitual, publicDoc } = await loadPublicRitual(routeId);
   if (publicRitual && publicDoc)
     return (
       <Box>

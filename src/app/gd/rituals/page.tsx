@@ -15,7 +15,10 @@ import {
 import { connection } from "next/server";
 import { sqlRitualReader } from "@/doc/sqlRuntime";
 import Link from "@/lib/link";
+import { pageMetadata } from "@/seo/metadata";
 import SqlDocAdmin from "./SqlDocAdmin";
+
+export const metadata = pageMetadata("/gd/rituals");
 
 const builtInDocs = [
   {

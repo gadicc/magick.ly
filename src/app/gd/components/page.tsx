@@ -1,4 +1,7 @@
+import { privateMetadata } from "@/seo/metadata";
 import Lamen from "./lamen";
+
+export const metadata = privateMetadata("Officer Lamens");
 
 export default function GDComponentTest() {
   return [
