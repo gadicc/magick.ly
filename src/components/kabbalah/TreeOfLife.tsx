@@ -1,7 +1,7 @@
-import dotProp from "dot-prop";
 import React from "react";
 
 import Data from "@/../data/data";
+import { readFieldPath } from "./fieldPath";
 
 const _sephirot = Object.values(Data.sephirah);
 const _paths = Data.tolPath;
@@ -126,20 +126,20 @@ function TreeOfLife({
     labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) =>
       field
         .split(",")
-        .map((field) => dotProp.get(_sephirot[i], field))
+        .map((field) => readFieldPath(_sephirot[i], field))
         .join(" "),
     );
 
   const topTextArr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) =>
     topText
       .split(",")
-      .map((path) => dotProp.get(_sephirot[i], path))
+      .map((path) => readFieldPath(_sephirot[i], path))
       .join(" "),
   );
   const bottomTextArr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) =>
     bottomText
       .split(",")
-      .map((path) => dotProp.get(_sephirot[i], path))
+      .map((path) => readFieldPath(_sephirot[i], path))
       .join(" "),
   );
 
