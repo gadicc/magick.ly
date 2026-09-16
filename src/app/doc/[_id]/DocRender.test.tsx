@@ -9,10 +9,11 @@ import {
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { SearchParamsContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
 import React from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DocContext from "@/doc/context";
 import type { DocNode } from "@/schemas";
-import DocRender from "./DocRender";
+import DocRender, { DocView } from "./DocRender";
 
 // Observe the real DocRender context without exercising JRT's unrelated hook
 // machinery. Inputs, their debounce, and Next's useSearchParams remain real.
@@ -129,6 +130,15 @@ async function advance(milliseconds = 1000) {
     await vi.advanceTimersByTimeAsync(milliseconds);
   });
 }
+
+describe("prerendered rituals", () => {
+  it("draw every default without a router or query", () => {
+    const html = renderToString(<DocView doc={doc} searchParams={null} />);
+    expect(html).toContain(
+      "{&quot;myRole&quot;:&quot;member&quot;,&quot;motto&quot;:&quot;Default motto&quot;}",
+    );
+  });
+});
 
 describe("ritual variables use local URL state", () => {
   it("initializes inputs and render context from the URL", () => {

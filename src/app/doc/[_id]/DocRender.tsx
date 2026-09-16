@@ -428,15 +428,29 @@ class ErrorBoundary extends React.Component<{
   }
 }
 
-export default function DocRender({
-  doc,
-  wrapWithErrorBoundary,
-}: {
+interface DocRenderProps {
   doc: DocNode;
   wrapWithErrorBoundary?: boolean;
+}
+
+/** Reads the display variables from the page query. */
+export default function DocRender(props: DocRenderProps) {
+  const searchParams = useSearchParams();
+  return <DocView {...props} searchParams={searchParams} />;
+}
+
+/**
+ * The ritual with explicit display variables; `null` shows every default,
+ * which is what the built-in ritual pages prerender.
+ */
+export function DocView({
+  doc,
+  wrapWithErrorBoundary,
+  searchParams,
+}: DocRenderProps & {
+  searchParams: Pick<URLSearchParams, "get"> | null;
 }) {
   // console.log({ doc });
-  const searchParams = useSearchParams();
   //const doc = { children: [{ type: "text", value: "hi" }] };
   //const [doc, setDoc] = React.useState(origDoc);
 

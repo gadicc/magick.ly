@@ -12,7 +12,7 @@ import _zelator from "!!raw-loader!@/doc/1=10.jade";
 import _theoricus from "!!raw-loader!@/doc/2=9.jade";
 import { prepare } from "@/doc/prepare";
 import type { DocNode } from "@/schemas";
-import DocRender from "./DocRender";
+import DocRender, { DocView } from "./DocRender";
 
 function prepareBuiltin(source: string): DocNode {
   // The established compiler emits a type-less document root and may retain
@@ -31,13 +31,21 @@ const docs = {
   // "chesed-talisman": prepare(_chesedTalisman),
 } satisfies Record<string, DocNode>;
 
-function DocLoader({ id }: { id: string }) {
+/**
+ * A bundled ritual. `prerender` draws it with the default display variables
+ * and no query, for the static page's Suspense fallback.
+ */
+function DocLoader({ id, prerender }: { id: string; prerender?: boolean }) {
   const doc = Object.hasOwn(docs, id)
     ? docs[id as keyof typeof docs]
     : undefined;
   if (!doc) return <div>Ritual not found.</div>;
 
-  return <DocRender doc={doc} />;
+  return prerender ? (
+    <DocView doc={doc} searchParams={null} />
+  ) : (
+    <DocRender doc={doc} />
+  );
 }
 
 //export default dynamic(Promise.resolve(Doc), { ssr: false });
