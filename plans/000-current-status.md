@@ -103,5 +103,10 @@ Follow-ups are separate from the completed migration work:
 - TODO: drop the `webpack` devDependency once Serwist's webpack plugin is gone;
   it settles that plugin's optional peer
   ([plan 029](029-turbopack-development.md#choices)).
+- TODO: give each Tree of Life path's letter its own id. `TreeOfLife` uses
+  `path<id>` for both the path outline and its letter, so every page with a
+  tree has 22 duplicate ids. SVG export already renames the later copies
+  (`svgExport.ts`), so exported files are valid. If a new id changes the
+  generated tree image's bytes, bump `TREE_IMAGE_PROFILE` with it.
 
 Majou2 and MyReiki were read-only skill-evaluation fixtures. Neither was migrated.
