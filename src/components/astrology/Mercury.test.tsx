@@ -53,4 +53,20 @@ describe("MercuryWidget", () => {
 
     await unmount();
   });
+
+  it("says so inside the widget when the dates run out", async () => {
+    const html = renderAt(new Date("2100-01-01T12:00:00Z"), <MercuryWidget />);
+    const { container, problems, unmount } = await hydrateAt(
+      new Date("2100-01-01T12:00:00Z"),
+      html,
+      <MercuryWidget />,
+    );
+
+    expect(problems).toEqual([]);
+    const label = within(container).getByText(/^Retro /);
+    expect(label.textContent).toBe("Retro dates unknown");
+    expect(container.querySelector("img")).not.toBeNull();
+
+    await unmount();
+  });
 });

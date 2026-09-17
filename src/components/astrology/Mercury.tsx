@@ -79,17 +79,15 @@ function MercuryWidget({ padding = "10px 0 2px 0" }) {
   // then fill in the dates.
   const hydrated = useHydrated();
   const retrograde = hydrated ? nextRetrograde(new Date()) : undefined;
-  if (hydrated && !retrograde)
-    return "Could not find next retrograde, sorry; please report.";
 
   const d = (d) =>
     DateTime.fromJSDate(d).toLocaleString({
       month: "short",
       day: "2-digit",
     });
-  const label = retrograde
-    ? `Retro ${d(retrograde.start)} – ${d(retrograde.end)}`
-    : "\u00a0"; // keeps the label's line height
+  let label = "\u00a0"; // keeps the label's line height
+  if (retrograde) label = `Retro ${d(retrograde.start)} – ${d(retrograde.end)}`;
+  else if (hydrated) label = "Retro dates unknown";
   const fitCqi = Math.floor(1000 / emWidth(label)) / 10;
 
   return (
