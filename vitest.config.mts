@@ -19,6 +19,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // The other tsconfig paths.
+      "@magick-data": fileURLToPath(new URL("./data", import.meta.url)),
+      "@magick-components": fileURLToPath(
+        new URL("./src/components", import.meta.url),
+      ),
       "next/font/local": fileURLToPath(
         new URL("./tests/nextFontLocal.ts", import.meta.url),
       ),
