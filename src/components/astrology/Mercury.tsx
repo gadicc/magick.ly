@@ -2,7 +2,7 @@
 
 import retrogrades from "@magick-data/astrology/Retrograde";
 import { DateTime } from "luxon";
-import Image from "next/legacy/image";
+import Image from "next/image";
 import useHydrated from "@/useHydrated";
 
 /** The retrograde in progress at `now`, or else the next one. */
@@ -85,7 +85,8 @@ function MercuryWidget({ padding = "10px 0 2px 0" }) {
       }}
     >
       <div style={{ padding }}>
-        <Image src="/pics/mercury.webp" height="85" width="85" alt="Mercury" />
+        {/* Decorative: the tile's title already names the planet. */}
+        <Image src="/pics/mercury.webp" height={85} width={85} alt="" />
       </div>
       <div style={{ color: "#cc5" }}>{label}</div>
     </div>
