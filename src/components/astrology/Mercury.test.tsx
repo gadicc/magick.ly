@@ -48,6 +48,8 @@ describe("MercuryWidget", () => {
     expect(problems).toEqual([]);
     const label = within(container).getByText(/^Retro /);
     expect(label.textContent).toBe("Retro 24 Oct – 13 Nov");
+    // 1rem, down to 9.5% of the tile's width, keeps it on one line.
+    expect(label.style.fontSize).toBe("min(1rem, 9.5cqi)");
 
     await unmount();
   });

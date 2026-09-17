@@ -37,7 +37,8 @@ export default function Planets() {
   return (
     <Container maxWidth="sm">
       <Box sx={{ my: 4 }}>
-        <Tiles tiles={tiles} />
+        {/* Two tiles, each half of this narrow container at any width. */}
+        <Tiles tiles={tiles} size={{ xs: 6 }} />
 
         <TableContainer component={Paper}>
           <Table aria-label="simple table">

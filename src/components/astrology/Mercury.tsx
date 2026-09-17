@@ -5,6 +5,22 @@ import { DateTime } from "luxon";
 import Image from "next/image";
 import useHydrated from "@/useHydrated";
 
+const NARROW_CHARACTER =
+  /[\p{sc=Latin}\p{sc=Cyrillic}\p{sc=Greek}\p{sc=Hebrew}\p{sc=Arabic}\p{sc=Common}\p{sc=Inherited}]/u;
+
+/**
+ * How many em a date label needs: 0.5 per character in the scripts above
+ * (digits and punctuation included) and 1 per other character. In Chromium
+ * no retrograde label in 79 locales was wider, though CJK and Indic labels
+ * come out smaller than they could be. Emoji or full-width characters would
+ * be wider, but the labels have none.
+ */
+function emWidth(text: string) {
+  let em = 0;
+  for (const char of text) em += NARROW_CHARACTER.test(char) ? 0.5 : 1;
+  return em;
+}
+
 /** The retrograde in progress at `now`, or else the next one. */
 function nextRetrograde(now: Date) {
   for (const [[y1, m1, d1], [y2, m2, d2]] of retrogrades.mercury) {
@@ -74,6 +90,7 @@ function MercuryWidget({ padding = "10px 0 2px 0" }) {
   const label = retrograde
     ? `Retro ${d(retrograde.start)} – ${d(retrograde.end)}`
     : "\u00a0"; // keeps the label's line height
+  const fitCqi = Math.floor(1000 / emWidth(label)) / 10;
 
   return (
     <div
@@ -82,13 +99,23 @@ function MercuryWidget({ padding = "10px 0 2px 0" }) {
         background: "url(/night-sky.jpg)",
         backgroundSize: "cover",
         height: "100%",
+        containerType: "inline-size",
       }}
     >
       <div style={{ padding }}>
         {/* Decorative: the tile's title already names the planet. */}
         <Image src="/pics/mercury.webp" height={85} width={85} alt="" />
       </div>
-      <div style={{ color: "#cc5" }}>{label}</div>
+      {/* One line in any locale: 1rem, or smaller when the tile is narrow. */}
+      <div
+        style={{
+          color: "#cc5",
+          fontSize: `min(1rem, ${fitCqi}cqi)`,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </div>
     </div>
   );
 }
