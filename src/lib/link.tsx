@@ -1,20 +1,11 @@
 "use client";
-import MuiLink from "@mui/material/Link";
+import MuiLink, { type LinkProps as MuiLinkProps } from "@mui/material/Link";
 import NextLink from "next/link";
-import React from "react";
 
-export default function Link({
-  href,
-  children,
-  underline,
-}: {
-  href: string;
-  children: React.ReactNode;
-  underline?: "none" | "hover" | "always";
-}) {
-  return (
-    <MuiLink component={NextLink} href={href} underline={underline}>
-      {children}
-    </MuiLink>
-  );
+// A server component can't pass NextLink to MuiLink across the client
+// boundary, so this client wrapper does it and forwards everything else.
+export type LinkProps = Omit<MuiLinkProps<typeof NextLink>, "component">;
+
+export default function Link(props: LinkProps) {
+  return <MuiLink component={NextLink} {...props} />;
 }
