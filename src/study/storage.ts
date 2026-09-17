@@ -20,6 +20,12 @@ interface StudyDeviceState {
   anonymousOwnerId: string;
   lastAccountId?: string;
   explicitlySignedOut?: boolean;
+  /** Counts identity changes so a delayed session answer can tell it is stale. */
+  identityRevision?: number;
+}
+
+function identityRevisionOf(device: StudyDeviceState | undefined) {
+  return device?.identityRevision ?? 0;
 }
 
 export interface StoredStudySnapshot {
@@ -220,10 +226,18 @@ export class StudyRepository {
         throw new Error("Study account identity must be a canonical UUIDv7.");
       await this.storage.transaction("rw", this.storage.device, async () => {
         const device = await this.ensureDevice();
+        // Nothing to store once the account is recorded and the sign-out
+        // flag has been set either way.
+        if (
+          device.lastAccountId === accountId &&
+          device.explicitlySignedOut !== undefined
+        )
+          return;
         await this.storage.device.put({
           ...device,
           lastAccountId: accountId,
           explicitlySignedOut: device.explicitlySignedOut ?? false,
+          identityRevision: identityRevisionOf(device) + 1,
         });
       });
       return {
@@ -265,19 +279,36 @@ export class StudyRepository {
     );
   }
 
-  /** Explicit sign-out keeps owner-bound rows but prevents cold-start reopening. */
-  async markSignedOut() {
-    const changed = await this.storage.transaction(
+  /** Read before a session check and passed to `markSignedOut()` with its answer. */
+  async identityRevision() {
+    return identityRevisionOf(await this.storage.device.get("active"));
+  }
+
+  /**
+   * Explicit sign-out keeps owner-bound rows but prevents cold-start reopening.
+   * With `expectedRevision`, nothing is written and false is returned if any
+   * tab stored an identity change after that revision was read.
+   */
+  async markSignedOut(expectedRevision?: number) {
+    const result = await this.storage.transaction(
       "rw",
       this.storage.device,
       async () => {
         const device = await this.ensureDevice();
-        if (device.explicitlySignedOut === true) return false;
-        await this.storage.device.put({ ...device, explicitlySignedOut: true });
-        return true;
+        const revision = identityRevisionOf(device);
+        if (expectedRevision !== undefined && revision !== expectedRevision)
+          return "stale";
+        if (device.explicitlySignedOut === true) return "unchanged";
+        await this.storage.device.put({
+          ...device,
+          explicitlySignedOut: true,
+          identityRevision: revision + 1,
+        });
+        return "changed";
       },
     );
-    if (changed) this.notifyIdentity({ type: "signed-out" });
+    if (result === "changed") this.notifyIdentity({ type: "signed-out" });
+    return result !== "stale";
   }
 
   /** Called only after an explicit, freshly verified account activation. */
@@ -286,10 +317,13 @@ export class StudyRepository {
       throw new Error("Study account identity must be a canonical UUIDv7.");
     await this.storage.transaction("rw", this.storage.device, async () => {
       const device = await this.ensureDevice();
+      // Always counts, even for the same account: a session answer that
+      // started before this activation must not sign it out.
       await this.storage.device.put({
         ...device,
         lastAccountId: accountId,
         explicitlySignedOut: false,
+        identityRevision: identityRevisionOf(device) + 1,
       });
     });
   }

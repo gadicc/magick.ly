@@ -243,6 +243,64 @@ describe("study client identity and continuity", () => {
     observer.close();
   });
 
+  it("keeps another tab's sign-in when older checks answer signed out", async () => {
+    const olderChecks: ((response: Response) => void)[] = [];
+    const heldCheck = () =>
+      new Promise<Response>((resolve) => {
+        olderChecks.push(resolve);
+      });
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockImplementationOnce(heldCheck)
+        .mockImplementationOnce(heldCheck)
+        .mockImplementation(async () =>
+          Response.json({
+            user: { id: A, name: null, image: null },
+            admin: false,
+          }),
+        ),
+    );
+
+    function ScopeHarness({ name }: { name: string }) {
+      const runtime = studyClient.useStudyList(null);
+      return (
+        <div>
+          {name} {runtime.error ?? runtime.scope?.key ?? "hidden"}
+        </div>
+      );
+    }
+
+    render(
+      <>
+        <ScopeHarness name="first" />
+        <ScopeHarness name="second" />
+      </>,
+    );
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    // The other tab signs in, but its signal has not reached this tab yet.
+    const otherDb = new studyStorage.StudyDatabase("magickli-study");
+    const otherTab = new studyStorage.StudyRepository(otherDb, {
+      broadcast: false,
+    });
+    await otherTab.markAccountActive(A);
+    await act(async () => {
+      for (const answer of olderChecks)
+        answer(Response.json({ user: null, admin: false }));
+    });
+
+    await screen.findByText(`first account:${A}`);
+    await screen.findByText(`second account:${A}`);
+    // Each view asks once more, and only once.
+    expect(fetch).toHaveBeenCalledTimes(4);
+    expect(await otherDb.device.get("active")).toMatchObject({
+      explicitlySignedOut: false,
+      lastAccountId: A,
+    });
+    otherTab.close();
+  });
+
   it("keeps the live quiz mounted while a local review refreshes its snapshot", async () => {
     Object.defineProperty(window.navigator, "onLine", {
       configurable: true,

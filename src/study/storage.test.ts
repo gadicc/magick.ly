@@ -152,6 +152,38 @@ describe("study Dexie scopes and outbox", () => {
     ).rejects.toThrow(/Invalid local study review/);
   });
 
+  it("skips a delayed sign-out after another tab stores an identity change", async () => {
+    const { first, second } = fixture(true);
+    if (!second) throw new Error("Expected second synthetic tab.");
+    const signals: string[] = [];
+    first.subscribeIdentity((signal) => signals.push(signal.type));
+
+    const beforeSignIn = await first.identityRevision();
+    await second.markAccountActive(A);
+    await expect(first.markSignedOut(beforeSignIn)).resolves.toBe(false);
+    expect(await first.lastLocalAccountId()).toBe(A);
+
+    // Signing in again as the same account still counts as a change.
+    const beforeRepeat = await first.identityRevision();
+    await second.markAccountActive(A);
+    await expect(first.markSignedOut(beforeRepeat)).resolves.toBe(false);
+    expect(await first.lastLocalAccountId()).toBe(A);
+    expect(signals).toEqual([]);
+
+    await expect(
+      first.markSignedOut(await first.identityRevision()),
+    ).resolves.toBe(true);
+    expect(await first.lastLocalAccountId()).toBeNull();
+    expect(signals).toEqual(["signed-out"]);
+
+    // Writes that change nothing leave the revision alone.
+    const signedOut = await first.identityRevision();
+    await first.scope(A);
+    await expect(first.markSignedOut(signedOut)).resolves.toBe(true);
+    expect(await first.identityRevision()).toBe(signedOut);
+    expect(signals).toEqual(["signed-out"]);
+  });
+
   it("serializes two tabs, retries the same UUID and retains later optimistic work", async () => {
     const { first, second } = fixture(true);
     if (!second) throw new Error("Expected second synthetic tab.");

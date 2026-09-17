@@ -83,7 +83,9 @@ export async function prepareStudySignOut() {
   const pending = [...activeRequests, ...activeScopeResolutions];
   await Promise.allSettled(pending.map((request) => request.promise));
   try {
-    await enqueueIdentityTransition(() => study.markSignedOut());
+    await enqueueIdentityTransition(async () => {
+      await study.markSignedOut();
+    });
   } catch (cause) {
     throw new Error("Study sign-out state could not be saved.", {
       cause,
@@ -129,6 +131,10 @@ async function resolveScope(
     throw new StudyAccountActivationPending();
   }
   if (accountActivation === null) return repository().scope(null);
+  // Another tab may sign in while this check is in flight, and its signal can
+  // arrive after the stale answer, so the device revision guards the write.
+  const revision = await repository().identityRevision();
+  assertCurrentIdentity(generation, signal);
   let response: Response;
   try {
     response = await fetch("/api/session", {
@@ -166,7 +172,17 @@ async function resolveScope(
     }
   }
   if (signedOut) {
-    await repository().markSignedOut();
+    if (!(await repository().markSignedOut(revision))) {
+      // The stored identity changed after this check began. Like an identity
+      // signal, restart every view's check once; other views' stale answers
+      // then fail the generation test instead of restarting again.
+      if (generation === identityGeneration) {
+        identityGeneration++;
+        abortActiveWork();
+        notifyControlListeners();
+      }
+      throw new DOMException("Study identity changed.", "AbortError");
+    }
     if (generation !== identityGeneration)
       throw new DOMException("Study identity changed.", "AbortError");
     // markSignedOut() signals only when it changes the device record, so an
