@@ -205,7 +205,13 @@ function StudyPage() {
               <TableRow
                 key={set.id}
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                onClick={() => router.push(`/study/${set.id}`)}
+                onClick={(event) => {
+                  // The set link navigates by itself, and modified clicks
+                  // on it open a new tab, so only clicks elsewhere on the
+                  // row navigate here.
+                  if ((event.target as Element).closest("a")) return;
+                  router.push(`/study/${set.id}`);
+                }}
               >
                 <TableCell sx={{ padding: "16px 0 16px 10px" }}>
                   <Chip size="small" label={set.gdGrade} />
