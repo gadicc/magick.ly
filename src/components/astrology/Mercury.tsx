@@ -3,13 +3,14 @@
 import retrogrades from "@magick-data/astrology/Retrograde";
 import { DateTime } from "luxon";
 import Image from "next/legacy/image";
+import useHydrated from "@/useHydrated";
 
-function find() {
-  const now = new Date();
-
-  for (const row of retrogrades.mercury) {
-    const start = new Date(row[0]);
-    const end = new Date(row[1]);
+/** The retrograde in progress at `now`, or else the next one. */
+function nextRetrograde(now: Date) {
+  for (const [[y1, m1, d1], [y2, m2, d2]] of retrogrades.mercury) {
+    // Local midnights; the data's months count from 1.
+    const start = new Date(y1, m1 - 1, d1);
+    const end = new Date(y2, m2 - 1, d2);
 
     if (now < end) return { start, end };
   }
@@ -57,8 +58,12 @@ function MercuryDrawing({ phase, width, height, }) {
 */
 
 function MercuryWidget({ padding = "10px 0 2px 0" }) {
-  const retrograde = find();
-  if (!retrograde)
+  // The page is prerendered at build time, so the server knows neither
+  // today's date nor the viewer's date format. Hydrate with a blank label,
+  // then fill in the dates.
+  const hydrated = useHydrated();
+  const retrograde = hydrated ? nextRetrograde(new Date()) : undefined;
+  if (hydrated && !retrograde)
     return "Could not find next retrograde, sorry; please report.";
 
   const d = (d) =>
@@ -66,6 +71,9 @@ function MercuryWidget({ padding = "10px 0 2px 0" }) {
       month: "short",
       day: "2-digit",
     });
+  const label = retrograde
+    ? `Retro ${d(retrograde.start)} – ${d(retrograde.end)}`
+    : "\u00a0"; // keeps the label's line height
 
   return (
     <div
@@ -76,15 +84,13 @@ function MercuryWidget({ padding = "10px 0 2px 0" }) {
         height: "100%",
       }}
     >
-      <style jsx>{``}</style>
       <div style={{ padding }}>
         <Image src="/pics/mercury.webp" height="85" width="85" alt="Mercury" />
       </div>
-      <div style={{ color: "#cc5" }}>
-        Retro {d(retrograde.start)} - {d(retrograde.end)}
-      </div>
+      <div style={{ color: "#cc5" }}>{label}</div>
     </div>
   );
 }
 
+export { nextRetrograde };
 export default MercuryWidget;
