@@ -121,4 +121,35 @@ describe("study card interaction", () => {
       "green",
     );
   });
+  it("renders the question in the font its set names", () => {
+    const styles: Record<string, unknown>[] = [];
+    const Question = ({
+      question,
+      style,
+    }: {
+      question: string;
+      style: Record<string, unknown>;
+    }) => {
+      styles.push(style);
+      return <div>{question}</div>;
+    };
+    const card = { id: "a", question: "A", answer: "a", answers: ["a"] };
+    const quiz = (questionFont?: "enochian") => (
+      <StudyQuiz
+        set={{ id: "synthetic", questionFont, Question } as unknown as StudySet}
+        cards={[card]}
+        mode="supermemo"
+        setMode={vi.fn()}
+        onReview={vi.fn()}
+        syncWarning={null}
+      />
+    );
+    const { rerender } = render(quiz("enochian"));
+    expect(styles.at(-1)).toMatchObject({
+      fontFamily: "LocalFont, 'Enochian Plain', 'Enochian'",
+      direction: "rtl",
+    });
+    rerender(quiz());
+    expect(styles.at(-1)).toEqual({});
+  });
 });

@@ -7,9 +7,17 @@ import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import React from "react";
+import enochianFont from "@/components/enochian/enochianFont";
 import type { StudyMode } from "@/study/reviewContract";
 import { randomCard } from "@/study/scheduling";
-import type { StudyCard, StudySet } from "@/study/sets";
+import type { StudyCard, StudySet, StudySetData } from "@/study/sets";
+
+const questionFonts = {
+  enochian: enochianFont.style,
+} satisfies Record<
+  NonNullable<StudySetData["questionFont"]>,
+  React.CSSProperties
+>;
 
 export default function StudyQuiz({
   set,
@@ -118,7 +126,10 @@ export default function StudyQuiz({
             {saveError ?? "Saved on this device; account sync will retry."}
           </Typography>
         )}
-        <Question question={card.question} style={set.questionStyle ?? {}} />
+        <Question
+          question={card.question}
+          style={set.questionFont ? questionFonts[set.questionFont] : {}}
+        />
         <Box sx={{ flexGrow: 1 }}>
           <Grid container spacing={1}>
             {card.answers.map((answer) => (

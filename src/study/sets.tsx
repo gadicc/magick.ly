@@ -1,6 +1,5 @@
 import Paper from "@mui/material/Paper";
 import Tetragram from "@/app/geomancy/Tetragram";
-import enochianFont from "@/components/enochian/enochianFont";
 import data from "../../data/data";
 
 // https://stackoverflow.com/a/56773391/1839099
@@ -59,7 +58,12 @@ export interface StudySetData<T = StudyCardDataItem> {
   question: string | ((item: T) => string | React.ReactNode);
   answer: string | ((item: T) => string);
   answers?: string[];
-  questionStyle?: Record<string, unknown>;
+  /**
+   * The quiz renders the question in this font. Sets name it instead of
+   * importing `next/font`: the study API route loads these sets, and
+   * Turbopack gives route handlers no font.
+   */
+  questionFont?: "enochian";
   gdGrade:
     | "0=0"
     | "1=10"
@@ -420,7 +424,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     id: "enochian-letters-latin",
     data: data.enochianLetter,
     question: "enochian",
-    questionStyle: enochianFont.style,
+    questionFont: "enochian",
     answer: "english",
     tags: ["enochian"],
     gdGrade: "?",
@@ -429,7 +433,7 @@ const sets: Record<string, StudySetData<unknown>> = {
     id: "enochian-letter-names",
     data: data.enochianLetter,
     question: "enochian",
-    questionStyle: enochianFont.style,
+    questionFont: "enochian",
     answer: "title",
     tags: ["enochian"],
     gdGrade: "?",

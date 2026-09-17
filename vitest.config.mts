@@ -19,6 +19,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "next/font/local": fileURLToPath(
+        new URL("./tests/nextFontLocal.ts", import.meta.url),
+      ),
     },
   },
   test: {
