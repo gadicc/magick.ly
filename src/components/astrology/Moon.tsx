@@ -1,6 +1,7 @@
 import lune from "lune";
 
 import useGeoIP from "@/useGeoIP";
+import useHydrated from "@/useHydrated";
 
 const moonMeanInclination = 5.15; // in degrees
 
@@ -34,17 +35,9 @@ const namesLocal = {
 
 // Based on https://github.com/tingletech/moon-phase/blob/gh-pages/moon-phase.js
 // Reactified, added hemisphere and inclination, filters, etc.
-function MoonDrawing({
-  phase,
-  width,
-  height,
-  northernHemisphere = true,
-}: {
-  phase: number;
-  width?: string | number;
-  height?: string | number;
-  northernHemisphere?: boolean;
-}) {
+
+/** SVG path of the moon's lit part for a `lune` phase (0 to 1, 0.5 is full). */
+function moonPath(phase: number) {
   let mag, sweep;
 
   // the "sweep-flag" and the direction of movement change every quarter moon
@@ -65,6 +58,21 @@ function MoonDrawing({
     throw new Error("Invalid phase: " + phase);
   }
 
+  return `m85,5 a${mag},20 0 1,${sweep[0]} 0,150 a20,20 0 1,${sweep[1]} 0,-150`;
+}
+
+function MoonDrawing({
+  phase,
+  width,
+  height,
+  northernHemisphere = true,
+}: {
+  /** Omit to draw only the unlit disc. */
+  phase?: number;
+  width?: string | number;
+  height?: string | number;
+  northernHemisphere?: boolean;
+}) {
   const inclination = northernHemisphere
     ? moonMeanInclination
     : 180 - moonMeanInclination;
@@ -98,21 +106,26 @@ function MoonDrawing({
         d="m85,5 a20,20 0 1,1 0,150 a20,20 0 1,1 0,-150"
         style={{ fill: "black" }}
       />
-      <path
-        className="moon"
-        d={`m85,5 a${mag},20 0 1,${sweep[0]} 0,150 a20,20 0 1,${sweep[1]} 0,-150`}
-        style={{ fill: "#ebc815" }}
-      />
+      {phase === undefined ? null : (
+        <path
+          className="moon"
+          d={moonPath(phase)}
+          style={{ fill: "#ebc815" }}
+        />
+      )}
     </svg>
   );
 }
 
 function MoonWidget({ moonPadding = "10px 0 2px 0" }) {
-  const phaseData = lune.phase(new Date());
-  const phaseValue = phaseData.phase;
-  const phaseName = moonPhaseName(phaseValue);
-  const phaseNameLocal = namesLocal.en[phaseName];
-  // console.log(phaseData);
+  // Pages with this widget are prerendered at build time, so the server can't
+  // know today's phase. Hydrate with the unlit disc, then draw the phase.
+  const hydrated = useHydrated();
+  const phaseValue = hydrated ? lune.phase(new Date()).phase : undefined;
+  const phaseNameLocal =
+    phaseValue === undefined
+      ? "\u00a0" // keeps the label's line height
+      : namesLocal.en[moonPhaseName(phaseValue)];
 
   const geo = useGeoIP();
   const northernHemisphere = !geo || geo.latitude > 0;
@@ -138,5 +151,5 @@ function MoonWidget({ moonPadding = "10px 0 2px 0" }) {
   );
 }
 
-export { moonMeanInclination };
+export { moonMeanInclination, moonPath };
 export default MoonWidget;

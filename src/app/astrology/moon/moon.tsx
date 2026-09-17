@@ -3,6 +3,7 @@ import lune from "lune";
 import { DateTime } from "luxon";
 
 import MoonDrawing from "@/components/astrology/Moon";
+import useHydrated from "@/useHydrated";
 
 /*
 // https://www.unicode.org/L2/L2017/17304-moon-var.pdf
@@ -16,6 +17,9 @@ function uniMoon(moon, north = true, invert = true) {
 */
 
 export default function Moon() {
+  // The page is prerendered at build time and the dates are shown in the
+  // viewer's time zone, so hydrate without them.
+  const hydrated = useHydrated();
   const now = new Date();
   const hunt = lune.phase_hunt(now);
   const huntNext = lune.phase_hunt(
@@ -68,10 +72,12 @@ export default function Moon() {
           {data.map((row) => (
             <div
               key={row.title}
-              className={"group" + (row.inPast ? " past" : "")}
+              className={"group" + (hydrated && row.inPast ? " past" : "")}
             >
               <div className="title">{row.title}</div>
-              <div className="date">{dateFmt(row.date)}</div>
+              <div className="date">
+                {hydrated ? dateFmt(row.date) : "\u00a0"}
+              </div>
             </div>
           ))}
         </div>
