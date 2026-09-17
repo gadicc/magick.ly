@@ -77,6 +77,13 @@ export default async function (phase: string): Promise<NextConfig> {
         parser: { parse: JSON5.parse },
       });
 
+      // Built-in ritual sources are imported `with { type: "text" }`. Next's
+      // webpack (5.98) ignores that attribute, so match the extension.
+      config.module.rules.push({
+        test: /\.jade$/,
+        type: "asset/source",
+      });
+
       config.module.rules.push({
         test: /\.svg$/,
         use: ["@svgr/webpack"],

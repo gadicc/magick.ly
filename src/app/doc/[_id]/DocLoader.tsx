@@ -1,15 +1,14 @@
 "use client";
 
+// Built-in ritual sources ship in the client bundle so they work offline.
+// Turbopack reads `type: "text"` itself; next.config.ts gives webpack a rule.
 // import neophyte from "../../src/doc/neophyte.yaml";
-// @ts-expect-error: ok
-import _neophyte from "!!raw-loader!@/doc/0=0.jade";
-// import _neophyteM from "!!raw-loader!../../src/doc/0=0m.jade";
-// @ts-expect-error: ok
-import _zelator from "!!raw-loader!@/doc/1=10.jade";
-// import _healing from "!!raw-loader!../../src/doc/healing.jade";
-// import _chesedTalisman from "!!raw-loader!../../src/doc/chesed-talisman.jade";
-// @ts-expect-error: ok
-import _theoricus from "!!raw-loader!@/doc/2=9.jade";
+import _neophyte from "@/doc/0=0.jade" with { type: "text" };
+// import _neophyteM from "@/doc/0=0m.jade" with { type: "text" };
+import _zelator from "@/doc/1=10.jade" with { type: "text" };
+// import _healing from "@/doc/healing.jade" with { type: "text" };
+// import _chesedTalisman from "@/doc/chesed-talisman.jade" with { type: "text" };
+import _theoricus from "@/doc/2=9.jade" with { type: "text" };
 import { prepare } from "@/doc/prepare";
 import type { DocNode } from "@/schemas";
 import DocRender, { DocView } from "./DocRender";

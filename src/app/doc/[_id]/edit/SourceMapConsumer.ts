@@ -1,9 +1,10 @@
-// @ts-expect-error: no types
-import sourceMapMappings from "arraybuffer-loader!source-map/lib/mappings.wasm";
 import { SourceMapConsumer } from "source-map";
 
+// Both bundlers emit the WASM as a static asset. The service worker precaches
+// build assets, so the editor can still map source offline.
 SourceMapConsumer.initialize({
-  "lib/mappings.wasm": sourceMapMappings,
+  "lib/mappings.wasm": new URL("source-map/lib/mappings.wasm", import.meta.url)
+    .href,
 });
 
 export default SourceMapConsumer;
