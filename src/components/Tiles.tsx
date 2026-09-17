@@ -1,4 +1,4 @@
-import { Grid, ImageListItemBar } from "@mui/material";
+import { Box, Grid, ImageListItemBar } from "@mui/material";
 import Image from "next/image";
 import Link from "@/lib/link";
 
@@ -19,21 +19,27 @@ function Tiles({ tiles }) {
             md: 3,
           }}
         >
-          <Link href={tile.to} underline="none">
+          {/*
+            A preview can draw its own links (GradeTree does), and links
+            can't nest, so the preview sits beside the tile's link, which
+            covers it. `inert` keeps the preview's links out of the tab
+            order and the accessibility tree. Text previews keep the link
+            colour they had inside the link.
+          */}
+          <Box
+            inert
+            sx={{
+              width: "100%",
+              height: "100%",
+              overflow: "hidden",
+              color: "primary.main",
+            }}
+          >
             {tile.Component ? (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  pointerEvents: "none",
-                  overflow: "hidden",
-                }}
-              >
-                <tile.Component
-                  height="100%"
-                  // className="MuiGridListTile-imgFullHeight"
-                />
-              </div>
+              <tile.Component
+                height="100%"
+                // className="MuiGridListTile-imgFullHeight"
+              />
             ) : null}
             {tile.img ? (
               typeof tile.img === "string" ? (
@@ -56,6 +62,17 @@ function Tiles({ tiles }) {
                 />
               )
             ) : null}
+          </Box>
+          <Link
+            href={tile.to}
+            underline="none"
+            sx={{
+              position: "absolute",
+              inset: 0,
+              // The tile clips overflow, so draw the focus ring inside it.
+              "&:focus-visible": { outlineOffset: "-3px" },
+            }}
+          >
             <ImageListItemBar
               sx={{ background: "rgba(0, 0, 0, 0.6)" }}
               title={tile.title}
