@@ -16,15 +16,19 @@ import Tiles from "@/components/Tiles";
 import Link from "@/lib/link";
 import OpenSource from "@/OpenSource";
 
+// Both previews show live data (the phase, the retrograde dates), so they
+// are informative and screen readers read them.
 const tiles = [
   {
     Component: MoonWidget,
     title: "Moon ☾",
+    informative: true,
     to: "moon",
   },
   {
     Component: MercuryWidget,
     title: "Mercury ☿",
+    informative: true,
     to: "planet/mercury",
   },
 ];
