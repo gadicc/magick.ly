@@ -32,4 +32,19 @@ describe("RoseSigil", () => {
     expect(numbers.length).toBeGreaterThan(100);
     for (const number of numbers) expect(number).toMatch(/^-?\d+(\.\d{1,3})?$/);
   });
+
+  it("draws repeated letters before optimisation", () => {
+    // Repeated letters share a centre until the client optimises the layout.
+    // A browser stops drawing a path at its first NaN, so a NaN in the
+    // opening move drops the whole path.
+    const html = renderToString(
+      <RoseSigil sigilText="דדדבבב" showRose={false} animate debug />,
+    );
+    const paths = [...html.matchAll(/<path [^>]*\bd="([^"]*)"/g)];
+    expect(paths).toHaveLength(2);
+    for (const [, d] of paths) {
+      expect(d).toMatch(/^M 1,25 A /);
+      expect(d).not.toContain("NaN");
+    }
+  });
 });

@@ -64,38 +64,42 @@ export function letterPoint(letter: string): Point {
   return { x: radius * Math.cos(angle), y: radius * Math.sin(angle) };
 }
 
+/**
+ * A line whose y falls by less than this fraction of its length is level,
+ * and its end bar takes the end order of a line whose y rises. Letters
+ * mirrored about the vertical axis differ in y only by rounding, under
+ * 1e-15 of the length, and engines can disagree on its sign, which would
+ * otherwise swap the bar's ends between server and browser. A bar this
+ * close to vertical is vertical at SVG's 0.001 precision.
+ */
+const LEVEL_RISE = 1e-9;
+
+/**
+ * The ends of a bar through `point2`, `distance` either side of it and
+ * perpendicular to the line from `point1`. The end on the +x side comes
+ * first; a level line's bar is vertical, and its end to the left of the
+ * direction of travel comes first.
+ */
 function calculatePerpendicularPointsAtEnd(
   point1: Point,
   point2: Point,
   distance: number,
 ): [Point, Point] {
-  // Calculate slope of original line
-  const slope = (point2.y - point1.y) / (point2.x - point1.x);
-
-  // Calculate slope of perpendicular line
-  const perpSlope = -1 / slope;
-
-  // Choose a point on the original line
-  const targetPoint = point2;
-
-  // Calculate y-intercept of perpendicular line
-  const yIntercept = targetPoint.y - perpSlope * targetPoint.x;
-
-  // Calculate two points on perpendicular line
-  const pointA = {
-    x: targetPoint.x + distance / Math.sqrt(1 + perpSlope ** 2),
-    y:
-      perpSlope * (targetPoint.x + distance / Math.sqrt(1 + perpSlope ** 2)) +
-      yIntercept,
-  };
-  const pointB = {
-    x: targetPoint.x - distance / Math.sqrt(1 + perpSlope ** 2),
-    y:
-      perpSlope * (targetPoint.x - distance / Math.sqrt(1 + perpSlope ** 2)) +
-      yIntercept,
-  };
-
-  return [pointA, pointB];
+  const length = lengthBetweenTwoPoints(point1, point2);
+  // As in `pointFromEndOfLine`, a coincident `point1` lies on the +x side.
+  const along =
+    length === 0
+      ? { x: -1, y: 0 }
+      : {
+          x: (point2.x - point1.x) / length,
+          y: (point2.y - point1.y) / length,
+        };
+  const side = along.y <= -LEVEL_RISE ? -distance : distance;
+  const offset = { x: along.y * side, y: -along.x * side };
+  return [
+    { x: point2.x + offset.x, y: point2.y + offset.y },
+    { x: point2.x - offset.x, y: point2.y - offset.y },
+  ];
 }
 
 function toDegrees(radians: number) {
@@ -123,6 +127,10 @@ function pointAtFractionOfLine(p1: Point, p2: Point, frac: number): Point {
 
 function pointFromEndOfLine(p1: Point, p2: Point, distance: number): Point {
   const length = lengthBetweenTwoPoints(p1, p2);
+  // Repeated letters share a centre before optimisation, so the line
+  // between them has no direction. Treat `p1` as lying on the +x side, as
+  // `Math.atan2(0, 0)` does in the angle tests.
+  if (length === 0) return { x: p2.x + distance, y: p2.y };
   const frac = distance / length;
   return pointAtFractionOfLine(p1, p2, 1 - frac);
 }
@@ -198,13 +206,12 @@ export function pathFromPoints({
   let d = "";
   if (points.length === 0) return "";
 
-  // Circle at the start
-  const start = points[1]
-    ? pointFromEndOfLine(points[1], points[0], -1)
-    : { x: points[0].x - 1, y: points[0].y };
-  const end = points[1]
-    ? pointFromEndOfLine(points[1], points[0], 1)
-    : { x: points[0].x + 1, y: points[0].y };
+  // Circle at the start, drawn from the side facing the second point, where
+  // the path leaves it. A lone letter has no second point, so like a
+  // repeated first letter its circle starts on the +x side.
+  const ahead = points[1] ?? points[0];
+  const start = pointFromEndOfLine(ahead, points[0], -1);
+  const end = pointFromEndOfLine(ahead, points[0], 1);
   d +=
     `M ${svgPair(end)} ` +
     largeArc(end, start, 1, false) +
