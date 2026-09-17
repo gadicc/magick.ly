@@ -66,6 +66,23 @@ export default async function (phase: string): Promise<NextConfig> {
       "/api/rituals/publication/backfill": [...ritualPublicationTraceFiles],
     },
     experimental: {},
+    // `pnpm dev` runs on Turbopack; production builds still use webpack, so
+    // keep these in step with the `webpack()` rules below. Ritual sources
+    // need no rule here: Turbopack reads `with { type: "text" }` itself.
+    turbopack: {
+      rules: {
+        // `as: "*.json"` keeps the `with { type: "json" }` imports valid.
+        "*.json5": {
+          loaders: ["./loaders/json5-loader.mjs"],
+          as: "*.json",
+        },
+        "*.svg": { loaders: ["@svgr/webpack"], as: "*.js" },
+      },
+      resolveAlias: {
+        // nlopt-js's Emscripten glue requires fs; see the webpack fallback.
+        fs: { browser: "./src/lib/emptyModule.ts" },
+      },
+    },
     webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
       // https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application
       // ./node_modules/nlopt-js/dist/index.js; Module not found: Can't resolve 'fs'

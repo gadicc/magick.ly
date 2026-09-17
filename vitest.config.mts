@@ -5,7 +5,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [
     {
-      // Mirror next.config's webpack rule so tests can render components over the data set.
+      // Mirror next.config's JSON5 rules so tests can render components over the data set.
       name: "magickli-json5",
       transform(code, id) {
         if (!id.endsWith(".json5")) return null;

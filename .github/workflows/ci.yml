@@ -46,3 +46,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm build
+      # Development runs on Turbopack while production builds with webpack
+      # (above). This Turbopack build replaces that output and only checks
+      # the development path still compiles and prerenders.
+      - run: pnpm check:turbopack

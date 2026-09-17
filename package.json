@@ -7,8 +7,10 @@
     "pnpm": "^10.18.0"
   },
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
+    "dev:webpack": "next dev --webpack",
     "build": "next build --webpack",
+    "check:turbopack": "SERWIST_SUPPRESS_TURBOPACK_WARNING=1 next build --turbopack",
     "start": "next start",
     "check": "biome check .",
     "lint": "biome lint .",
