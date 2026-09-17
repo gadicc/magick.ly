@@ -41,7 +41,7 @@ export default function Planets() {
         <Tiles tiles={tiles} size={{ xs: 6 }} />
 
         <TableContainer component={Paper}>
-          <Table aria-label="simple table">
+          <Table aria-label="Planets">
             <TableHead>
               <TableRow>
                 <TableCell>Symbol</TableCell>
@@ -53,22 +53,27 @@ export default function Planets() {
             <TableBody>
               {Object.values(Data.planet).map((planet) => (
                 <TableRow key={planet.id}>
-                  <TableCell scope="row">
-                    <Link href={"/astrology/planet/" + planet.id}>
-                      {planet.symbol}
-                    </Link>
+                  {/* No link without text: it would be an unnamed tab stop. */}
+                  <TableCell>
+                    {planet.symbol && (
+                      <Link href={"/astrology/planet/" + planet.id}>
+                        {planet.symbol}
+                      </Link>
+                    )}
                   </TableCell>
 
-                  <TableCell scope="row">
+                  <TableCell component="th" scope="row">
                     <Link href={"/astrology/planet/" + planet.id}>
                       {planet.name.en.en}
                     </Link>
                   </TableCell>
 
-                  <TableCell scope="row">
-                    <Link href={"/astrology/planet/" + planet.id}>
-                      {planet.name.he ? planet.name.he.roman : ""}
-                    </Link>
+                  <TableCell>
+                    {planet.name.he?.roman && (
+                      <Link href={"/astrology/planet/" + planet.id}>
+                        {planet.name.he.roman}
+                      </Link>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
