@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { privateMetadata } from "@/seo/metadata";
 import Lamen from "./lamen";
 
@@ -16,9 +17,9 @@ export default function GDComponentTest() {
     "keryx",
     "sentinel",
   ].map((officer) => (
-    <>
+    <Fragment key={officer}>
       <Lamen officer={officer} />
       <br />
-    </>
+    </Fragment>
   ));
 }
