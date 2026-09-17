@@ -41,8 +41,32 @@ describe("Tiles", () => {
     // The link covers the preview, so the whole tile stays clickable.
     expect(getComputedStyle(tile).position).toBe("absolute");
     expect(tile.closest("[inert]")).toBeNull();
-    expect(tile.previousElementSibling?.hasAttribute("inert")).toBe(true);
+    expect(tile.nextElementSibling?.hasAttribute("inert")).toBe(true);
+    expect(tile.parentElement?.className).toContain("MuiGrid-grid-md-3");
     const about = screen.getByRole("link", { name: "About" });
-    expect(about.previousElementSibling?.querySelector("img")).not.toBeNull();
+    expect(about.nextElementSibling?.querySelector("img")).not.toBeNull();
+  });
+
+  it("leaves an informative preview readable, after its title", () => {
+    render(
+      <Tiles
+        size={{ xs: 6 }}
+        tiles={[
+          {
+            Component: () => <div>Waxing Crescent</div>,
+            title: "Moon ☾",
+            to: "/astrology/moon",
+            informative: true,
+          },
+        ]}
+      />,
+    );
+
+    const tile = screen.getByRole("link", { name: "Moon ☾" });
+    const preview = tile.nextElementSibling;
+    expect(preview?.textContent).toBe("Waxing Crescent");
+    expect(preview?.hasAttribute("inert")).toBe(false);
+    expect(tile.parentElement?.className).toContain("MuiGrid-grid-xs-6");
+    expect(tile.parentElement?.className).not.toContain("MuiGrid-grid-md");
   });
 });

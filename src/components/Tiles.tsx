@@ -1,8 +1,25 @@
-import { Box, Grid, ImageListItemBar } from "@mui/material";
+import { Box, Grid, type GridProps, ImageListItemBar } from "@mui/material";
 import Image from "next/image";
 import Link from "@/lib/link";
 
-function Tiles({ tiles }) {
+/**
+ * Tile widths for a full-width page. The breakpoints follow the viewport, so
+ * a page that puts Tiles in a narrower container passes its own `size`.
+ */
+const FULL_WIDTH_SIZE: GridProps["size"] = { xs: 6, sm: 4, md: 3 };
+
+/**
+ * Linked tiles, each previewing its destination with `img` or `Component`.
+ * Mark a tile `informative` when its preview shows information rather than
+ * decoration and has no links of its own, so screen readers read it.
+ */
+function Tiles({
+  tiles,
+  size = FULL_WIDTH_SIZE,
+}: {
+  tiles;
+  size?: GridProps["size"];
+}) {
   return (
     <Grid container spacing={0}>
       {tiles.map((tile) => (
@@ -13,21 +30,38 @@ function Tiles({ tiles }) {
             position: "relative",
             overflow: "hidden",
           }}
-          size={{
-            xs: 6,
-            sm: 4,
-            md: 3,
-          }}
+          size={size}
         >
           {/*
             A preview can draw its own links (GradeTree does), and links
-            can't nest, so the preview sits beside the tile's link, which
-            covers it. `inert` keeps the preview's links out of the tab
-            order and the accessibility tree. Text previews keep the link
-            colour they had inside the link.
+            can't nest, so the tile's link sits beside the preview and covers
+            it. The link comes first so screen readers reach the title before
+            an informative preview.
+          */}
+          <Link
+            href={tile.to}
+            underline="none"
+            sx={{
+              position: "absolute",
+              inset: 0,
+              // The preview comes later and may make its own layer.
+              zIndex: 1,
+              // The tile clips overflow, so draw the focus ring inside it.
+              "&:focus-visible": { outlineOffset: "-3px" },
+            }}
+          >
+            <ImageListItemBar
+              sx={{ background: "rgba(0, 0, 0, 0.6)" }}
+              title={tile.title}
+            />
+          </Link>
+          {/*
+            `inert` keeps a decorative preview, and any links in it, out of
+            the tab order and the accessibility tree. Text previews keep the
+            link colour they had when they sat inside the link.
           */}
           <Box
-            inert
+            inert={!tile.informative}
             sx={{
               width: "100%",
               height: "100%",
@@ -63,21 +97,6 @@ function Tiles({ tiles }) {
               )
             ) : null}
           </Box>
-          <Link
-            href={tile.to}
-            underline="none"
-            sx={{
-              position: "absolute",
-              inset: 0,
-              // The tile clips overflow, so draw the focus ring inside it.
-              "&:focus-visible": { outlineOffset: "-3px" },
-            }}
-          >
-            <ImageListItemBar
-              sx={{ background: "rgba(0, 0, 0, 0.6)" }}
-              title={tile.title}
-            />
-          </Link>
         </Grid>
       ))}
     </Grid>
