@@ -94,5 +94,14 @@ Follow-ups are separate from the completed migration work:
   names. The archangel data fix (17 September) moved the Tree image identity
   to `magickli-tree-image-outlines-v2`; see
   [plan 028](028-seo.md#archangel-data).
+- Development runs on Turbopack since 17 September (`pnpm dev`;
+  `pnpm dev:webpack` for parity), and production still builds with webpack;
+  see [plan 029](029-turbopack-development.md). TODO: move production builds
+  to Turbopack when relevant. The service worker must first leave
+  `@serwist/next`'s webpack plugin; the steps and revisit conditions are in
+  [plan 029](029-turbopack-development.md#production-builds-on-turbopack-deferred).
+- TODO: drop the `webpack` devDependency once Serwist's webpack plugin is gone;
+  it settles that plugin's optional peer
+  ([plan 029](029-turbopack-development.md#choices)).
 
 Majou2 and MyReiki were read-only skill-evaluation fixtures. Neither was migrated.
