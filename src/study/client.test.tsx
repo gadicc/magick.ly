@@ -219,6 +219,30 @@ describe("study client identity and continuity", () => {
     expect(fetch).toHaveBeenCalledOnce();
   });
 
+  it("treats a null session user as signed out", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ user: null, admin: false })),
+    );
+
+    function ScopeHarness() {
+      const runtime = studyClient.useStudyList(null);
+      return <div>{runtime.error ?? runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    const first = render(<ScopeHarness />);
+    await screen.findByText(/^anonymous:/);
+    first.unmount();
+    render(<ScopeHarness />);
+    await screen.findByText(/^anonymous:/);
+    expect(fetch).toHaveBeenCalledOnce();
+    const observer = new studyStorage.StudyDatabase("magickli-study");
+    expect(await observer.device.get("active")).toMatchObject({
+      explicitlySignedOut: true,
+    });
+    observer.close();
+  });
+
   it("keeps the live quiz mounted while a local review refreshes its snapshot", async () => {
     Object.defineProperty(window.navigator, "onLine", {
       configurable: true,

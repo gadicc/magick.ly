@@ -6,16 +6,17 @@ const responseHeaders = {
   Vary: "Cookie, Authorization",
 };
 
-/** Fresh identity for local account binding; never a ritual permission or offline lease. */
+/**
+ * Fresh identity for local account binding; never a ritual permission or offline lease.
+ * Signed-out and expired sessions get 200 with a null user: browsers log every
+ * 401 as a failed request, and anonymous pages ask on each load and refocus.
+ */
 export async function GET() {
   try {
     const viewer = await getCurrentSqlViewer();
-    if (!viewer)
-      return Response.json(
-        { user: null, admin: false },
-        { status: 401, headers: responseHeaders },
-      );
-    return Response.json(viewer, { headers: responseHeaders });
+    return Response.json(viewer ?? { user: null, admin: false }, {
+      headers: responseHeaders,
+    });
   } catch {
     return Response.json(
       { error: "SESSION_UNAVAILABLE" },

@@ -108,6 +108,16 @@ user's ID, name, image and separately read global-admin flag with `no-store`,
 rechecking the session after the grant lookup. Its failure response contains no
 provider diagnostics or session tokens.
 
+A change made on 17 September 2026 answers a signed-out or expired session
+with HTTP 200 and `{ "user": null, "admin": false }` instead of 401. Browsers
+logged every anonymous check as a failed request, and anonymous pages check on
+each load and tab refocus. The study client still accepts 401, so a
+rolled-back server keeps working. A tab still running the previous client
+treats the null user as malformed: an anonymous visitor in one sees "Study
+progress could not be loaded" until the page reloads. Page loads are
+network-first, so any online reload, including the update prompt's, picks up
+the new client. That window was accepted when both sides changed together.
+
 The new `/signin` page starts Google authentication through Better Auth and
 accepts only local application callback paths. CI uses synthetic authentication
 values and closed loopback SQL endpoints. The existing login handler and global

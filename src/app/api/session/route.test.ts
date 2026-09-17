@@ -24,10 +24,12 @@ describe("fresh browser identity endpoint", () => {
     });
     expect(mocks.viewer).toHaveBeenCalledTimes(1);
   });
-  it("refuses expired or signed-out sessions without querying access", async () => {
+  it("answers expired or signed-out sessions with a null user", async () => {
     mocks.viewer.mockResolvedValue(null);
     const response = await GET();
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(response.headers.get("vary")).toContain("Cookie");
     expect(await response.json()).toEqual({ user: null, admin: false });
     expect(mocks.viewer).toHaveBeenCalledTimes(1);
   });

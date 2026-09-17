@@ -27,6 +27,17 @@ function session(ownerId: string) {
   return response;
 }
 
+function signedOutSession() {
+  const response = Response.json(
+    { user: null, admin: false },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+  Object.defineProperty(response, "url", {
+    value: `${location.origin}/api/session`,
+  });
+  return response;
+}
+
 function runtime() {
   vi.stubGlobal("BroadcastChannel", SilentChannel);
   const database = new RitualOfflineDatabase(`browser-${crypto.randomUUID()}`, {
@@ -104,6 +115,19 @@ it("freshly verifies a newer bridge identity after an older reader check", async
   expect(bridgeFetcher).toHaveBeenCalledOnce();
   expect(activateStudy).toHaveBeenCalledWith(B);
   expect(instance.coordinator.state.account?.ownerId).toBe(B);
+  instance.coordinator.dispose();
+});
+
+it("keeps the local account when the session check finds no user", async () => {
+  const instance = runtime();
+  await instance.start();
+  await expect(
+    instance.refreshVerifiedAccount(vi.fn(async () => session(A))),
+  ).resolves.toBe(true);
+  await expect(
+    instance.refreshVerifiedAccount(vi.fn(async () => signedOutSession())),
+  ).resolves.toBe(false);
+  expect(instance.coordinator.state.account?.ownerId).toBe(A);
   instance.coordinator.dispose();
 });
 

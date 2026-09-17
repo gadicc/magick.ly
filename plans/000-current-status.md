@@ -103,6 +103,11 @@ Follow-ups are separate from the completed migration work:
 - TODO: drop the `webpack` devDependency once Serwist's webpack plugin is gone;
   it settles that plugin's optional peer
   ([plan 029](029-turbopack-development.md#choices)).
+- Not yet released: from the next release, anonymous `/api/session` checks
+  return 200 with a null user instead of 401 (changed 17 September). An
+  anonymous tab left open across that release shows a study load error until
+  it reloads; see
+  [plan 013](013-sql-auth-runtime.md#runtime-entrypoints-prepared).
 - TODO: give each Tree of Life path's letter its own id. `TreeOfLife` uses
   `path<id>` for both the path outline and its letter, so every page with a
   tree has 22 duplicate ids. SVG export already renames the later copies

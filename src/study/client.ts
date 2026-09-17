@@ -144,7 +144,28 @@ async function resolveScope(
     return repository().scope(lastAccountId);
   }
   assertCurrentIdentity(generation, signal);
-  if (response.status === 401) {
+  // The server answers a signed-out session with a null user; a rolled-back
+  // server may still answer 401 instead.
+  let signedOut = response.status === 401;
+  if (response.ok) {
+    const body: unknown = await response.json();
+    assertCurrentIdentity(generation, signal);
+    const user =
+      body && typeof body === "object" && !Array.isArray(body)
+        ? (body as { user?: unknown }).user
+        : undefined;
+    if (user === null) signedOut = true;
+    else {
+      const id =
+        user && typeof user === "object"
+          ? (user as { id?: unknown }).id
+          : undefined;
+      if (isUuidV7(id) && id === id.toLowerCase())
+        return repository().scope(id);
+      throw new Error("Malformed study identity response.");
+    }
+  }
+  if (signedOut) {
     await repository().markSignedOut();
     if (generation !== identityGeneration)
       throw new DOMException("Study identity changed.", "AbortError");
@@ -152,16 +173,6 @@ async function resolveScope(
     // already signed-out device would otherwise ask again for every view.
     accountActivation = null;
     return repository().scope(null);
-  }
-  if (response.ok) {
-    const body: unknown = await response.json();
-    assertCurrentIdentity(generation, signal);
-    const id =
-      body && typeof body === "object" && !Array.isArray(body)
-        ? (body as { user?: { id?: unknown } }).user?.id
-        : null;
-    if (isUuidV7(id) && id === id.toLowerCase()) return repository().scope(id);
-    throw new Error("Malformed study identity response.");
   }
   const lastAccountId = await repository().lastLocalAccountId();
   assertCurrentIdentity(generation, signal);
