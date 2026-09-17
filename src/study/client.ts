@@ -148,6 +148,9 @@ async function resolveScope(
     await repository().markSignedOut();
     if (generation !== identityGeneration)
       throw new DOMException("Study identity changed.", "AbortError");
+    // markSignedOut() signals only when it changes the device record, so an
+    // already signed-out device would otherwise ask again for every view.
+    accountActivation = null;
     return repository().scope(null);
   }
   if (response.ok) {

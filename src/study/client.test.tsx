@@ -192,6 +192,33 @@ describe("study client identity and continuity", () => {
     observer.close();
   });
 
+  it("asks once per page whether a signed-out device is still anonymous", async () => {
+    const seedDb = new studyStorage.StudyDatabase("magickli-study");
+    const seed = new studyStorage.StudyRepository(seedDb, {
+      broadcast: false,
+    });
+    await seed.markSignedOut();
+    seed.close();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ user: null, admin: false }, { status: 401 }),
+      ),
+    );
+
+    function ScopeHarness() {
+      const runtime = studyClient.useStudyList(null);
+      return <div>{runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    const first = render(<ScopeHarness />);
+    await screen.findByText(/^anonymous:/);
+    first.unmount();
+    render(<ScopeHarness />);
+    await screen.findByText(/^anonymous:/);
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+
   it("keeps the live quiz mounted while a local review refreshes its snapshot", async () => {
     Object.defineProperty(window.navigator, "onLine", {
       configurable: true,
