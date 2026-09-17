@@ -173,6 +173,51 @@ describe("rose sigil geometry", () => {
     expect(bars[0]).toMatch(/ L 19\.546,13\.587 L 19\.546,17\.587$/);
   });
 
+  it("bends squiggles the same way however an engine rounds", () => {
+    // פ and כ sit at one height, and צ, ט and מ (or ס, ז and ש) on one line
+    // through the centre, but only up to rounding that engines can differ in.
+    const step = (value: number, sign: number) =>
+      value + sign * Math.abs(value) * Number.EPSILON;
+    for (const text of ["אככפ", "פפפכ", "כככפ", "צטטמ", "סזזש"]) {
+      const sigilTokens = [...text];
+      const d = pathFromPoints({ points: sigilPoints(text), sigilTokens });
+      for (const letter of new Set(sigilTokens))
+        for (const [dx, dy] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ]) {
+          const { x, y } = letterPoint(letter);
+          const moved = { x: step(x, dx), y: step(y, dy) };
+          expect(moved).not.toEqual({ x, y });
+          const points = sigilTokens.map((token) =>
+            token === letter ? moved : letterPoint(token),
+          );
+          expect(pathFromPoints({ points, sigilTokens })).toBe(d);
+        }
+    }
+    // Only ties change: directions 1e-6 apart still decide the bend.
+    const bend = (previous: Point, nextNext: Point) =>
+      pathFromPoints({
+        points: [previous, { x: 0, y: 0 }, { x: 0, y: 0.5 }, nextNext],
+        sigilTokens: ["א", "ב", "ב", "ג"],
+      }).match(/A 2,1 0 1,([01]) /)?.[1];
+    // Coming from along -x counts as π whichever side of the axis rounding
+    // puts it, while a real tilt below the axis stays near -π.
+    const down = { x: 0, y: 10 };
+    expect(bend({ x: -10, y: -1e-14 }, down)).toBe("1");
+    expect(bend({ x: -10, y: 1e-14 }, down)).toBe("1");
+    expect(bend({ x: -10, y: -1e-6 }, down)).toBe("0");
+    expect(bend({ x: -10, y: 1e-6 }, down)).toBe("1");
+    // Leaving along the line it came in on.
+    const diagonal = { x: -10, y: -10 };
+    expect(bend(diagonal, { x: -20, y: -20 - 1e-14 })).toBe("0");
+    expect(bend(diagonal, { x: -20, y: -20 + 1e-14 })).toBe("0");
+    expect(bend(diagonal, { x: -20, y: -20 - 1e-6 })).toBe("0");
+    expect(bend(diagonal, { x: -20, y: -20 + 1e-6 })).toBe("1");
+  });
+
   it("rounds coordinates so engines that differ in the last bit agree", () => {
     expect(SVG_COORDINATE_DECIMALS).toBe(3);
     // י's label y from Node 25 and from Chromium 152, which failed hydration.

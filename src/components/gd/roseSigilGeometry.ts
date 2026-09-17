@@ -65,14 +65,15 @@ export function letterPoint(letter: string): Point {
 }
 
 /**
- * A line whose y falls by less than this fraction of its length is level,
- * and its end bar takes the end order of a line whose y rises. Letters
- * mirrored about the vertical axis differ in y only by rounding, under
- * 1e-15 of the length, and engines can disagree on its sign, which would
- * otherwise swap the bar's ends between server and browser. A bar this
- * close to vertical is vertical at SVG's 0.001 precision.
+ * Directions closer than this, in radians or as a fraction of a line's
+ * length, are the same direction. Letter centres that line up exactly,
+ * such as mirrored letters at one height or letters on one line through
+ * the centre, are only aligned up to rounding, under 1e-15, and engines can
+ * disagree on its sign. A choice between such directions could then
+ * differ between server and browser. SVG's 0.001 precision cannot show
+ * a difference this small.
  */
-const LEVEL_RISE = 1e-9;
+const DIRECTION_TOLERANCE = 1e-9;
 
 /**
  * The ends of a bar through `point2`, `distance` either side of it and
@@ -94,7 +95,8 @@ function calculatePerpendicularPointsAtEnd(
           x: (point2.x - point1.x) / length,
           y: (point2.y - point1.y) / length,
         };
-  const side = along.y <= -LEVEL_RISE ? -distance : distance;
+  // A level line has no +x end; it takes the order of a line whose y rises.
+  const side = along.y <= -DIRECTION_TOLERANCE ? -distance : distance;
   const offset = { x: along.y * side, y: -along.x * side };
   return [
     { x: point2.x + offset.x, y: point2.y + offset.y },
@@ -108,6 +110,18 @@ function toDegrees(radians: number) {
 
 function lengthBetweenTwoPoints(p1: Point, p2: Point) {
   return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+}
+
+/**
+ * `Math.atan2` of the line from `from` to `to`, with angles within
+ * DIRECTION_TOLERANCE above -π moved to π. Rounding decides whether a line
+ * along -x lies just above or below the axis, and so whether `Math.atan2`
+ * gives nearly π or nearly -π; comparing with the same tolerance then
+ * treats both as one direction.
+ */
+function direction(from: Point, to: Point) {
+  const angle = Math.atan2(to.y - from.y, to.x - from.x);
+  return angle < DIRECTION_TOLERANCE - Math.PI ? Math.PI : angle;
 }
 
 // Subtract vertex from p1,p2 to normalize on x-axis and calc angle
@@ -250,9 +264,10 @@ export function pathFromPoints({
         const nextNext = points[i + 2];
         // The squiggle bends away from where the path goes next; a repeat
         // at the very end has no next point and bends the default way.
+        // Directions that differ only by rounding count as equal.
         const side =
           nextNext &&
-          toDegrees(angleBetweenTwoPointsAndVertex(prev, nextNext, p)) < 0
+          direction(p, nextNext) < direction(p, prev) - DIRECTION_TOLERANCE
             ? "1"
             : "0";
         d += `L ${svgPair(justBefore)} `;
