@@ -21,7 +21,10 @@ const FONTS = [
   ["Noto Sans Symbols 2", "NotoSansSymbols2-Regular.ttf"],
 ] as const;
 
-const readAsset = (file: string) => readFile(path.join(process.cwd(), file));
+// Cards are drawn only while they prerender, so the route needs none of these
+// files traced. Without the comment Turbopack traces the whole project.
+const readAsset = (file: string) =>
+  readFile(path.join(/*turbopackIgnore: true*/ process.cwd(), file));
 
 async function loadFonts() {
   return Promise.all(

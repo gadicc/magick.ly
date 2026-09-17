@@ -36,7 +36,10 @@ async function drawArt(art: CardArt): Promise<Buffer> {
   let fit: "cover" | "contain" = "contain";
   let position: string | undefined;
   if (art.kind === "file") {
-    source = await readFile(path.join(process.cwd(), art.file));
+    // Read only while the cards prerender; see the OG route's `readAsset`.
+    source = await readFile(
+      path.join(/*turbopackIgnore: true*/ process.cwd(), art.file),
+    );
     fit = art.fit;
     position = art.position;
   } else {
