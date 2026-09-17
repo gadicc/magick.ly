@@ -75,6 +75,25 @@ function LineOutline({ x1, y1, x2, y2, offset = 5, ...args }) {
   );
 }
 
+/** A link, or a plain group when `href` is empty (GradeTree's paths). */
+function SvgLink({
+  href,
+  children,
+  ...props
+}: {
+  href?: string | null;
+  id?: string;
+  children: React.ReactNode;
+}) {
+  if (!href) return <g {...props}>{children}</g>;
+  return (
+    // @ts-expect-error: JSX types <a> as the HTML element, without xlinkHref
+    <a {...props} xlinkHref={href}>
+      {children}
+    </a>
+  );
+}
+
 /*
  * Note: originally I used a lot of CSS classes, which worked superbly in the
  * browser, but was very inconsistent when exporting into external programs.
@@ -388,8 +407,7 @@ function TreeOfLife({
             : null;
 
           return (
-            // @ts-expect-error: later
-            <a key={path.id} id={"path" + path.id} xlinkHref={pathHref(path)}>
+            <SvgLink key={path.id} id={"path" + path.id} href={pathHref(path)}>
               <LineOutline
                 x1={start.x}
                 y1={start.y}
@@ -422,7 +440,7 @@ function TreeOfLife({
                   return out;
                 })()}
               </title>
-            </a>
+            </SvgLink>
           );
         })}
       </g>
@@ -447,8 +465,7 @@ function TreeOfLife({
             : null;
 
           return (
-            // @ts-expect-error: later
-            <a key={path.id} id={"path" + path.id} xlinkHref={pathHref(path)}>
+            <SvgLink key={path.id} id={"path" + path.id} href={pathHref(path)}>
               <text
                 key={path.id}
                 style={style || undefined}
@@ -459,14 +476,13 @@ function TreeOfLife({
               >
                 {path[letterAttr]?.hebrewLetter?.letter?.he}
               </text>
-            </a>
+            </SvgLink>
           );
         })}
       </g>
       <g id="sephirot">
         {sephirot.map((s, i) => (
-          // @ts-expect-error: later
-          <a key={i} id={s.data.id} xlinkHref={sephirahHref(s)}>
+          <SvgLink key={i} id={s.data.id} href={sephirahHref(s)}>
             <circle
               cx={s.x}
               cy={s.y}
@@ -691,7 +707,7 @@ function TreeOfLife({
                 </g>
               );
             })()}
-          </a>
+          </SvgLink>
         ))}
       </g>
       {showConstructionCircles && (
