@@ -256,7 +256,7 @@ function generated(
       sourceSha256: hash("synthetic JSX " + JSON.stringify(request.props)),
       request,
       renderer: {
-        profile: "magickli-tree-image-outlines-v1" as const,
+        profile: "magickli-tree-image-outlines-v2" as const,
         resvg: "2.6.2",
         wasmSha256: hash("synthetic WASM"),
         fonts: [{ file: "synthetic-font.ttf", sha256: hash("synthetic font") }],

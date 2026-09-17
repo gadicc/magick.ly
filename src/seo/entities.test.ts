@@ -53,14 +53,17 @@ describe("entity pages", () => {
   });
 
   it("describes Sephiroth, including Da'at", () => {
-    // Keter's row spells its archangel key `archangelIdId`, so no archangel.
     expect(sephirahPage("keter")).toEqual({
       path: "/kabbalah/sephirah/keter",
       title: "Keter (Crown) on the Tree of Life",
       description:
         'Keter (כתר), "Crown", is Sephirah 1 of the Tree of Life: god name ' +
-        "Ehiyeh, angelic host Chayot Hakodesh, King and Queen scale colours.",
+        "Ehiyeh, archangel Metatron, angelic host Chayot Hakodesh, King and " +
+        "Queen scale colours.",
     });
+    expect(sephirahPage("malchut")?.description).toContain(
+      "archangel Sandalphon",
+    );
     expect(sephirahPage("daat")).toMatchObject({
       path: "/kabbalah/sephirah/daat",
       description:

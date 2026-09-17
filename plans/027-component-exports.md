@@ -138,6 +138,14 @@ Verified in Chromium 152 against a local dev server unless marked otherwise.
   `opengraph-image.tsx` files are the framework's own social-preview mechanism
   and can call `renderComponentImage` in process.
 
+> **17 September 2026:** the Tree image identity is now
+> `magickli-tree-image-outlines-v2`. Keter, Chochmah and Malchut gained their
+> archangels (Metatron, Ratziel, Sandalphon), which changes this reference's
+> output to 151,079 bytes, SHA-256
+> `b66fab61bf2f1c4015440bff9d6875a380b48cb1159d69f75c8b50459b6cfed5`, and with
+> it the generated catalog digest. The v1 figures in this record stay as the
+> record of what was published; see [plan 028](028-seo.md#archangel-data).
+
 ## Architecture options
 
 1. **Explicit registry (recommended).** Pure per-slug contract modules

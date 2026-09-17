@@ -25,7 +25,7 @@
       roman: "Roshit haGilgulim",
     },
     stone: "diamond",
-    archangelIdId: "metatron",
+    archangelId: "metatron",
     soulId: "yechidah",
     angelicOrderId: "chayot-hakodesh",
     gdGradeId: "10=1",

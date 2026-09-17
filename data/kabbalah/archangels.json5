@@ -96,6 +96,30 @@
       he: "הניאל",
       roman: "Haniel",
     },
+    sephirahId: "netzach",
   },
-  sephirahId: "netzach",
+  metatron: {
+    id: "metatron",
+    name: {
+      he: "מטטרון",
+      roman: "Metatron",
+    },
+    sephirahId: "keter",
+  },
+  raziel: {
+    id: "raziel",
+    name: {
+      he: "רזיאל",
+      roman: "Ratziel",
+    },
+    sephirahId: "chochmah",
+  },
+  sandalphon: {
+    id: "sandalphon",
+    name: {
+      he: "סנדלפון",
+      roman: "Sandalphon",
+    },
+    sephirahId: "malchut",
+  },
 }

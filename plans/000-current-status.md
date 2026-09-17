@@ -87,10 +87,12 @@ Follow-ups are separate from the completed migration work:
 - TODO: after the SEO release, resubmit `/sitemap.xml` in Search Console and
   remove `/sitemap-0.xml` if it was submitted directly (it is now a 404); see
   [plan 028](028-seo.md#follow-ups).
-- TODO: SEO content follow-ups from [plan 028](028-seo.md#follow-ups): fix
-  Keter's `archangelIdId` data key, compute `/astrology/moon` dates only in the
-  browser, replace the raw JSON rows on planet and grade pages, prerender the
-  `/study` set list, consider public SQL rituals for the sitemap, and give the
-  short app bar titles fuller names.
+- TODO: SEO content follow-ups from [plan 028](028-seo.md#follow-ups):
+  compute `/astrology/moon` dates only in the browser, replace the raw JSON
+  rows on planet and grade pages, prerender the `/study` set list, consider
+  public SQL rituals for the sitemap, and give the short app bar titles fuller
+  names. The archangel data fix (17 September) moved the Tree image identity
+  to `magickli-tree-image-outlines-v2`; see
+  [plan 028](028-seo.md#archangel-data).
 
 Majou2 and MyReiki were read-only skill-evaluation fixtures. Neither was migrated.

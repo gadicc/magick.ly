@@ -38,10 +38,11 @@ describe("component image registry", () => {
     const image = await render("tree-of-life", reference);
     expect(image.identity.profile).toBe(TREE_IMAGE_PROFILE);
     expect(image.identity.fonts).toHaveLength(5);
-    // Recorded in plans/009 from the production build and the generated catalog.
-    expect(image.byteSize).toBe(142_962);
+    // Profile v2: the v1 bytes recorded in plans/009 (142,962, 00c82f49…)
+    // changed when Keter, Chochmah and Malchut gained their archangels.
+    expect(image.byteSize).toBe(151_079);
     expect(image.sha256).toBe(
-      "00c82f49fa8318986a278ec4f3f3ea49520f9ecdae797c12d011e53475ebfef9",
+      "b66fab61bf2f1c4015440bff9d6875a380b48cb1159d69f75c8b50459b6cfed5",
     );
     expect(await validate(image.bytes)).toMatchObject({ status: "validated" });
   });

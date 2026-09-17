@@ -52,7 +52,7 @@ function render(_slug: string, params: URLSearchParams) {
     contentType: request.format === "svg" ? "image/svg+xml" : "image/png",
     sourceSha256: hash("synthetic JSX source"),
     identity: {
-      profile: "magickli-tree-image-outlines-v1",
+      profile: "magickli-tree-image-outlines-v2",
       resvg: "2.6.2",
       wasmSha256: "a".repeat(64),
       fonts: [{ file: "NotoSans-Regular.ttf", sha256: "b".repeat(64) }],
@@ -101,7 +101,7 @@ describe("generated ritual image captures", () => {
           new URL(ref, origins[0]).searchParams,
         ),
         renderer: expect.objectContaining({
-          profile: "magickli-tree-image-outlines-v1",
+          profile: "magickli-tree-image-outlines-v2",
           fonts: [{ file: "NotoSans-Regular.ttf", sha256: "b".repeat(64) }],
         }),
       }),

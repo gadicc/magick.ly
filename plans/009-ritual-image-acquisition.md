@@ -264,6 +264,14 @@ fingerprints, 15 public images and three source files remain unchanged. No
 database connection, provider write or retained protected source/object bytes was
 needed. Disposable aliases served only the in-memory legacy projection.
 
+> **17 September 2026:** the Tree image identity is now
+> `magickli-tree-image-outlines-v2`. Keter, Chochmah and Malchut gained their
+> archangels (Metatron, Ratziel, Sandalphon), which changes this reference's
+> output to 151,079 bytes, SHA-256
+> `b66fab61bf2f1c4015440bff9d6875a380b48cb1159d69f75c8b50459b6cfed5`, and with
+> it the generated catalog digest. The v1 figures above stay as the record of
+> what was published; see [plan 028](028-seo.md#archangel-data).
+
 The isolated acceptance harness initially mixed BSON's CJS decoder with the ESM
 importer's ObjectId class. Using one actual ESM module instance restored the
 intended identity check; application validation was not weakened. Evidence:

@@ -6,7 +6,7 @@ import { initWasm, Resvg } from "@resvg/resvg-wasm";
 import { TREE_VIEWBOX } from "./contracts/treeOfLife";
 
 /** Identity of existing generated Tree of Life assets; bytes must not change under it. */
-export const TREE_IMAGE_PROFILE = "magickli-tree-image-outlines-v1";
+export const TREE_IMAGE_PROFILE = "magickli-tree-image-outlines-v2";
 /** The other registered components share the same fonts and normalisation. */
 export const COMPONENT_IMAGE_PROFILE = "magickli-component-image-outlines-v1";
 
