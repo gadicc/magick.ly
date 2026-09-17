@@ -98,21 +98,22 @@ export interface StudyCard {
 function generateCards(this: StudySet) {
   const { data, question, answer, answers: _answers } = this;
   const array = Object.values(data);
+  // Items can share an answer (kaf and kaf-sofit both mean "palm of hand"),
+  // so distractors come from the distinct answers, never the card's own.
+  const answerTexts = Array.from(new Set(array.map(answer)));
 
   shuffle(array);
   return array.map((item) => {
-    const otherItems = array.filter(
-      (oItem, i) => oItem !== item && array.indexOf(oItem) === i,
-    );
-    shuffle(otherItems);
-    const answers =
-      _answers || otherItems.slice(0, 3).concat([item]).map(answer);
+    const correct = answer(item);
+    const otherAnswers = answerTexts.filter((text) => text !== correct);
+    shuffle(otherAnswers);
+    const answers = _answers || otherAnswers.slice(0, 3).concat([correct]);
     if (!_answers) shuffle(answers);
     return {
       // setId: name,
       id: item.id,
       question: typeof question === "function" ? question(item) : question,
-      answer: answer(item),
+      answer: correct,
       answers,
     } as StudyCard;
   });
