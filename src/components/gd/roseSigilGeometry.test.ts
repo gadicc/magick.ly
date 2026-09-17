@@ -1,13 +1,43 @@
 import { describe, expect, it } from "vitest";
 import {
+  largeArc,
   letterIJ,
   letterPoint,
   objective,
   optimizeSigilPoints,
+  type Point,
   pathFromPoints,
   pointsToArray,
+  SVG_COORDINATE_DECIMALS,
   sigilPoints,
+  svgCoordinate,
 } from "./roseSigilGeometry";
+
+/** One or two doubles away from zero: the size of a Node/Chromium trig difference. */
+const nudge = (value: number) => value * (1 + Number.EPSILON);
+
+/** Centre and radius SVG gives `A radius,radius 0 large,sweep to` (SVG 2, B.2.4). */
+function arcCircle(
+  from: Point,
+  to: Point,
+  radius: number,
+  large: boolean,
+  sweep: boolean,
+) {
+  const hx = (from.x - to.x) / 2;
+  const hy = (from.y - to.y) / 2;
+  const half = hx * hx + hy * hy;
+  const r = Math.max(radius, Math.sqrt(half));
+  const coef =
+    (large === sweep ? -1 : 1) * Math.sqrt(Math.max(0, r * r - half) / half);
+  return {
+    x: coef * hy + (from.x + to.x) / 2,
+    y: -coef * hx + (from.y + to.y) / 2,
+    r,
+  };
+}
+
+const NUMBER = /-?[\d.]+(?:e[-+]?\d+)?/g;
 
 describe("rose sigil geometry", () => {
   it("places every rose letter on its ring and rejects others", () => {
@@ -26,7 +56,9 @@ describe("rose sigil geometry", () => {
       points: sigilPoints("א"),
       sigilTokens: ["א"],
     });
-    expect(single).toMatch(/^M .* A 1,1 0 1,0 .* A 1,1 0 1,0 /);
+    // The start marker is a full circle of eight anticlockwise quarter arcs.
+    expect(single).toMatch(/^M 1,-15 A 1,1 0 0,0 /);
+    expect(single.match(/A 1,1 0 0,0 /g)).toHaveLength(8);
     expect(single).not.toContain("L ");
     const repeat = pathFromPoints({
       points: sigilPoints("אבב"),
@@ -50,8 +82,93 @@ describe("rose sigil geometry", () => {
       ],
       sigilTokens: ["א", "ב", "ג"],
     });
-    expect(straight.match(/A 1,1 0 1,1/g)).toHaveLength(3);
+    // Three clockwise loop arcs, four quarters each.
+    expect(straight.match(/A 1,1 0 0,1 /g)).toHaveLength(12);
     expect(pathFromPoints({ points: [], sigilTokens: [] })).toBe("");
+  });
+
+  it("rounds coordinates so engines that differ in the last bit agree", () => {
+    expect(SVG_COORDINATE_DECIMALS).toBe(3);
+    // י's label y from Node 25 and from Chromium 152, which failed hydration.
+    expect(svgCoordinate(30.310889132455348)).toBe(30.311);
+    expect(svgCoordinate(30.310889132455344)).toBe(30.311);
+    expect(svgCoordinate(-17.500000000000014)).toBe(-17.5);
+    expect(Object.is(svgCoordinate(-6.429395695523604e-15), 0)).toBe(true);
+    for (const text of ["א", "אב", "אבג", "גדי", "אבבג", "גבבא", "שלומ"]) {
+      const sigilTokens = text.split("");
+      const points = sigilPoints(text);
+      const d = pathFromPoints({ points, sigilTokens });
+      for (const number of d.match(NUMBER) ?? [])
+        expect(number).toMatch(/^-?\d+(\.\d{1,3})?$/);
+      const nudged = points.map(({ x, y }) => ({ x: nudge(x), y: nudge(y) }));
+      expect(nudged).not.toEqual(points);
+      expect(pathFromPoints({ points: nudged, sigilTokens })).toBe(d);
+    }
+  });
+
+  it("draws large arcs as quarters of the same circle that rounding keeps", () => {
+    const cases: Array<[Point, Point]> = [
+      // An ordinary loop.
+      [
+        { x: 1.931, y: 24.02 },
+        { x: 0, y: 24.503 },
+      ],
+      // Optimised repeats: rounded as one arc, its ends would merge.
+      [
+        { x: 0, y: -14.99913 },
+        { x: 0, y: -14.99901 },
+      ],
+      // The start marker's chord is its diameter.
+      [
+        { x: 1, y: -15 },
+        { x: -1, y: -15 },
+      ],
+      // Longer than the diameter, so SVG enlarges the radius.
+      [
+        { x: 3, y: 4 },
+        { x: 0, y: 0 },
+      ],
+    ];
+    for (const [from, to] of cases)
+      for (const clockwise of [true, false]) {
+        const d = largeArc(from, to, 1, clockwise);
+        const quarters = [
+          ...d.matchAll(/A ([\d.]+),\1 0 0,([01]) (-?[\d.]+),(-?[\d.]+) /g),
+        ];
+        expect(quarters).toHaveLength(4);
+        expect(quarters.map(([command]) => command).join("")).toBe(d);
+        const circle = arcCircle(from, to, 1, true, clockwise);
+        let at = { x: svgCoordinate(from.x), y: svgCoordinate(from.y) };
+        for (const [, r, sweep, x, y] of quarters) {
+          expect(sweep).toBe(clockwise ? "1" : "0");
+          const next = { x: Number(x), y: Number(y) };
+          const quarter = arcCircle(at, next, Number(r), false, clockwise);
+          expect(
+            Math.hypot(quarter.x - circle.x, quarter.y - circle.y),
+          ).toBeLessThan(0.002);
+          expect(Math.abs(quarter.r - circle.r)).toBeLessThan(0.002);
+          at = next;
+        }
+        expect(at).toEqual({ x: svgCoordinate(to.x), y: svgCoordinate(to.y) });
+      }
+    expect(largeArc({ x: 1, y: 2 }, { x: 1, y: 2 }, 1, true)).toBe("");
+  });
+
+  it("keeps the loop between optimised repeats a thousandth apart", () => {
+    // COBYLA's layout for אאא under Node 25; the loop's chord is 0.00012.
+    const points = [
+      { x: 1.8369684029544886e-15, y: -15.000510271213843 },
+      { x: 1.836944300199573e-15, y: -14.999293443774167 },
+      { x: 9.184537381221264e-16, y: -14.998976117843958 },
+    ];
+    const d = pathFromPoints({ points, sigilTokens: ["א", "א", "א"] });
+    const loop = [...d.matchAll(/A 1,1 0 0,1 (-?[\d.]+),/g)].map(([, x]) =>
+      Number(x),
+    );
+    expect(loop).toHaveLength(12);
+    // Its two unit circles sit either side of the vertical path.
+    expect(Math.max(...loop)).toBe(2);
+    expect(Math.min(...loop)).toBe(-2);
   });
 
   it("scores wider angles higher and penalises drifting far from the letter", () => {

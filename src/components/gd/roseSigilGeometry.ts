@@ -2,7 +2,8 @@
  * Rose-cross sigil geometry shared by the interactive component and the server
  * renderer. Everything is deterministic for a given letter sequence, including
  * the layout optimisation, which is bounded by evaluation count rather than
- * time so both sides agree.
+ * time so both sides agree. Engines can still differ in the last bit of a
+ * trig result, so every number written to SVG goes through `svgCoordinate`.
  */
 
 export const ROSE_LETTERS = [
@@ -17,6 +18,29 @@ export const SIGIL_MAX_EVALUATIONS = 20_000;
 export interface Point {
   x: number;
   y: number;
+}
+
+/**
+ * Decimal places kept in SVG output, as in SVGO's default. On the 100-unit
+ * canvas that is about 0.02 px of error even at the 4096 px raster limit.
+ */
+export const SVG_COORDINATE_DECIMALS = 3;
+const SVG_COORDINATE_SCALE = 10 ** SVG_COORDINATE_DECIMALS;
+
+/**
+ * A number as written to SVG. Node and the browser can disagree in the last
+ * bit of `Math.sin`/`Math.cos` (30.310889132455348 against …344), and React
+ * reports any such attribute difference as a hydration mismatch; rounding
+ * gives both the same digits.
+ */
+export function svgCoordinate(value: number): number {
+  // `+ 0` turns the -0 that tiny negative values round to into 0.
+  return Math.round(value * SVG_COORDINATE_SCALE) / SVG_COORDINATE_SCALE + 0;
+}
+
+/** `x,y` for SVG path data, rounded like every other emitted coordinate. */
+function svgPair(point: Point) {
+  return `${svgCoordinate(point.x)},${svgCoordinate(point.y)}`;
 }
 
 export function letterIJ(letter: string) {
@@ -103,6 +127,55 @@ function pointFromEndOfLine(p1: Point, p2: Point, distance: number): Point {
   return pointAtFractionOfLine(p1, p2, 1 - frac);
 }
 
+/**
+ * Path data for the arc `A radius,radius 0 1,<sweep> to` drawn from `from`,
+ * split into four equal arcs of the same circle. `clockwise` is SVG's sweep
+ * flag (clockwise on screen).
+ *
+ * A single arc is fragile once rounded when its chord is tiny or a whole
+ * diameter. Loops between optimised repeats have chords of a few
+ * hundred-thousandths of a unit, and their circle turns with the chord, so
+ * rounded ends could make it vanish or move. The start marker's chord is
+ * its diameter, where rounding moves the arc by the square root of the
+ * error. Each quarter spans 45° to 90°, so its chord is at least 0.76 ×
+ * radius and rounding barely moves its centre.
+ */
+export function largeArc(
+  from: Point,
+  to: Point,
+  radius: number,
+  clockwise: boolean,
+) {
+  const dx = from.x - to.x;
+  const dy = from.y - to.y;
+  const chord = Math.hypot(dx, dy);
+  // SVG draws nothing for an arc whose ends coincide.
+  if (chord === 0) return "";
+  // SVG enlarges the radius until the chord fits.
+  const r = Math.max(radius, chord / 2);
+  // SVG places a large arc's centre off the chord's midpoint along
+  // (-dy, dx) when clockwise and the opposite way otherwise; clockwise on
+  // screen is towards positive angles.
+  const turn = clockwise ? 1 : -1;
+  const offset = (turn * Math.sqrt(r * r - (chord / 2) ** 2)) / chord;
+  const cx = (from.x + to.x) / 2 - dy * offset;
+  const cy = (from.y + to.y) / 2 + dx * offset;
+  const start = Math.atan2(from.y - cy, from.x - cx);
+  // The large arc is the whole circle minus the short arc between the ends.
+  const span = turn * (2 * Math.PI - 2 * Math.asin(chord / 2 / r));
+  const arc = `A ${svgCoordinate(r)},${svgCoordinate(r)} 0 0,${clockwise ? 1 : 0}`;
+  let d = "";
+  for (let quarter = 1; quarter <= 4; quarter++) {
+    const angle = start + (span * quarter) / 4;
+    const point =
+      quarter === 4
+        ? to
+        : { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+    d += `${arc} ${svgPair(point)} `;
+  }
+  return d;
+}
+
 export function arrayToPoints(array: number[]) {
   const points: Point[] = [];
   for (let i = 0; i < array.length; i += 2) {
@@ -133,9 +206,9 @@ export function pathFromPoints({
     ? pointFromEndOfLine(points[1], points[0], 1)
     : { x: points[0].x + 1, y: points[0].y };
   d +=
-    `M ${end.x},${end.y} ` +
-    `A 1,1 0 1,0 ${start.x},${start.y} ` +
-    `A 1,1 0 1,0 ${end.x},${end.y} `;
+    `M ${svgPair(end)} ` +
+    largeArc(end, start, 1, false) +
+    largeArc(start, end, 1, false);
 
   // Connecting line
   for (let i = 1; i < points.length; i++) {
@@ -156,10 +229,10 @@ export function pathFromPoints({
         const r = 1;
         const justBefore = pointAtFractionOfLine(prev, p, 0.9);
 
-        d += "L " + justBefore.x + "," + justBefore.y + " ";
-        d += `A ${r},${r} 0 1,1 ${p.x},${p.y} `;
-        d += `A ${r},${r} 0 1,1 ${justBefore.x},${justBefore.y} `;
-        d += `A ${r},${r} 0 1,1 ${p.x},${p.y} `;
+        d += `L ${svgPair(justBefore)} `;
+        d += largeArc(justBefore, p, r, true);
+        d += largeArc(p, justBefore, r, true);
+        d += largeArc(justBefore, p, r, true);
         continue;
       } /* if (near-) straight line */
 
@@ -175,15 +248,15 @@ export function pathFromPoints({
           toDegrees(angleBetweenTwoPointsAndVertex(prev, nextNext, p)) < 0
             ? "1"
             : "0";
-        d += "L " + justBefore.x + "," + justBefore.y + " ";
-        d += `A 2,1 0 1,${side} ${justBefore2.x},${justBefore2.y}`;
-        d += `A 2,1 0 1,${side} ${p.x},${p.y}`;
+        d += `L ${svgPair(justBefore)} `;
+        d += `A 2,1 0 1,${side} ${svgPair(justBefore2)}`;
+        d += `A 2,1 0 1,${side} ${svgPair(p)}`;
         i++;
         continue;
       }
     } /* if (next) */
 
-    d += "L " + p.x + "," + p.y + " ";
+    d += `L ${svgPair(p)} `;
   } /* for (point) */
 
   // Small perpendicular line at the end
@@ -203,7 +276,7 @@ export function pathFromPoints({
       2,
     );
 
-    d += "L " + finalPoints.map((p) => p.x + "," + p.y).join(" L ");
+    d += "L " + finalPoints.map(svgPair).join(" L ");
   }
 
   return d;

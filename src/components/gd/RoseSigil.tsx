@@ -1,11 +1,13 @@
 import React from "react";
 import {
   letterIJ,
+  letterPoint,
   optimizeSigilPoints,
   type Point,
   pathFromPoints,
   ROSE_LETTERS,
   sigilPoints,
+  svgCoordinate,
 } from "./roseSigilGeometry";
 
 export { letterIJ };
@@ -67,52 +69,49 @@ export function RoseSigilImage({
             strokeWidth={0.5}
             fill="none"
           />
-          {ROSE_LETTERS.map((row, i) => {
-            const count = row.length;
-            const slice = (2 * Math.PI) / count;
-            const offset = -Math.PI / 2 - (i === 1 ? slice / 2 : 0);
-            const radius = 10 * (i + 1) + 5;
-            return (
-              <React.Fragment key={row.join("")}>
-                <circle
-                  cx={0}
-                  cy={0}
-                  r={10 * (i + 2)}
-                  stroke={roseStrokeColor}
-                  strokeWidth={0.5}
-                  fill="none"
-                />
-                {row.map((letter, j) => {
-                  const angle = offset - slice * j;
-                  return (
-                    <React.Fragment key={letter}>
-                      {debug && (
-                        <circle
-                          cx={radius * Math.cos(angle)}
-                          cy={radius * Math.sin(angle)}
-                          r={5}
-                          stroke={roseStrokeColor}
-                          strokeWidth={0.5}
-                          strokeDasharray={0.2}
-                          fill="none"
-                        />
-                      )}
-                      <text
-                        x={radius * Math.cos(angle)}
-                        y={radius * Math.sin(angle)}
-                        fill={roseStrokeColor}
-                        textAnchor="middle"
-                        fontSize={10}
-                        dominantBaseline="middle"
-                      >
-                        {letter}
-                      </text>
-                    </React.Fragment>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
+          {ROSE_LETTERS.map((row, i) => (
+            <React.Fragment key={row.join("")}>
+              <circle
+                cx={0}
+                cy={0}
+                r={10 * (i + 2)}
+                stroke={roseStrokeColor}
+                strokeWidth={0.5}
+                fill="none"
+              />
+              {row.map((letter) => {
+                // Labels sit on the letter centres the path is drawn through.
+                const centre = letterPoint(letter);
+                const x = svgCoordinate(centre.x);
+                const y = svgCoordinate(centre.y);
+                return (
+                  <React.Fragment key={letter}>
+                    {debug && (
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r={5}
+                        stroke={roseStrokeColor}
+                        strokeWidth={0.5}
+                        strokeDasharray={0.2}
+                        fill="none"
+                      />
+                    )}
+                    <text
+                      x={x}
+                      y={y}
+                      fill={roseStrokeColor}
+                      textAnchor="middle"
+                      fontSize={10}
+                      dominantBaseline="middle"
+                    >
+                      {letter}
+                    </text>
+                  </React.Fragment>
+                );
+              })}
+            </React.Fragment>
+          ))}
         </>
       )}
 
