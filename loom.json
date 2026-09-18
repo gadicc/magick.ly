@@ -134,7 +134,7 @@
           "vercelEnvironments": ["production"]
         },
         "release": {
-          "productionBranch": "master"
+          "productionBranch": "main"
         }
       }
     }

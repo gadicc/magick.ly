@@ -2,7 +2,7 @@ name: Production release
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -14,11 +14,11 @@ concurrency:
 
 jobs:
   quality:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/ci.yml
 
   release:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 40

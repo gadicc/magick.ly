@@ -3,7 +3,7 @@
   "regions": ["lhr1"],
   "git": {
     "deploymentEnabled": {
-      "master": false
+      "main": false
     }
   }
 }
