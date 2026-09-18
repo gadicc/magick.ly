@@ -43,7 +43,7 @@
     "@emotion/cache": "11.14.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@gadicc/loom": "1.28.0",
+    "@gadicc/loom": "1.29.0",
     "@hookform/resolvers": "^5.9.1",
     "@langchain/core": "^1.2.11",
     "@langchain/textsplitters": "^1.0.1",
