@@ -24,6 +24,7 @@ async function settle(container: HTMLElement) {
       await new Promise((resolve) => setTimeout(resolve, 10));
     });
   }
+  throw new Error("The widget's label stayed blank for 500ms");
 }
 
 describe("MercuryWidget", () => {
@@ -33,7 +34,7 @@ describe("MercuryWidget", () => {
     Settings.defaultZone = "America/New_York";
     const html = renderAt(new Date("2026-07-01T12:00:00Z"), <MercuryWidget />);
     expect(html).not.toContain("Retro");
-    expect(html).toContain("> </div>");
+    expect(html).toContain(">\u00a0</div>");
 
     Settings.defaultLocale = "en-GB";
     Settings.defaultZone = "Europe/London";

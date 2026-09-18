@@ -72,16 +72,26 @@ function MercuryWidget({ padding = "10px 0 2px 0" }) {
     let current = true;
     // The ephemeris is worth about 22kB gzipped, so it loads here rather
     // than with the page.
-    import("./mercuryRetrograde")
-      .then(({ currentOrNextRetrograde }) => {
-        if (current) setRetrograde(currentOrNextRetrograde(new Date()) ?? null);
-      })
-      .catch((error) => {
-        console.error(error);
-        if (current) setRetrograde(null);
-      });
+    const update = () =>
+      import("./mercuryRetrograde")
+        .then(({ currentOrNextRetrograde }) => {
+          if (current)
+            setRetrograde(currentOrNextRetrograde(new Date()) ?? null);
+        })
+        .catch((error) => {
+          console.error(error);
+          if (current) setRetrograde(null);
+        });
+    update();
+
+    // A tab left open for days would otherwise keep a finished retrograde.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") update();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       current = false;
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
