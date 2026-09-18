@@ -4,6 +4,12 @@ import { pageMetadata } from "@/seo/metadata";
 
 export const metadata = pageMetadata("/about");
 
+// The AGPL asks that whoever uses this app can get the source it runs.
+const commit = process.env.VERCEL_GIT_COMMIT_SHA;
+const sourceUrl = commit
+  ? `https://github.com/gadicc/magick.ly/tree/${commit}`
+  : "https://github.com/gadicc/magick.ly";
+
 export default function Sequence() {
   return (
     <Container maxWidth="sm">
@@ -39,7 +45,10 @@ export default function Sequence() {
         <div>
           Design goals:
           <ul>
-            <li>Open source, permissive licenses wherever possible.</li>
+            <li>
+              Open source: copyleft for the app, permissive for the data and
+              components, so those can travel.
+            </li>
             <li>
               Publish useful magick{" "}
               <a href="https://github.com/gadicc/magick.ly/tree/master/data">
@@ -62,7 +71,38 @@ export default function Sequence() {
           </ul>
         </div>
 
-        <p>Copyright (c) 2020 by Gadi Cohen, MIT licensed.</p>
+        <h2 id="licence">Licence</h2>
+
+        <p>
+          Copyright (c) 2020-2026 Gadi Cohen. This app is free software under
+          the{" "}
+          <a href="https://www.gnu.org/licenses/agpl-3.0.html">
+            GNU Affero General Public License
+          </a>
+          , version 3 or any later version: you may use it, change it and run
+          it, and anyone you serve it to may have its source.
+        </p>
+
+        <p>
+          Two parts are deliberately freer. The{" "}
+          <a href="https://github.com/gadicc/magick.ly/tree/master/data">
+            data
+          </a>{" "}
+          is{" "}
+          <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>,
+          as are the images this app draws, such as the Tree of Life, sigils,
+          tablets and lamens: use them anywhere, with credit. The marked{" "}
+          <a href="https://github.com/gadicc/magick.ly/tree/master/src/components">
+            components
+          </a>{" "}
+          are MIT.
+        </p>
+
+        <p>
+          The source of the version running here is{" "}
+          <a href={sourceUrl}>on GitHub</a>
+          {commit ? ` (${commit.slice(0, 7)})` : null}.
+        </p>
 
         <h2 id="credits">Credits</h2>
 
