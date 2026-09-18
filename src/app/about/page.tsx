@@ -1,5 +1,5 @@
+import Link from "@magick-components/Link";
 import { Box, Container } from "@mui/material";
-import Link from "@/lib/link";
 import { pageMetadata } from "@/seo/metadata";
 
 export const metadata = pageMetadata("/about");

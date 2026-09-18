@@ -1,8 +1,7 @@
+import Link from "@magick-components/Link";
 import Box from "@mui/material/Box";
-
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
-
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -11,7 +10,6 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Data from "@/../data/data";
 import GradeTree from "@/components/gd/GradeTree";
-import Link from "@/lib/link";
 import { pageMetadata } from "@/seo/metadata";
 
 export const metadata = pageMetadata("/gd/grades");

@@ -1,6 +1,6 @@
+import Link from "@magick-components/Link";
 import { Box } from "@mui/material";
 import Tiles from "@/components/Tiles";
-import Link from "@/lib/link";
 import { pageMetadata } from "@/seo/metadata";
 import AstrologyTile from "../img/astrology.jpeg";
 import PlanetaryHoursPic from "./img/planetary-hours.webp";

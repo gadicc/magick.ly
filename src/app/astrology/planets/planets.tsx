@@ -2,6 +2,7 @@
 
 import MercuryWidget from "@magick-components/astrology/Mercury";
 import MoonWidget from "@magick-components/astrology/Moon";
+import Link from "@magick-components/Link";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
@@ -13,7 +14,6 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Data from "@/../data/data";
 import Tiles from "@/components/Tiles";
-import Link from "@/lib/link";
 import OpenSource from "@/OpenSource";
 
 // Both previews show live data (the phase, the retrograde dates), so they

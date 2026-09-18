@@ -1,12 +1,11 @@
+import Link from "@magick-components/Link";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import { decycle } from "cycle";
 import { notFound } from "next/navigation";
 import Data from "@/../data/data";
-
 import GradeTree from "@/components/gd/GradeTree";
-import Link from "@/lib/link";
 import { entityIds, gradePage } from "@/seo/entities";
 import { seoMetadata } from "@/seo/metadata";
 

@@ -1,6 +1,6 @@
 import { Box, Grid, type GridProps, ImageListItemBar } from "@mui/material";
 import Image from "next/image";
-import Link from "@/lib/link";
+import Link from "./Link";
 
 /**
  * Tile widths for a full-width page. The breakpoints follow the viewport, so

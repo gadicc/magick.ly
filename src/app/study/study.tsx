@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "@magick-components/Link";
 import {
   Chip,
   Container,
@@ -18,7 +19,6 @@ import {
 import { formatDistanceToNowStrict } from "date-fns";
 import React from "react";
 import { useSession } from "@/auth/client";
-import Link from "@/lib/link";
 import {
   useRouter,
   useSearchParams,

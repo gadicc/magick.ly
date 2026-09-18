@@ -1,4 +1,5 @@
 "use client";
+import Link from "@magick-components/Link";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -6,7 +7,6 @@ import { decycle } from "cycle";
 import Data from "@/../data/data";
 import Chakras from "@/components/chakras/Chakras";
 import TreeOfLife from "@/components/kabbalah/TreeOfLife";
-import Link from "@/lib/link";
 
 const sephirot = Object.values(Data.sephirah);
 

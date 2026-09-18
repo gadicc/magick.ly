@@ -43,7 +43,7 @@ import {
 import React from "react";
 import { sqlBrowserLifecycle } from "@/auth/browserLifecycle";
 import { useSession } from "@/auth/client";
-// import Link from "@/lib/link";
+// import Link from "@magick-components/Link";
 import { useLegacyRecoveryGate } from "./clientProviders";
 import pathnames, { type Pathnames, type PathnameValue } from "./pathnames";
 

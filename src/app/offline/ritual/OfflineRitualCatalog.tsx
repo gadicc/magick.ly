@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "@magick-components/Link";
 import {
   Alert,
   Box,
@@ -11,7 +12,6 @@ import {
   Typography,
 } from "@mui/material";
 import React from "react";
-import Link from "@/lib/link";
 import { getBrowserOfflineRuntime } from "@/offline/browserRuntime";
 import type { OfflineAccount } from "@/offline/lease";
 import type { OfflineOperation } from "@/offline/lifecycle";

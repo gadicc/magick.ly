@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "@magick-components/Link";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -7,7 +8,6 @@ import React from "react";
 import Data from "@/../data/data";
 import ExportControls from "@/components/export/ExportControls";
 import Tree from "@/components/kabbalah/TreeOfLife";
-import Link from "@/lib/link";
 import { type TreeSettings, treeImageLink, treeSettings } from "./treeSettings";
 
 type SetSetting = (key: string, value: string | boolean) => void;

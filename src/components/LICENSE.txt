@@ -4,7 +4,6 @@ although the app around them is AGPL-3.0-or-later (see ../../LICENSE.txt).
 This licence covers the files in this directory and its subdirectories, except
 for these, which import code from the app and so carry the app's licence:
 
-  Tiles.tsx
   export/ExportControls.tsx
 
 The data these components read, in ../../data, is CC BY 4.0, and images they

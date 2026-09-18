@@ -1,12 +1,11 @@
 "use client";
+import Link from "@magick-components/Link";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import { decycle } from "cycle";
 import Image from "next/legacy/image";
 import Data from "@/../data/data";
-
 import TreeOfLife from "@/components/kabbalah/TreeOfLife";
-import Link from "@/lib/link";
 import { RWSPath, tarotDeck } from "@/tarot";
 
 const paths = Object.values(Data.tolPath);

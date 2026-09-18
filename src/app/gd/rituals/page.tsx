@@ -1,3 +1,4 @@
+import Link from "@magick-components/Link";
 import { Edit } from "@mui/icons-material";
 import {
   Box,
@@ -14,7 +15,6 @@ import {
 } from "@mui/material";
 import { connection } from "next/server";
 import { sqlRitualReader } from "@/doc/sqlRuntime";
-import Link from "@/lib/link";
 import { pageMetadata } from "@/seo/metadata";
 import SqlDocAdmin from "./SqlDocAdmin";
 
