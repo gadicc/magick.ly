@@ -53,28 +53,16 @@ export default function Planets() {
             <TableBody>
               {Object.values(Data.planet).map((planet) => (
                 <TableRow key={planet.id}>
-                  {/* No link without text: it would be an unnamed tab stop. */}
-                  <TableCell>
-                    {planet.symbol && (
-                      <Link href={"/astrology/planet/" + planet.id}>
-                        {planet.symbol}
-                      </Link>
-                    )}
-                  </TableCell>
+                  <TableCell>{planet.symbol}</TableCell>
 
+                  {/* One link per row, so each planet is one tab stop. */}
                   <TableCell component="th" scope="row">
                     <Link href={"/astrology/planet/" + planet.id}>
                       {planet.name.en.en}
                     </Link>
                   </TableCell>
 
-                  <TableCell>
-                    {planet.name.he?.roman && (
-                      <Link href={"/astrology/planet/" + planet.id}>
-                        {planet.name.he.roman}
-                      </Link>
-                    )}
-                  </TableCell>
+                  <TableCell>{planet.name.he?.roman}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
