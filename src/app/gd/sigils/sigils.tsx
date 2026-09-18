@@ -12,8 +12,8 @@ import {
   TextField,
 } from "@mui/material";
 import React from "react";
-import ExportControls from "@/components/export/ExportControls";
 import RoseSigil, { letterIJ } from "@/components/gd/RoseSigil";
+import ExportControls from "@/export/ExportControls";
 import { parseComponentImageRequest } from "@/render/componentImageRequest";
 import { rectifySigilText } from "@/render/contracts/roseSigil";
 

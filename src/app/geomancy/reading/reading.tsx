@@ -21,7 +21,7 @@ import { PlanetId } from "@/../data/astrology/Planets";
 import data, { geomanicHouse as houses } from "@/../data/data";
 import { upcomingHoursForPlanetAtLocation } from "@/app/astrology/planetary-hours/utils";
 import PlanetarySpirit from "@/components/astrology/planetarySpirits";
-import ExportControls from "@/components/export/ExportControls";
+import ExportControls from "@/export/ExportControls";
 import { capitalizeFirstLetter, ordinal } from "@/lib/utils";
 import { mothersToString } from "@/render/contracts/astroGeomancyChart";
 import Tetragram from "../Tetragram";

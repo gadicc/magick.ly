@@ -101,7 +101,7 @@ export default defineConfig({
         "src/render/contracts/roseSigil.ts",
         "src/components/export/svgExport.ts",
         "src/components/export/exportRuntime.ts",
-        "src/components/export/ExportControls.tsx",
+        "src/export/ExportControls.tsx",
         "src/app/geomancy/reading/readingState.ts",
         "src/app/kabbalah/tree/treeSettings.ts",
         "src/lib/pageSearchParams.ts",

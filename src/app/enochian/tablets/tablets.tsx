@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import React from "react";
 import Tablet from "@/components/enochian/Tablet";
-import ExportControls from "@/components/export/ExportControls";
+import ExportControls from "@/export/ExportControls";
 import OpenSource from "@/OpenSource";
 import { componentImageFilename } from "@/render/componentImageUrl";
 import { TABLET_IDS } from "@/render/contracts/enochianTablet";

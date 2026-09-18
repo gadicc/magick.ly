@@ -1,10 +1,8 @@
 These components are MIT licensed so that they can be used in other projects,
 although the app around them is AGPL-3.0-or-later (see ../../LICENSE.txt).
 
-This licence covers the files in this directory and its subdirectories, except
-for these, which import code from the app and so carry the app's licence:
-
-  export/ExportControls.tsx
+This licence covers the files in this directory and its subdirectories. None
+of them import app code, so they can be used on their own.
 
 The data these components read, in ../../data, is CC BY 4.0, and images they
 draw are CC BY 4.0; see ../../README.md.
