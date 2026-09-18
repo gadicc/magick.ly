@@ -1,4 +1,6 @@
+import { Box } from "@mui/material";
 import Tiles from "@/components/Tiles";
+import Link from "@/lib/link";
 import { pageMetadata } from "@/seo/metadata";
 import AstrologyTile from "../img/astrology.jpeg";
 import PlanetaryHoursPic from "./img/planetary-hours.webp";
@@ -27,7 +29,14 @@ const tiles = [
 ];
 
 function Astrology() {
-  return <Tiles tiles={tiles} />;
+  return (
+    <>
+      <Tiles tiles={tiles} />
+      <Box sx={{ m: 2, fontSize: "80%" }}>
+        <Link href="/about#credits">Image credits</Link>
+      </Box>
+    </>
+  );
 }
 
 export default Astrology;

@@ -216,11 +216,7 @@ export function TreeOfLifeView({
           </ol>
 
           <div style={{ fontSize: "60%" }}>
-            <b>Credit:</b> Glyph inspired by{" "}
-            <a href="https://commons.wikimedia.org/wiki/File:Tree_of_life_bahir_Hebrew.svg">
-              Tree of life bahir Hebrew.svg
-            </a>{" "}
-            from Wikimedia Commons.
+            <Link href="/about#credits">Image credits</Link>
           </div>
         </Box>
       </Container>

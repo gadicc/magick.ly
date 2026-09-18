@@ -1,4 +1,5 @@
 import { Box, Container } from "@mui/material";
+import Link from "@/lib/link";
 import { pageMetadata } from "@/seo/metadata";
 
 export const metadata = pageMetadata("/about");
@@ -60,6 +61,52 @@ export default function Sequence() {
             </li>
           </ul>
         </div>
+
+        <h2 id="credits">Credits</h2>
+
+        <p>Work by others that this app shows, with thanks:</p>
+
+        <ul>
+          <li>
+            The planets photo on the <Link href="/astrology">Astrology</Link>{" "}
+            page:{" "}
+            <a href="https://commons.wikimedia.org/wiki/File:Planets2013.svg">
+              Planets2013.svg
+            </a>{" "}
+            by WP, from Wikimedia Commons, under{" "}
+            <a href="https://creativecommons.org/licenses/by-sa/3.0">
+              CC BY-SA 3.0
+            </a>
+            .
+          </li>
+          <li>
+            The robes photo on the{" "}
+            <Link href="/gd/rituals">Golden Dawn rituals</Link> page:{" "}
+            <a href="https://commons.wikimedia.org/wiki/File:Anxfisa_Golden_Dawn_Robes.jpg">
+              Anxfisa Golden Dawn Robes.jpg
+            </a>{" "}
+            by Anxfisa, from Wikimedia Commons, under{" "}
+            <a href="https://creativecommons.org/licenses/by-sa/3.0">
+              CC BY-SA 3.0
+            </a>
+            .
+          </li>
+          <li>
+            The Sentinel&apos;s eye on the officer lamens:{" "}
+            <a href="https://www.svgrepo.com/svg/322283/eye-of-horus">
+              Eye of Horus
+            </a>{" "}
+            from SVG Repo, under CC BY.
+          </li>
+          <li>
+            The <Link href="/kabbalah/tree">Tree of Life</Link> glyph is our
+            own, drawn from measurements, and was inspired by{" "}
+            <a href="https://commons.wikimedia.org/wiki/File:Tree_of_life_bahir_Hebrew.svg">
+              Tree of life bahir Hebrew.svg
+            </a>{" "}
+            by User:AnonMoos, which is public domain.
+          </li>
+        </ul>
 
         <p>Copyright (c) 2020 by Gadi Cohen, MIT licensed.</p>
       </Box>

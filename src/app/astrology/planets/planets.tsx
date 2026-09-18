@@ -112,14 +112,6 @@ export default function Planets() {
             "@magick-components/astrology/Mercury.tsx",
           ]}
         />
-
-        <div style={{ fontSize: "80%" }}>
-          <b>Image credit:</b>
-          <a href="https://en.wikipedia.org/wiki/File:Planets2013.svg">
-            Planet2013.svg
-          </a>{" "}
-          from Wikimedia Commons, released under CC-BY-SA 2.5.
-        </div>
       </Box>
     </Container>
   );

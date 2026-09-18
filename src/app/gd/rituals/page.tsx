@@ -109,12 +109,8 @@ export default async function Rituals() {
           <Link href="/temples">My Temples</Link>. From there, you can join an
           existing temple or create and manage one.
         </p>
-        <p>
-          Image credit:{" "}
-          <a href="https://commons.wikimedia.org/wiki/File:Anxfisa_Golden_Dawn_Robes.jpg">
-            Anxfisa Golden Dawn Robes.jpg
-          </a>{" "}
-          (CC BY-SA 3.0).
+        <p style={{ fontSize: "80%" }}>
+          <Link href="/about#credits">Image credits</Link>
         </p>
       </Box>
     </Container>
