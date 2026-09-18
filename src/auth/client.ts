@@ -1,9 +1,15 @@
 "use client";
 
+import { inferAdditionalFields } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
+import type { SqlAuth } from "./sqlAuth";
 
 /** Same-origin cookies; private offline authorization uses its own fresh check. */
-export const authClient = createAuthClient();
+export const authClient = createAuthClient({
+  // Types only: the import is erased, so the server auth module never reaches
+  // the browser bundle.
+  plugins: [inferAdditionalFields<SqlAuth>()],
+});
 
 // Better Auth reports a signed-out session as pending again while it
 // refetches (on focus, reconnect or a cross-tab change). Views that wait
