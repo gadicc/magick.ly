@@ -63,6 +63,7 @@ export default function Planets() {
                     {planet.symbol && (
                       <Box
                         component="span"
+                        aria-hidden
                         sx={{ display: { sm: "none" }, mr: 1 }}
                       >
                         {planet.symbol}
@@ -92,7 +93,11 @@ export default function Planets() {
                         >
                           {planet.name.he.he}
                         </Box>
-                        <Box component="span" sx={{ color: "text.secondary" }}>
+                        <Box
+                          component="span"
+                          lang="he-Latn"
+                          sx={{ color: "text.secondary" }}
+                        >
                           {planet.name.he.roman}
                         </Box>
                       </Box>
