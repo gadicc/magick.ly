@@ -1,9 +1,9 @@
 "use client";
 
-import retrogrades from "@magick-data/astrology/Retrograde";
-import { DateTime } from "luxon";
+import type { DateTime } from "luxon";
 import Image from "next/image";
-import useHydrated from "@/useHydrated";
+import { useEffect, useState } from "react";
+import type { Retrograde } from "./mercuryRetrograde";
 
 const NARROW_CHARACTER =
   /[\p{sc=Latin}\p{sc=Cyrillic}\p{sc=Greek}\p{sc=Hebrew}\p{sc=Arabic}\p{sc=Common}\p{sc=Inherited}]/u;
@@ -19,17 +19,6 @@ function emWidth(text: string) {
   let em = 0;
   for (const char of text) em += NARROW_CHARACTER.test(char) ? 0.5 : 1;
   return em;
-}
-
-/** The retrograde in progress at `now`, or else the next one. */
-function nextRetrograde(now: Date) {
-  for (const [[y1, m1, d1], [y2, m2, d2]] of retrogrades.mercury) {
-    // Local midnights; the data's months count from 1.
-    const start = new Date(y1, m1 - 1, d1);
-    const end = new Date(y2, m2 - 1, d2);
-
-    if (now < end) return { start, end };
-  }
 }
 
 /*
@@ -74,20 +63,33 @@ function MercuryDrawing({ phase, width, height, }) {
 */
 
 function MercuryWidget({ padding = "10px 0 2px 0" }) {
-  // The page is prerendered at build time, so the server knows neither
-  // today's date nor the viewer's date format. Hydrate with a blank label,
-  // then fill in the dates.
-  const hydrated = useHydrated();
-  const retrograde = hydrated ? nextRetrograde(new Date()) : undefined;
+  // The page is prerendered, and the dates depend on today's date, the
+  // viewer's zone and their date format, so they can't be in the HTML.
+  // undefined until the calculation answers, then a retrograde or null.
+  const [retrograde, setRetrograde] = useState<Retrograde | null>();
 
-  const d = (d) =>
-    DateTime.fromJSDate(d).toLocaleString({
-      month: "short",
-      day: "2-digit",
-    });
+  useEffect(() => {
+    let current = true;
+    // The ephemeris is worth about 22kB gzipped, so it loads here rather
+    // than with the page.
+    import("./mercuryRetrograde")
+      .then(({ currentOrNextRetrograde }) => {
+        if (current) setRetrograde(currentOrNextRetrograde(new Date()) ?? null);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (current) setRetrograde(null);
+      });
+    return () => {
+      current = false;
+    };
+  }, []);
+
+  const d = (date: DateTime) =>
+    date.toLocaleString({ month: "short", day: "2-digit" });
   let label = "\u00a0"; // keeps the label's line height
   if (retrograde) label = `Retro ${d(retrograde.start)} – ${d(retrograde.end)}`;
-  else if (hydrated) label = "Retro dates unknown";
+  else if (retrograde === null) label = "Retro dates unknown";
   const fitCqi = Math.floor(1000 / emWidth(label)) / 10;
 
   return (
@@ -118,5 +120,4 @@ function MercuryWidget({ padding = "10px 0 2px 0" }) {
   );
 }
 
-export { nextRetrograde };
 export default MercuryWidget;

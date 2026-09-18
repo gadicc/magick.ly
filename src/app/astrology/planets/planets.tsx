@@ -110,6 +110,7 @@ export default function Planets() {
             "@/app/astrology/planets/planets.tsx",
             "@magick-components/astrology/Moon.tsx",
             "@magick-components/astrology/Mercury.tsx",
+            "@magick-components/astrology/mercuryRetrograde.ts",
           ]}
         />
       </Box>

@@ -1,51 +1,50 @@
 // @vitest-environment jsdom
 import { within } from "@testing-library/react";
 import { Settings } from "luxon";
+import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { hydrateAt, renderAt } from "../../../tests/hydration";
-import MercuryWidget, { nextRetrograde } from "./Mercury";
+import MercuryWidget from "./Mercury";
 
 const defaultLocale = Settings.defaultLocale;
+const defaultZone = Settings.defaultZone;
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.doUnmock("./mercuryRetrograde");
   Settings.defaultLocale = defaultLocale;
+  Settings.defaultZone = defaultZone;
 });
 
-describe("nextRetrograde", () => {
-  it("finds the retrograde in progress, or else the next one", () => {
-    const at = (time: string) => nextRetrograde(new Date(time));
-
-    expect(at("2026-07-01T12:00")).toEqual({
-      start: new Date(2026, 5, 29),
-      end: new Date(2026, 6, 23),
+/** Lets the widget's dynamic import and its state update settle. */
+async function settle(container: HTMLElement) {
+  for (let tries = 0; tries < 50; tries++) {
+    if (container.textContent?.trim()) return;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
-    // A retrograde is over from the start of its end date.
-    expect(at("2026-07-23T00:00")).toEqual({
-      start: new Date(2026, 9, 24),
-      end: new Date(2026, 10, 13),
-    });
-    expect(at("2100-01-01T00:00")).toBeUndefined();
-  });
-});
+  }
+}
 
 describe("MercuryWidget", () => {
-  it("hydrates a later visit in another locale without mismatches", async () => {
-    // Built during one retrograde by an en-US machine, viewed after it in
-    // an en-GB browser.
+  it("hydrates a prerendered page, then fills in the dates", async () => {
+    // Built by an en-US machine in New York months before the visit.
     Settings.defaultLocale = "en-US";
+    Settings.defaultZone = "America/New_York";
     const html = renderAt(new Date("2026-07-01T12:00:00Z"), <MercuryWidget />);
     expect(html).not.toContain("Retro");
-    expect(html).toContain(">\u00a0</div>");
+    expect(html).toContain("> </div>");
 
     Settings.defaultLocale = "en-GB";
+    Settings.defaultZone = "Europe/London";
     const { container, problems, unmount } = await hydrateAt(
-      new Date("2026-08-01T12:00:00Z"),
+      new Date("2026-10-30T12:00:00Z"),
       html,
       <MercuryWidget />,
     );
 
     expect(problems).toEqual([]);
+    await settle(container);
     const label = within(container).getByText(/^Retro /);
     expect(label.textContent).toBe("Retro 24 Oct – 13 Nov");
     // 1rem, down to 9.5% of the tile's width, keeps it on one line.
@@ -54,15 +53,20 @@ describe("MercuryWidget", () => {
     await unmount();
   });
 
-  it("says so inside the widget when the dates run out", async () => {
-    const html = renderAt(new Date("2100-01-01T12:00:00Z"), <MercuryWidget />);
+  it("says so when no retrograde comes back", async () => {
+    vi.doMock("./mercuryRetrograde", () => ({
+      currentOrNextRetrograde: () => undefined,
+    }));
+
+    const html = renderAt(new Date("2026-10-30T12:00:00Z"), <MercuryWidget />);
     const { container, problems, unmount } = await hydrateAt(
-      new Date("2100-01-01T12:00:00Z"),
+      new Date("2026-10-30T12:00:00Z"),
       html,
       <MercuryWidget />,
     );
 
     expect(problems).toEqual([]);
+    await settle(container);
     const label = within(container).getByText(/^Retro /);
     expect(label.textContent).toBe("Retro dates unknown");
     expect(container.querySelector("img")).not.toBeNull();
