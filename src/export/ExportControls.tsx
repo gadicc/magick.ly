@@ -1,16 +1,4 @@
 "use client";
-import {
-  copyPng,
-  copySvg,
-  copyText,
-  downloadBlob,
-  rasterizeSvg,
-} from "@magick-components/export/exportRuntime";
-import {
-  rasterSize,
-  SvgExportError,
-  serializeSvg,
-} from "@magick-components/export/svgExport";
 import { Alert, Button, Snackbar } from "@mui/material";
 import React from "react";
 import {
@@ -18,6 +6,14 @@ import {
   componentImagePath,
 } from "@/render/componentImageUrl";
 import { CONTRACTS } from "@/render/contracts";
+import {
+  copyPng,
+  copySvg,
+  copyText,
+  downloadBlob,
+  rasterizeSvg,
+} from "./exportRuntime";
+import { rasterSize, SvgExportError, serializeSvg } from "./svgExport";
 
 const MESSAGES: Record<SvgExportError["code"], string> = {
   "no-target": "Nothing to export yet.",

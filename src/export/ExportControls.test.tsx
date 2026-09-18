@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
-import { SvgExportError } from "@magick-components/export/svgExport";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ExportControls, { type ExportControlsProps } from "./ExportControls";
+import { SvgExportError } from "./svgExport";
 
 const runtime = vi.hoisted(() => ({
   rasterizeSvg: vi.fn(),
@@ -13,7 +13,7 @@ const runtime = vi.hoisted(() => ({
   copyPng: vi.fn(),
   copyText: vi.fn(),
 }));
-vi.mock("@magick-components/export/exportRuntime", () => runtime);
+vi.mock("./exportRuntime", () => runtime);
 
 function Page({
   filename,
