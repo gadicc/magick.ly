@@ -113,6 +113,10 @@ export default function Planets() {
             "@magick-components/astrology/mercuryRetrograde.ts",
           ]}
         />
+
+        <p style={{ fontSize: "80%" }}>
+          <Link href="/about#credits">Image credits</Link>
+        </p>
       </Box>
     </Container>
   );

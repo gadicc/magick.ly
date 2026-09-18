@@ -108,6 +108,11 @@ Follow-ups are separate from the completed migration work:
   anonymous tab left open across that release shows a study load error until
   it reloads; see
   [plan 013](013-sql-auth-runtime.md#runtime-entrypoints-prepared).
+- TODO: name the authors of the two SVG Repo assets in the About page's
+  credits (the Sentinel's eye, CC BY, and the Kerux's caduceus, public
+  domain). svgrepo.com answered 429 when the credits were written, so only
+  the source and licence are listed; CC BY asks for the creator's name where
+  one is given.
 - TODO: size tiles from the space they have, for the UX pass. `Tiles` takes
   MUI Grid breakpoints, which follow the viewport, so a page whose tiles sit
   in a narrower container has to pass its own `size`, as /astrology/planets
