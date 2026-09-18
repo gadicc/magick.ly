@@ -33,6 +33,8 @@ const tiles = [
   },
 ];
 
+const NARROW_HIDDEN = { display: { xs: "none", sm: "table-cell" } };
+
 export default function Planets() {
   return (
     <Container maxWidth="sm">
@@ -44,7 +46,8 @@ export default function Planets() {
           <Table aria-label="Planets">
             <TableHead>
               <TableRow>
-                <TableCell>Symbol</TableCell>
+                {/* Phones fold the symbol into the name to make room. */}
+                <TableCell sx={NARROW_HIDDEN}>Symbol</TableCell>
                 <TableCell>English</TableCell>
                 <TableCell>Hebrew</TableCell>
               </TableRow>
@@ -53,16 +56,48 @@ export default function Planets() {
             <TableBody>
               {Object.values(Data.planet).map((planet) => (
                 <TableRow key={planet.id}>
-                  <TableCell>{planet.symbol}</TableCell>
+                  <TableCell sx={NARROW_HIDDEN}>{planet.symbol}</TableCell>
 
                   {/* One link per row, so each planet is one tab stop. */}
                   <TableCell component="th" scope="row">
+                    {planet.symbol && (
+                      <Box
+                        component="span"
+                        sx={{ display: { sm: "none" }, mr: 1 }}
+                      >
+                        {planet.symbol}
+                      </Box>
+                    )}
                     <Link href={"/astrology/planet/" + planet.id}>
                       {planet.name.en.en}
                     </Link>
                   </TableCell>
 
-                  <TableCell>{planet.name.he?.roman}</TableCell>
+                  <TableCell>
+                    {planet.name.he && (
+                      // The transliteration wraps below only when it must.
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          alignItems: "baseline",
+                          columnGap: 1,
+                        }}
+                      >
+                        <Box
+                          component="span"
+                          lang="he"
+                          dir="rtl"
+                          sx={{ fontSize: "1.25em" }}
+                        >
+                          {planet.name.he.he}
+                        </Box>
+                        <Box component="span" sx={{ color: "text.secondary" }}>
+                          {planet.name.he.roman}
+                        </Box>
+                      </Box>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
