@@ -54,11 +54,15 @@ export function mercuryStations(from: Date, to: Date, stepDays = 2): Station[] {
     // A station is where the speed crosses zero, so search for that root.
     const options = { dt_tolerance_seconds: 1 };
     if (value >= 0 && nextValue < 0) {
+      // Search answers null where it cannot bracket the root. Dropping a
+      // station would pair the wrong ones, so fail instead of misdating.
       const found = Search((t) => -speed(t), time, next, options);
-      if (found) stations.push({ type: "retrograde", time: found.date });
+      if (!found) throw new Error(`No station by ${next.date.toISOString()}`);
+      stations.push({ type: "retrograde", time: found.date });
     } else if (value < 0 && nextValue >= 0) {
       const found = Search(speed, time, next, options);
-      if (found) stations.push({ type: "direct", time: found.date });
+      if (!found) throw new Error(`No station by ${next.date.toISOString()}`);
+      stations.push({ type: "direct", time: found.date });
     }
     time = next;
     value = nextValue;

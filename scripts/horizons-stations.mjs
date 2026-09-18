@@ -8,12 +8,19 @@
  * year, and fits a cubic around each hourly extremum of that longitude.
  * Horizons results are US government work and in the public domain.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 // Each year's table is a megabyte, so keep them out of the repo.
-const CACHE = new URL(`file://${join(tmpdir(), "magickli-horizons/")}`);
+const CACHE = pathToFileURL(join(tmpdir(), "magickli-horizons/"));
 mkdirSync(CACHE, { recursive: true });
 
 async function fetchYear(year) {
@@ -38,7 +45,10 @@ async function fetchYear(year) {
   if (!res.ok) throw new Error(`Horizons ${year}: HTTP ${res.status}`);
   const text = await res.text();
   if (!text.includes("$$SOE")) throw new Error(`Horizons ${year}: ${text}`);
-  writeFileSync(file, text);
+  // Rename in, so an interrupted run leaves no half table to trust later.
+  const partial = new URL(`${year}.txt.part`, CACHE);
+  writeFileSync(partial, text);
+  renameSync(partial, file);
   return text;
 }
 
@@ -49,7 +59,9 @@ function parse(text) {
   const rows = [];
   for (const line of body.trim().split("\n")) {
     const [date, , , lon] = line.split(",").map((s) => s.trim());
-    const [, y, mon, d, hh, mm] = date.match(/(\d+)-(\w+)-(\d+) (\d+):(\d+)/);
+    const parts = date.match(/(\d+)-(\w+)-(\d+) (\d+):(\d+)/);
+    if (!parts) throw new Error(`Horizons line not understood: ${line}`);
+    const [, y, mon, d, hh, mm] = parts;
     const ms = Date.UTC(+y, MONTHS.indexOf(mon), +d, +hh, +mm);
     rows.push({ ms, lon: +lon });
   }
@@ -112,7 +124,9 @@ export async function horizonsStations(fromYear, toYear) {
     const disc = Math.sqrt(4 * c * c - 12 * d * b);
     const roots = [(-2 * c + disc) / (6 * d), (-2 * c - disc) / (6 * d)];
     const x = roots.reduce((p, q) => (Math.abs(q) < Math.abs(p) ? q : p));
-    if (Math.abs(x) > 1) throw new Error(`bad fit at ${new Date(rows[i][0])}`);
+    // NaN passes a plain `> 1`, and would write a null date to the fixture.
+    if (!Number.isFinite(x) || Math.abs(x) > 1)
+      throw new Error(`bad fit at ${new Date(rows[i][0]).toISOString()}: ${x}`);
     out.push({
       type: isMax ? "R" : "D",
       date: new Date(rows[i][0] + x * 3600_000),

@@ -100,13 +100,22 @@ describe("currentOrNextRetrograde", () => {
     );
   });
 
-  it("always finds a retrograde", () => {
+  it("always finds the current or next retrograde", () => {
     Settings.defaultZone = "UTC";
     for (let day = 0; day < 370; day += 7) {
       const now = new Date(Date.UTC(2026, 0, 1) + day * 86400_000);
       const retrograde = currentOrNextRetrograde(now);
-      expect(retrograde?.start.toMillis()).toBeLessThan(
-        (retrograde?.end.toMillis() ?? 0) + 1,
+      if (!retrograde) throw new Error(`No retrograde at ${now.toISOString()}`);
+
+      expect(retrograde.start.toMillis()).toBeLessThanOrEqual(
+        retrograde.end.toMillis(),
+      );
+      // It hasn't finished, and Mercury turns retrograde every 116 days.
+      expect(retrograde.end.endOf("day").toMillis()).toBeGreaterThanOrEqual(
+        now.getTime(),
+      );
+      expect(retrograde.start.toMillis()).toBeLessThan(
+        now.getTime() + 130 * 86400_000,
       );
     }
   });
