@@ -58,6 +58,7 @@
     "@uiw/react-split": "^5.9.4",
     "@vercel/functions": "^3.9.8",
     "ai": "7.0.102",
+    "astronomy-engine": "2.1.19",
     "better-auth": "1.7.5",
     "bson": "^6.10.4",
     "css-tree": "3.2.1",

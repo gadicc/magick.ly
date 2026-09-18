@@ -100,6 +100,9 @@ importers:
       ai:
         specifier: 7.0.102
         version: 7.0.102(zod@4.6.5)
+      astronomy-engine:
+        specifier: 2.1.19
+        version: 2.1.19
       better-auth:
         specifier: 1.7.5
         version: 1.7.5(@opentelemetry/api@1.9.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.5.8)(@neondatabase/serverless@1.1.0)(@opentelemetry/api@1.9.0)(kysely@0.29.5)(postgres@3.4.9))(mongodb@6.2.0)(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@24.13.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.1)
@@ -2988,6 +2991,9 @@ packages:
 
   ast-v8-to-istanbul@1.0.6:
     resolution: {integrity: sha512-fvpl29helSO2w/z7utIbrkNXILdrLwDwAMH2I/zPKlGf5244+gf+B4cyS1sANcrPY2h+hWCGSgC8N61s/+AF9A==}
+
+  astronomy-engine@2.1.19:
+    resolution: {integrity: sha512-8yWKNf7UeNbH458h3sAJ6ZgAjE5jTXp/mNNRFoC20j2SHwZIjAQeEsBB2Q3uCFRaTCCJRv33K2XhkhZQMXoX6w==}
 
   async-streamify@1.2.0:
     resolution: {integrity: sha512-glt1ty2xBlEtOGj/OdUYhWheeoRPmelGjfbkIXdOEkMxf1aIDmWkFCFihHwdPms8W2rXN4zbrIki9rgrGUq/WQ==}
@@ -7855,6 +7861,8 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       estree-walker: 3.0.3
       js-tokens: 10.0.0
+
+  astronomy-engine@2.1.19: {}
 
   async-streamify@1.2.0: {}
 
