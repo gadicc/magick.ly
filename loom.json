@@ -20,6 +20,23 @@
     }
   },
   "features": {
+    "auth": {
+      "status": "active",
+      "activatedOn": "2026-09-18",
+      "config": {
+        "entrypoints": {
+          "routeHandler": "src/app/api/auth/[...nextauth]/route.ts",
+          "signInPage": "src/app/signin/page.tsx"
+        },
+        "modules": {
+          "authClientModule": "src/auth/client.ts",
+          "authModule": "src/auth/sqlAuth.ts",
+          "authRuntimeModule": "src/auth/runtime.ts",
+          "authServerModule": "src/auth/session.ts"
+        },
+        "requestSessionReaders": "app-owned"
+      }
+    },
     "files": {
       "status": "active",
       "config": {
