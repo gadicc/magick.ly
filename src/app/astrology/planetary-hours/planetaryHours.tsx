@@ -1,4 +1,5 @@
 "use client";
+import useGeoIP from "@magick-components/hooks/useGeoIP";
 import { ExpandMore } from "@mui/icons-material";
 import {
   Accordion,
@@ -22,7 +23,6 @@ import {
 import { format } from "date-fns";
 import React from "react";
 import OpenSource from "@/OpenSource";
-import useGeoIP from "@/useGeoIP";
 import {
   calcPlanetaryHoursForDayAndLocation,
   DAY_IN_MS,

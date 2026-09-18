@@ -1,7 +1,7 @@
 import lune from "lune";
 
-import useGeoIP from "@/useGeoIP";
-import useHydrated from "@/useHydrated";
+import useGeoIP from "../hooks/useGeoIP";
+import useHydrated from "../hooks/useHydrated";
 
 const moonMeanInclination = 5.15; // in degrees
 

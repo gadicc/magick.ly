@@ -1,4 +1,5 @@
 "use client";
+import useGeoIP from "@magick-components/hooks/useGeoIP";
 import {
   Box,
   Container,
@@ -23,7 +24,6 @@ import PlanetarySpirit from "@/components/astrology/planetarySpirits";
 import ExportControls from "@/components/export/ExportControls";
 import { capitalizeFirstLetter, ordinal } from "@/lib/utils";
 import { mothersToString } from "@/render/contracts/astroGeomancyChart";
-import useGeoIP from "@/useGeoIP";
 import Tetragram from "../Tetragram";
 import { compute, tetragramFromRows } from "../tetragrams";
 import AstroGeomancyChart from "./AstroGeomancyChart";
