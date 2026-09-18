@@ -22,6 +22,8 @@ interface StudyDeviceState {
   explicitlySignedOut?: boolean;
   /** Counts identity changes so a delayed session answer can tell it is stale. */
   identityRevision?: number;
+  /** Revision of the last sign-out the user asked for, kept across activations. */
+  explicitSignOutRevision?: number;
 }
 
 function identityRevisionOf(device: StudyDeviceState | undefined) {
@@ -61,9 +63,14 @@ export interface ClaimedStudyReview {
   event: StoredStudyReviewEvent;
 }
 
+/**
+ * `revision` is the device revision the signal was written at; the sign-out
+ * fence announced before its write has none. `explicit` marks a sign-out the
+ * user asked for, which no activation may overrule.
+ */
 export type StudyIdentitySignal =
-  | { type: "signed-out" }
-  | { type: "account"; accountId: string };
+  | { type: "signed-out"; explicit: boolean; revision?: number }
+  | { type: "account"; accountId: string; revision?: number };
 
 /** Study data uses a separate database so legacy quarantine and ritual leases stay isolated. */
 export class StudyDatabase extends Dexie {
@@ -168,8 +175,24 @@ export class StudyRepository {
           return;
         }
         const signal = value as Record<string, unknown>;
+        // A tab running older code sends neither field. Treating its sign-out
+        // as explicit and its revision as unknown keeps the older, stricter
+        // handling for those messages.
+        const revision =
+          typeof signal.revision === "number" &&
+          Number.isSafeInteger(signal.revision) &&
+          signal.revision >= 0
+            ? signal.revision
+            : undefined;
         if (signal.type === "signed-out") {
-          this.notifyIdentity({ type: "signed-out" }, false);
+          this.notifyIdentity(
+            {
+              type: "signed-out",
+              explicit: signal.explicit !== false,
+              revision,
+            },
+            false,
+          );
           return;
         }
         if (
@@ -178,7 +201,7 @@ export class StudyRepository {
           signal.accountId === signal.accountId.toLowerCase()
         )
           this.notifyIdentity(
-            { type: "account", accountId: signal.accountId },
+            { type: "account", accountId: signal.accountId, revision },
             false,
           );
       };
@@ -209,14 +232,15 @@ export class StudyRepository {
     if (broadcast) this.channel?.postMessage(signal);
   }
 
+  /** The fence a requested sign-out raises before its write, so it has no revision. */
   announceSignedOut() {
-    this.notifyIdentity({ type: "signed-out" });
+    this.notifyIdentity({ type: "signed-out", explicit: true });
   }
 
-  announceAccount(accountId: string) {
+  announceAccount(accountId: string, revision?: number) {
     if (!isUuidV7(accountId) || accountId !== accountId.toLowerCase())
       throw new Error("Study account identity must be a canonical UUIDv7.");
-    this.notifyIdentity({ type: "account", accountId });
+    this.notifyIdentity({ type: "account", accountId, revision });
   }
 
   /** Null selects this device's stable anonymous identity; it is never an account ID. */
@@ -285,11 +309,21 @@ export class StudyRepository {
   }
 
   /**
-   * Explicit sign-out keeps owner-bound rows but prevents cold-start reopening.
-   * With `expectedRevision`, nothing is written and false is returned if any
-   * tab stored an identity change after that revision was read.
+   * Sign-out keeps owner-bound rows but prevents cold-start reopening. With
+   * `expectedRevision`, nothing is written and "stale" is returned when any
+   * tab stored an identity change after that revision was read. `explicit`
+   * records a sign-out the user asked for: it always writes, and an
+   * activation whose session check began earlier may no longer overrule it.
+   * Otherwise the stored revision is returned, or "unchanged" when the device
+   * was already signed out.
    */
-  async markSignedOut(expectedRevision?: number) {
+  async markSignedOut({
+    expectedRevision,
+    explicit = false,
+  }: {
+    expectedRevision?: number;
+    explicit?: boolean;
+  } = {}): Promise<"stale" | "unchanged" | number> {
     const result = await this.storage.transaction(
       "rw",
       this.storage.device,
@@ -297,34 +331,54 @@ export class StudyRepository {
         const device = await this.ensureDevice();
         const revision = identityRevisionOf(device);
         if (expectedRevision !== undefined && revision !== expectedRevision)
-          return "stale";
-        if (device.explicitlySignedOut === true) return "unchanged";
+          return "stale" as const;
+        if (device.explicitlySignedOut === true && !explicit)
+          return "unchanged" as const;
         await this.storage.device.put({
           ...device,
           explicitlySignedOut: true,
           identityRevision: revision + 1,
+          ...(explicit ? { explicitSignOutRevision: revision + 1 } : {}),
         });
-        return "changed";
+        return revision + 1;
       },
     );
-    if (result === "changed") this.notifyIdentity({ type: "signed-out" });
-    return result !== "stale";
+    if (typeof result === "number")
+      this.notifyIdentity({
+        type: "signed-out",
+        explicit,
+        revision: result,
+      });
+    return result;
   }
 
-  /** Called only after an explicit, freshly verified account activation. */
-  async markAccountActive(accountId: string) {
+  /**
+   * Called only after an explicit, freshly verified account activation.
+   * `baselineRevision` is the device revision read before that session check:
+   * the activation is refused, returning null, when the user asked for a
+   * sign-out after it, because the check may predate that sign-out. Returns
+   * the stored revision, which orders this activation against other tabs.
+   */
+  async markAccountActive(accountId: string, baselineRevision?: number) {
     if (!isUuidV7(accountId) || accountId !== accountId.toLowerCase())
       throw new Error("Study account identity must be a canonical UUIDv7.");
-    await this.storage.transaction("rw", this.storage.device, async () => {
+    return this.storage.transaction("rw", this.storage.device, async () => {
       const device = await this.ensureDevice();
+      if (
+        baselineRevision !== undefined &&
+        (device.explicitSignOutRevision ?? 0) > baselineRevision
+      )
+        return null;
       // Always counts, even for the same account: a session answer that
       // started before this activation must not sign it out.
+      const revision = identityRevisionOf(device) + 1;
       await this.storage.device.put({
         ...device,
         lastAccountId: accountId,
         explicitlySignedOut: false,
-        identityRevision: identityRevisionOf(device) + 1,
+        identityRevision: revision,
       });
+      return revision;
     });
   }
 

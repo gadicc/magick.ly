@@ -11,6 +11,10 @@ let singleton: StudyRepository | undefined;
 /** Undefined has no fresh identity yet; null is a sign-out fence; a UUID is an explicit activation. */
 let accountActivation: string | null | undefined;
 let identityGeneration = 0;
+/** Newest device revision this tab has applied, so older signals are ignored. */
+let appliedIdentityRevision = 0;
+/** Counts sign-outs the user asked for, which outrank any pending activation. */
+let explicitSignOuts = 0;
 let identityTransition: Promise<void> = Promise.resolve();
 const activeRequests = new Set<{
   controller: AbortController;
@@ -41,9 +45,12 @@ function abortActiveWork() {
     request.controller.abort();
 }
 
-function enqueueIdentityTransition(work: () => Promise<void>) {
+function enqueueIdentityTransition<T>(work: () => Promise<T>): Promise<T> {
   const result = identityTransition.then(work, work);
-  identityTransition = result.catch(() => {});
+  identityTransition = result.then(
+    () => undefined,
+    () => undefined,
+  );
   return result;
 }
 
@@ -51,6 +58,17 @@ function repository() {
   if (!singleton) {
     singleton = new StudyRepository(new StudyDatabase());
     singleton.subscribeIdentity((signal) => {
+      // Identity writes are numbered, so a signal that another tab stored
+      // before the newest one this tab applied is already superseded. The
+      // sign-out fence carries no revision and always applies.
+      if (
+        signal.revision !== undefined &&
+        signal.revision < appliedIdentityRevision
+      )
+        return;
+      if (signal.revision !== undefined)
+        appliedIdentityRevision = signal.revision;
+      if (signal.type === "signed-out" && signal.explicit) explicitSignOuts++;
       accountActivation =
         signal.type === "signed-out" ? null : signal.accountId;
       identityGeneration++;
@@ -84,7 +102,7 @@ export async function prepareStudySignOut() {
   await Promise.allSettled(pending.map((request) => request.promise));
   try {
     await enqueueIdentityTransition(async () => {
-      await study.markSignedOut();
+      await study.markSignedOut({ explicit: true });
     });
   } catch (cause) {
     throw new Error("Study sign-out state could not be saved.", {
@@ -93,17 +111,36 @@ export async function prepareStudySignOut() {
   }
 }
 
-/** Resumes account views only after the auth runtime freshly verifies this exact account. */
-export async function activateStudyAccount(accountId: string) {
+/** Baseline for an activation: read before the session check that verifies it. */
+export function studyIdentityRevision() {
+  return repository().identityRevision();
+}
+
+/**
+ * Resumes account views only after the auth runtime freshly verifies this
+ * exact account. `baselineRevision` is the revision read before that check;
+ * a sign-out the user asked for since then refuses the activation, and false
+ * is returned. Another tab's anonymous answer does not: this activation is
+ * stored after it, so it announces the account to every tab.
+ */
+export async function activateStudyAccount(
+  accountId: string,
+  baselineRevision?: number,
+) {
   if (!isUuidV7(accountId) || accountId !== accountId.toLowerCase())
     throw new Error("Study account identity must be a canonical UUIDv7.");
   const study = repository();
+  const signOutsBefore = explicitSignOuts;
   accountActivation = null;
-  const generation = ++identityGeneration;
+  identityGeneration++;
   abortActiveWork();
   notifyControlListeners();
-  await enqueueIdentityTransition(() => study.markAccountActive(accountId));
-  if (generation === identityGeneration) study.announceAccount(accountId);
+  const revision = await enqueueIdentityTransition(() =>
+    study.markAccountActive(accountId, baselineRevision),
+  );
+  if (revision === null || explicitSignOuts !== signOutsBefore) return false;
+  study.announceAccount(accountId, revision);
+  return true;
 }
 
 function assertCurrentIdentity(generation: number, signal: AbortSignal) {
@@ -172,7 +209,10 @@ async function resolveScope(
     }
   }
   if (signedOut) {
-    if (!(await repository().markSignedOut(revision))) {
+    const stored = await repository().markSignedOut({
+      expectedRevision: revision,
+    });
+    if (stored === "stale") {
       // The stored identity changed after this check began. Like an identity
       // signal, restart every view's check once; other views' stale answers
       // then fail the generation test instead of restarting again.

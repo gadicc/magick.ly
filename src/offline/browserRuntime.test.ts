@@ -91,12 +91,13 @@ it("freshly verifies a newer bridge identity after an older reader check", async
   const oldSession = deferred<Response>();
   const readerFetcher = vi.fn(() => oldSession.promise);
   const bridgeFetcher = vi.fn(async () => session(B));
-  const activateStudy = vi.fn(async () => {});
+  const activateStudy = vi.fn(async () => true);
   const lifecycle = createSqlBrowserLifecycle({
     async refreshPrivateAccount() {
       if (!(await instance.refreshVerifiedAccount(bridgeFetcher))) return null;
       return instance.coordinator.state.account?.ownerId ?? null;
     },
+    studyIdentityRevision: vi.fn(async () => 0),
     activateStudy,
     prepareStudySignOut: vi.fn(async () => {}),
     preparePrivateSignOut: () => instance.signOut(),
@@ -113,7 +114,7 @@ it("freshly verifies a newer bridge identity after an older reader check", async
   await expect(reader).resolves.toBe(true);
   await expect(bridge).resolves.toBe(true);
   expect(bridgeFetcher).toHaveBeenCalledOnce();
-  expect(activateStudy).toHaveBeenCalledWith(B);
+  expect(activateStudy).toHaveBeenCalledWith(B, 0);
   expect(instance.coordinator.state.account?.ownerId).toBe(B);
   instance.coordinator.dispose();
 });

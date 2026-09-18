@@ -2,7 +2,11 @@
 
 import { isUuidV7 } from "../lib/ids";
 import { getBrowserOfflineRuntime } from "../offline/browserRuntime";
-import { activateStudyAccount, prepareStudySignOut } from "../study/client";
+import {
+  activateStudyAccount,
+  prepareStudySignOut,
+  studyIdentityRevision,
+} from "../study/client";
 import { authClient } from "./client";
 
 export type SqlBrowserSignOutFailure =
@@ -15,7 +19,8 @@ export type SqlBrowserSignOutResult =
 
 export interface SqlBrowserLifecycleDependencies {
   refreshPrivateAccount(): Promise<string | null>;
-  activateStudy(accountId: string): Promise<void>;
+  studyIdentityRevision(): Promise<number>;
+  activateStudy(accountId: string, baselineRevision: number): Promise<boolean>;
   prepareStudySignOut(): Promise<void>;
   preparePrivateSignOut(): Promise<boolean>;
   signOutAuth(): Promise<boolean>;
@@ -37,6 +42,9 @@ export function createSqlBrowserLifecycle(
     async refreshVerifiedAccount(): Promise<boolean> {
       if (accountViewsFenced) return false;
       const action = ++generation;
+      // Read before the session check, so a sign-out stored while it runs can
+      // refuse this activation rather than being overwritten by it.
+      const baseline = await dependencies.studyIdentityRevision();
       const ownerId = await dependencies.refreshPrivateAccount();
       if (
         accountViewsFenced ||
@@ -46,7 +54,7 @@ export function createSqlBrowserLifecycle(
         ownerId !== ownerId.toLowerCase()
       )
         return false;
-      await dependencies.activateStudy(ownerId);
+      if (!(await dependencies.activateStudy(ownerId, baseline))) return false;
       return !accountViewsFenced && action === generation;
     },
 
@@ -94,6 +102,7 @@ export const sqlBrowserLifecycle = createSqlBrowserLifecycle({
     if (!(await runtime.refreshVerifiedAccount())) return null;
     return runtime.coordinator.state.account?.ownerId ?? null;
   },
+  studyIdentityRevision,
   activateStudy: activateStudyAccount,
   prepareStudySignOut,
   preparePrivateSignOut: () => getBrowserOfflineRuntime().signOut(),

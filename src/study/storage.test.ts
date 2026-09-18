@@ -160,28 +160,64 @@ describe("study Dexie scopes and outbox", () => {
 
     const beforeSignIn = await first.identityRevision();
     await second.markAccountActive(A);
-    await expect(first.markSignedOut(beforeSignIn)).resolves.toBe(false);
+    await expect(
+      first.markSignedOut({ expectedRevision: beforeSignIn }),
+    ).resolves.toBe("stale");
     expect(await first.lastLocalAccountId()).toBe(A);
 
     // Signing in again as the same account still counts as a change.
     const beforeRepeat = await first.identityRevision();
     await second.markAccountActive(A);
-    await expect(first.markSignedOut(beforeRepeat)).resolves.toBe(false);
+    await expect(
+      first.markSignedOut({ expectedRevision: beforeRepeat }),
+    ).resolves.toBe("stale");
     expect(await first.lastLocalAccountId()).toBe(A);
     expect(signals).toEqual([]);
 
     await expect(
-      first.markSignedOut(await first.identityRevision()),
-    ).resolves.toBe(true);
+      first.markSignedOut({ expectedRevision: await first.identityRevision() }),
+    ).resolves.toBeTypeOf("number");
     expect(await first.lastLocalAccountId()).toBeNull();
     expect(signals).toEqual(["signed-out"]);
 
     // Writes that change nothing leave the revision alone.
     const signedOut = await first.identityRevision();
     await first.scope(A);
-    await expect(first.markSignedOut(signedOut)).resolves.toBe(true);
+    await expect(
+      first.markSignedOut({ expectedRevision: signedOut }),
+    ).resolves.toBe("unchanged");
     expect(await first.identityRevision()).toBe(signedOut);
     expect(signals).toEqual(["signed-out"]);
+  });
+
+  it("refuses an activation whose check began before a requested sign-out", async () => {
+    const { first, second } = fixture(true);
+    if (!second) throw new Error("Expected second synthetic tab.");
+
+    // One tab checks the session, the user signs out in another, and the
+    // check's answer arrives afterwards.
+    const beforeCheck = await first.identityRevision();
+    await expect(second.markSignedOut({ explicit: true })).resolves.toBeTypeOf(
+      "number",
+    );
+    await expect(first.markAccountActive(A, beforeCheck)).resolves.toBeNull();
+    expect(await first.isExplicitlySignedOut()).toBe(true);
+    expect(await first.lastLocalAccountId()).toBeNull();
+
+    // A check that began after that sign-out still activates.
+    const afterSignOut = await first.identityRevision();
+    await expect(first.markAccountActive(A, afterSignOut)).resolves.toBeTypeOf(
+      "number",
+    );
+    expect(await first.lastLocalAccountId()).toBe(A);
+
+    // An anonymous answer, which is not a requested sign-out, never refuses one.
+    const beforeAnonymous = await first.identityRevision();
+    await second.markSignedOut({ expectedRevision: beforeAnonymous });
+    await expect(
+      first.markAccountActive(A, beforeAnonymous),
+    ).resolves.toBeTypeOf("number");
+    expect(await first.lastLocalAccountId()).toBe(A);
   });
 
   it("serializes two tabs, retries the same UUID and retains later optimistic work", async () => {

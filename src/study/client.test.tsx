@@ -301,6 +301,92 @@ describe("study client identity and continuity", () => {
     otherTab.close();
   });
 
+  it("announces a sign-in that another tab's anonymous answer raced", async () => {
+    let releaseActivation!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      releaseActivation = resolve;
+    });
+    const original = studyStorage.StudyRepository.prototype.markAccountActive;
+    vi.spyOn(
+      studyStorage.StudyRepository.prototype,
+      "markAccountActive",
+    ).mockImplementation(async function (accountId, baselineRevision) {
+      await blocked;
+      return original.call(this, accountId, baselineRevision);
+    });
+
+    function ScopeHarness() {
+      const runtime = studyClient.useStudyList(A);
+      return <div>{runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    render(<ScopeHarness />);
+    await screen.findByText("hidden");
+    const baseline = await studyClient.studyIdentityRevision();
+    const activation = studyClient.activateStudyAccount(A, baseline);
+
+    // The other tab's anonymous check answers while this sign-in is storing.
+    const otherDb = new studyStorage.StudyDatabase("magickli-study");
+    const otherTab = new studyStorage.StudyRepository(otherDb);
+    await otherTab.markSignedOut({
+      expectedRevision: await otherTab.identityRevision(),
+    });
+    await act(async () => {
+      releaseActivation();
+      await activation;
+    });
+
+    await expect(activation).resolves.toBe(true);
+    await screen.findByText(`account:${A}`);
+    expect(await otherDb.device.get("active")).toMatchObject({
+      explicitlySignedOut: false,
+      lastAccountId: A,
+    });
+    otherTab.close();
+  });
+
+  it("refuses a sign-in that a sign-out in another tab overtook", async () => {
+    let releaseActivation!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      releaseActivation = resolve;
+    });
+    const original = studyStorage.StudyRepository.prototype.markAccountActive;
+    vi.spyOn(
+      studyStorage.StudyRepository.prototype,
+      "markAccountActive",
+    ).mockImplementation(async function (accountId, baselineRevision) {
+      await blocked;
+      return original.call(this, accountId, baselineRevision);
+    });
+
+    function ScopeHarness() {
+      const runtime = studyClient.useStudyList(A);
+      return <div>{runtime.scope?.key ?? "hidden"}</div>;
+    }
+
+    render(<ScopeHarness />);
+    await screen.findByText("hidden");
+    const baseline = await studyClient.studyIdentityRevision();
+    const activation = studyClient.activateStudyAccount(A, baseline);
+
+    // The user signs out in the other tab while this sign-in is storing.
+    const otherDb = new studyStorage.StudyDatabase("magickli-study");
+    const otherTab = new studyStorage.StudyRepository(otherDb);
+    await otherTab.markSignedOut({ explicit: true });
+    await act(async () => {
+      releaseActivation();
+      await activation;
+    });
+
+    await expect(activation).resolves.toBe(false);
+    expect(screen.getByText("hidden")).toBeTruthy();
+    expect(await otherDb.device.get("active")).toMatchObject({
+      explicitlySignedOut: true,
+    });
+    expect(await otherTab.lastLocalAccountId()).toBeNull();
+    otherTab.close();
+  });
+
   it("keeps the live quiz mounted while a local review refreshes its snapshot", async () => {
     Object.defineProperty(window.navigator, "onLine", {
       configurable: true,
